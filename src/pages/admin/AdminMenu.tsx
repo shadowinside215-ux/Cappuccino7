@@ -9,8 +9,10 @@ export default function AdminMenu() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<string | null>(null); // null, 'new', or productId
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const [newItem, setNewItem] = useState({
     name: '',
     description: '',
@@ -19,6 +21,7 @@ export default function AdminMenu() {
     image: '',
     isAvailable: true
   });
+  const [editItem, setEditItem] = useState<Partial<Product>>({});
 
   useEffect(() => {
     const unsubCat = onSnapshot(query(collection(db, 'categories'), orderBy('order')), (snap) => {
@@ -30,7 +33,7 @@ export default function AdminMenu() {
     return () => { unsubCat(); unsubProd(); };
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'new' | 'edit') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -43,7 +46,7 @@ export default function AdminMenu() {
       return;
     }
 
-    setIsUploading(true);
+    setIsUploading(type === 'new' ? 'new' : editingId || 'edit');
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', uploadPreset);
@@ -55,7 +58,11 @@ export default function AdminMenu() {
       );
       const data = await response.json();
       if (data.secure_url) {
-        setNewItem(prev => ({ ...prev, image: data.secure_url }));
+        if (type === 'new') {
+          setNewItem(prev => ({ ...prev, image: data.secure_url }));
+        } else {
+          setEditItem(prev => ({ ...prev, image: data.secure_url }));
+        }
         toast.success('Image uploaded successfully');
       } else {
         throw new Error('Upload failed');
@@ -64,8 +71,19 @@ export default function AdminMenu() {
       console.error(err);
       toast.error('Failed to upload image');
     } finally {
-      setIsUploading(false);
+      setIsUploading(null);
     }
+  };
+
+  const handleUpdateItem = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingId || !editItem.name) return;
+    try {
+      await updateDoc(doc(db, 'products', editingId), editItem);
+      setEditingId(null);
+      setEditItem({});
+      toast.success('Product updated successfully!');
+    } catch (err) { toast.error('Update failed'); }
   };
 
   const handleAddItem = async (e: FormEvent) => {
@@ -166,7 +184,7 @@ export default function AdminMenu() {
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-bento-accent hover:bg-stone-100 transition-all group overflow-hidden relative"
               >
-                {isUploading ? (
+                {isUploading === 'new' ? (
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="text-bento-accent animate-spin" size={32} />
                     <p className="text-[10px] font-bold text-stone-400 uppercase">Uploading to Cloudinary...</p>
@@ -192,7 +210,7 @@ export default function AdminMenu() {
               <input 
                 type="file" 
                 ref={fileInputRef}
-                onChange={handleFileUpload}
+                onChange={(e) => handleFileUpload(e, 'new')}
                 accept="image/*"
                 className="hidden"
               />
@@ -226,38 +244,112 @@ export default function AdminMenu() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {catProducts.map(product => (
-                  <div key={product.id} className="card group !p-4 flex items-center gap-5 hover:border-bento-accent/20">
-                    <div className="relative w-20 h-20 flex-shrink-0">
-                      <img 
-                        src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
-                        className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
-                        referrerPolicy="no-referrer"
-                      />
-                      {!product.isAvailable && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="bg-stone-800 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Hidden</div>
+                  <div key={product.id} className="flex flex-col gap-4">
+                    <div className="card group !p-4 flex items-center gap-5 hover:border-bento-accent/20">
+                      <div className="relative w-20 h-20 flex-shrink-0">
+                        <img 
+                          src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
+                          className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
+                          referrerPolicy="no-referrer"
+                        />
+                        {!product.isAvailable && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="bg-stone-800 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Hidden</div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <h3 className="font-bold text-bento-ink truncate leading-tight">{product.name}</h3>
+                        <p className="text-xs font-black text-bento-accent mt-1">{product.price} MAD</p>
+                        <p className="text-[10px] text-stone-400 truncate mt-1">{product.description || 'No description provided'}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <button 
+                          onClick={() => {
+                            setEditingId(product.id);
+                            setEditItem(product);
+                          }}
+                          className="p-2 rounded-xl text-stone-400 bg-stone-50 hover:bg-stone-100 transition-colors"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button 
+                          onClick={() => toggleAvailability(product)}
+                          className={`p-2 rounded-xl transition-all ${product.isAvailable ? 'text-green-600 bg-green-50 shadow-sm shadow-green-100' : 'text-stone-300 bg-stone-50'}`}
+                        >
+                          <Check size={18} />
+                        </button>
+                        <button 
+                          onClick={() => deleteProduct(product.id)}
+                          className="p-2 rounded-xl text-red-400 bg-red-50 hover:bg-red-100 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {editingId === product.id && (
+                      <form onSubmit={handleUpdateItem} className="card !p-6 border-bento-accent/30 animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                          <p className="text-[10px] font-black text-bento-accent uppercase tracking-widest">Editing Product</p>
+                          <button type="button" onClick={() => setEditingId(null)} className="text-stone-300 hover:text-stone-500 transition-colors"><X size={18} /></button>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-bento-ink truncate leading-tight">{product.name}</h3>
-                      <p className="text-xs font-black text-bento-accent mt-1">{product.price.toFixed(2)} MAD</p>
-                      <p className="text-[10px] text-stone-400 truncate mt-1">{product.description || 'No description provided'}</p>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <button 
-                        onClick={() => toggleAvailability(product)}
-                        className={`p-2 rounded-xl transition-all ${product.isAvailable ? 'text-green-600 bg-green-50 shadow-sm shadow-green-100' : 'text-stone-300 bg-stone-50'}`}
-                      >
-                        <Check size={18} />
-                      </button>
-                      <button 
-                        onClick={() => deleteProduct(product.id)}
-                        className="p-2 rounded-xl text-red-400 bg-red-50 hover:bg-red-100 transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-[9px] font-black text-stone-300 uppercase tracking-widest ml-1">Properties</label>
+                              <input 
+                                type="text" placeholder="Name" required 
+                                value={editItem.name} onChange={e => setEditItem({...editItem, name: e.target.value})}
+                                className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-bento-accent outline-none font-bold"
+                              />
+                              <input 
+                                type="number" step="0.01" placeholder="Price" required
+                                value={editItem.price || ''} onChange={e => setEditItem({...editItem, price: parseFloat(e.target.value)})}
+                                className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-bento-accent outline-none font-bold"
+                              />
+                            </div>
+                            <textarea 
+                              placeholder="Description"
+                              value={editItem.description} onChange={e => setEditItem({...editItem, description: e.target.value})}
+                              className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 h-20 text-xs focus:ring-2 focus:ring-bento-accent outline-none"
+                            />
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <label className="text-[9px] font-black text-stone-300 uppercase tracking-widest ml-1">Change Image</label>
+                            <div 
+                              onClick={() => editFileInputRef.current?.click()}
+                              className="w-full aspect-[2/1] bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-bento-accent transition-all relative overflow-hidden"
+                            >
+                              {isUploading === editingId ? (
+                                <Loader2 className="text-bento-accent animate-spin" size={24} />
+                              ) : (
+                                <>
+                                  <img src={editItem.image} className="w-full h-full object-cover opacity-60" />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                    <div className="p-3 bg-white rounded-xl shadow-lg ring-1 ring-black/5">
+                                      <Upload className="text-bento-primary" size={20} />
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            <input 
+                              type="file" 
+                              ref={editFileInputRef}
+                              onChange={(e) => handleFileUpload(e, 'edit')}
+                              accept="image/*"
+                              className="hidden"
+                            />
+                            <button type="submit" className="w-full bg-bento-accent text-bento-primary py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-bento-accent/10 hover:bg-stone-900 hover:text-white transition-all">
+                              Save Changes
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    )}
                   </div>
                 ))}
               </div>
