@@ -5,6 +5,7 @@ export interface UserProfile {
   name: string;
   email: string;
   points: number;
+  coffeeCount: number; // For the 10 + 1 free coffee rule
   isAdmin: boolean;
   createdAt: string;
 }

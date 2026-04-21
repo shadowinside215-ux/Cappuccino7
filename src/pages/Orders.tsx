@@ -62,7 +62,7 @@ export default function Orders() {
                 </div>
                 <div className="bg-stone-50 px-5 py-3 rounded-2xl border border-stone-100 min-w-[120px] text-center">
                   <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1 leading-none">Total Paid</p>
-                  <p className="text-2xl font-black text-bento-primary leading-none">${order.total.toFixed(2)}</p>
+                  <p className="text-2xl font-black text-bento-primary leading-none">{order.total} MAD</p>
                 </div>
               </div>
               

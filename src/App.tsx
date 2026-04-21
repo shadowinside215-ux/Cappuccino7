@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -16,6 +16,37 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminMenu from './pages/admin/AdminMenu';
 import AdminOrders from './pages/admin/AdminOrders';
 import Login from './pages/Login';
+import AdminLogin from './pages/admin/AdminLogin';
+
+const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  const [isAdminDocument, setIsAdminDocument] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const isAdminMode = sessionStorage.getItem('admin_mode') === 'true';
+      if (isAdminMode) {
+        setIsAdminDocument(true);
+        return;
+      }
+      
+      if (userProfile?.uid) {
+        const adminDoc = await getDoc(doc(db, 'admins', userProfile.uid));
+        setIsAdminDocument(adminDoc.exists());
+      } else {
+        setIsAdminDocument(false);
+      }
+    };
+    checkAdmin();
+  }, [userProfile]);
+
+  if (isAdminDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Checking permissions...</div>;
+
+  if (isAdminDocument || userProfile?.isAdmin) {
+    return <>{children}</>;
+  }
+
+  return <Navigate to="/admin/login" />;
+};
 
 function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   const location = useLocation();
@@ -73,30 +104,53 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
         <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-b border-stone-100 z-40 sm:hidden">
           <div className="px-6 py-4 flex justify-between items-center">
             <span className="text-xl font-black italic text-bento-primary tracking-tighter uppercase">Cappuccino7</span>
-            {userProfile?.points !== undefined && (
-              <div className="bg-bento-accent/10 border border-bento-accent/20 px-3 py-1 rounded-full flex items-center gap-2">
-                <Award size={14} className="text-bento-accent" />
-                <span className="text-[10px] font-black text-bento-primary">{userProfile.points} pts</span>
+            {(userProfile?.points !== undefined || userProfile?.coffeeCount !== undefined) && (
+              <div className="flex gap-2">
+                {userProfile?.coffeeCount !== undefined && (
+                  <div className="bg-amber-100 border border-amber-200 px-3 py-1 rounded-full flex items-center gap-2">
+                    <Coffee size={14} className="text-amber-700" />
+                    <span className="text-[10px] font-black text-amber-900">{userProfile.coffeeCount}/10</span>
+                  </div>
+                )}
+                {userProfile?.points !== undefined && (
+                  <div className="bg-bento-accent/10 border border-bento-accent/20 px-3 py-1 rounded-full flex items-center gap-2">
+                    <Award size={14} className="text-bento-accent" />
+                    <span className="text-[10px] font-black text-bento-primary">{userProfile.points} pts</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </header>
       )}
       <Navbar userProfile={userProfile} />
-      <main className={`max-w-4xl mx-auto px-6 py-10 ${location.pathname !== '/login' ? 'pt-24 sm:pt-10' : ''}`}>
+      <main className={`max-w-4xl mx-auto px-6 py-10 ${location.pathname !== '/login' && !location.pathname.startsWith('/admin/login') ? 'pt-24 sm:pt-10' : ''}`}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home userProfile={userProfile} />} />
           <Route path="/login" element={<Login />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
           <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
           
           {/* Admin Routes */}
-          <Route path="/admin" element={userProfile?.isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
-          <Route path="/admin/menu" element={userProfile?.isAdmin ? <AdminMenu /> : <Navigate to="/" />} />
-          <Route path="/admin/orders" element={userProfile?.isAdmin ? <AdminOrders /> : <Navigate to="/" />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
+          <Route path="/admin/menu" element={<AdminGuard userProfile={userProfile}><AdminMenu /></AdminGuard>} />
+          <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
         </Routes>
       </main>
+
+      {/* Persistent Admin Footer Access */}
+      {!location.pathname.startsWith('/admin') && (
+        <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-12 text-center opacity-30 hover:opacity-100 transition-opacity">
+          <Link 
+            to="/admin/login" 
+            className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-bento-primary"
+          >
+            Site Administrator Access
+          </Link>
+        </footer>
+      )}
     </div>
   );
 }

@@ -24,13 +24,27 @@ export default function AdminOrders() {
     try {
       await updateDoc(doc(db, 'orders', order.id), { status: newStatus });
       
-      // If delivered, award points to user
+      // If delivered, award points and increment coffee count
       if (newStatus === 'delivered' && order.status !== 'delivered') {
         const userRef = doc(db, 'users', order.userId);
+        
+        // Logic for coffee loyalty rule
+        const coffeeKeywords = ['coffee', 'cappuccino', 'latte', 'espresso', 'café', 'machiato', 'boisson chaude'];
+        const coffeeCountInOrder = order.items.reduce((acc, item) => {
+          const isCoffee = coffeeKeywords.some(kw => item.name.toLowerCase().includes(kw));
+          return isCoffee ? acc + item.quantity : acc;
+        }, 0);
+
         await updateDoc(userRef, {
-          points: increment(order.pointsEarned)
+          points: increment(order.pointsEarned),
+          coffeeCount: increment(coffeeCountInOrder)
         });
-        toast.success(`Points awarded to ${order.customerName}!`);
+        
+        if (coffeeCountInOrder > 0) {
+          toast.success(`Awarded ${coffeeCountInOrder} coffee points to ${order.customerName}!`);
+        } else {
+          toast.success(`Points awarded to ${order.customerName}!`);
+        }
       }
       
       toast.success(`Order set to ${newStatus}`);
@@ -80,7 +94,7 @@ export default function AdminOrders() {
                 </div>
                 
                 <div className="flex flex-col items-end md:w-48">
-                  <p className="text-3xl font-black text-brown-950 mb-1">${order.total.toFixed(2)}</p>
+                  <p className="text-3xl font-black text-brown-950 mb-1">{order.total.toFixed(0)} MAD</p>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full">
                     {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -114,7 +128,7 @@ export default function AdminOrders() {
             {orders.filter(o => o.status === 'delivered').slice(0, 5).map(o => (
               <div key={o.id} className="bg-white/50 p-4 rounded-2xl flex justify-between items-center text-sm">
                 <span className="font-bold">{o.customerName}</span>
-                <span className="text-gray-400">delivered • ${o.total.toFixed(2)}</span>
+                <span className="text-gray-400">delivered • {o.total.toFixed(0)} MAD</span>
               </div>
             ))}
           </div>

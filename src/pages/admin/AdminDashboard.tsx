@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatc
 import { db } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -14,6 +14,8 @@ export default function AdminDashboard() {
     todayRevenue: 0
   });
   const [isEmpty, setIsEmpty] = useState(false);
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,6 +39,9 @@ export default function AdminDashboard() {
       const prodsSnap = await getDocs(collection(db, 'products'));
       const catsSnap = await getDocs(collection(db, 'categories'));
       
+      const usersData = usersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+      setUsers(usersData);
+
       setIsEmpty(catsSnap.empty);
       setStats(prev => ({ 
         ...prev, 
@@ -50,21 +55,87 @@ export default function AdminDashboard() {
   }, []);
 
   const initializeDatabase = async () => {
+    if (isSettingUp) return;
+    setIsSettingUp(true);
     try {
       const batch = writeBatch(db);
       
-      // Default categories
+      // Default categories with priorities
       const categories = [
-        { name: 'Coffee Drinks', order: 1 },
-        { name: 'Breakfast Items', order: 2 },
-        { name: 'Juices & Soda', order: 3 },
-        { name: 'Desserts & Pastries', order: 4 }
+        { name: '🍳 Breakfast', order: 1 },
+        { name: '🥗 Brunch', order: 2 },
+        { name: '🥤 Drinks & Juices', order: 3 },
+        { name: '🍔 Fast Food', order: 4 },
+        { name: '🥒 Healthy Meals', order: 5 },
+        { name: '🍰 Desserts', order: 6 },
+        { name: '🍦 Ice Cream', order: 7 },
+        { name: '⭐ Signature Menu', order: 8 }
       ];
 
-      categories.forEach(cat => {
-        const ref = doc(collection(db, 'categories'));
-        batch.set(ref, cat);
-      });
+      // Mapping for specific required data
+      const breakfastItems = [
+        { name: 'Occidental', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800' },
+        { name: 'Amazigh', price: 48, description: 'Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?q=80&w=800' },
+        { name: 'Gourmand', price: 45, description: 'Œufs au plat ou brouillés, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=800' },
+        { name: 'Ftour Fassi', price: 48, description: 'Œufs au khlii, Huile d\'olive, olives noires, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?q=80&w=800' },
+        { name: 'Ftour Chamali', price: 48, description: 'Œufs brouillés avec charcuterie et fromage blanc, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1513442542250-854d436a73f2?q=80&w=800' },
+        { name: 'Omelette Spéciale', price: 48, description: 'Œufs brouillés, Tomate cerise, oignons, Dinde fumée, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1494597564530-897f5a210287?q=80&w=800' },
+        { name: 'Cappuccino7 Breakfast', price: 68, description: 'Croque Monsieur, Hotdog, Fromage blanc, Salade verte, Crêpes Nutella, Salade de fruits, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' },
+        { name: 'Healthy Breakfast', price: 60, description: 'Toast avocat + œufs, Bol d’avoine (banane, chia, fruits secs), Fruits de saison, yaourt, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1490312278390-ab6414f8d2f5?q=80&w=800' },
+        { name: 'Turkie', price: 68, description: 'Œufs au plat ou brouillés, Hash browns, Tomate grillée, Boisson chaude, Jus d\'orange, Balboula, Eau minérale', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=800' },
+        { name: 'Anglais', price: 85, description: 'Œufs au plat, Fromages, Concombre, tomate, olives, Jambon, beurre, confiture, Pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' }
+      ];
+
+      const brunchItems = [
+        { name: 'Brunch (1 Personne)', price: 87, description: 'Omelette, saucisses, Beghrir, Harcha, Meloui, Miel, Amlou, Fromage, Jus orange, Pancakes Nutella, Boisson chaude...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=80&w=800' },
+        { name: 'Brunch (2 Personnes)', price: 150, description: 'Double portion: Omelette, saucisses, plateau beldi complet, fromages, charcuterie, jus orange, pancakes, desserts...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=80&w=800' }
+      ];
+
+      const drinkItems = [
+        { name: 'Espresso Prestige', price: 15, description: 'Strong, aromatic artisan espresso roast.', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=800' },
+        { name: 'Signature Cappuccino', price: 25, description: 'Our namesake classic with velvety foam.', image: 'https://images.unsplash.com/photo-1534778101976-62847782c213?q=80&w=800' },
+        { name: 'Fresh Orange Juice', price: 20, description: '100% natural, freshly squeezed.', image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800' }
+      ];
+
+      const fastFoodItems = [
+        { name: 'Classic Beef Burger', price: 45, description: 'Premium beef, cheddar, fresh lettuce, and house sauce.', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800' },
+        { name: 'Chicken Club Sandwich', price: 40, description: 'Triple decker with grilled chicken, turkey, and eggs.', image: 'https://images.unsplash.com/photo-1567234665766-4740a7575db0?q=80&w=800' }
+      ];
+
+      const healthyItems = [
+        { name: 'Avocado Energy Toast', price: 55, description: 'Sourdough, smashed avocado, poached eggs, seeds.', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=800' },
+        { name: 'Greek Quinoa Salad', price: 48, description: 'Fresh veggies, feta, olives, and citrus dressing.', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800' }
+      ];
+
+      const dessertItems = [
+        { name: 'Nutella Pancakes', price: 35, description: 'Stack of 3 fluffy pancakes with chocolate and fruits.', image: 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?q=80&w=800' },
+        { name: 'Moroccan Pastry Plate', price: 30, description: 'Assortment of artisan traditional cookies.', image: 'https://images.unsplash.com/photo-1533035353720-f1c6a75cd8ab?q=80&w=800' }
+      ];
+
+      const iceCreamItems = [
+        { name: 'Artisan Vanilla Bean', price: 25, description: 'Double scoop of premium vanilla with honey drizzle.', image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9391?q=80&w=800' },
+        { name: 'Pistachio Delight', price: 30, description: 'Traditional roasted pistachio with chopped nuts.', image: 'https://images.unsplash.com/photo-1505394033323-4241bb21750b?q=80&w=800' }
+      ];
+
+      for (const cat of categories) {
+        const catRef = doc(collection(db, 'categories'));
+        batch.set(catRef, cat);
+        
+        let items: any[] = [];
+        if (cat.name.includes('Breakfast')) items = breakfastItems;
+        else if (cat.name.includes('Brunch')) items = brunchItems;
+        else if (cat.name.includes('Drinks')) items = drinkItems;
+        else if (cat.name.includes('Fast Food')) items = fastFoodItems;
+        else if (cat.name.includes('Healthy')) items = healthyItems;
+        else if (cat.name.includes('Desserts')) items = dessertItems;
+        else if (cat.name.includes('Ice Cream')) items = iceCreamItems;
+        else if (cat.name.includes('Signature')) items = [breakfastItems[6]]; // Feature the namesake
+
+        items.forEach(item => {
+          const prodRef = doc(collection(db, 'products'));
+          batch.set(prodRef, { ...item, categoryId: catRef.id, isAvailable: true });
+        });
+      }
 
       // Default settings
       batch.set(doc(db, 'settings', 'global'), {
@@ -75,10 +146,15 @@ export default function AdminDashboard() {
       await batch.commit();
       setIsEmpty(false);
       toast.success('Database initialized with default categories!');
-      window.location.reload();
+      // Give a tiny delay for Firestore to propogate then redirect
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 800);
     } catch (err) {
       console.error(err);
       toast.error('Failed to initialize database');
+    } finally {
+      setIsSettingUp(false);
     }
   };
 
@@ -105,9 +181,10 @@ export default function AdminDashboard() {
             </div>
             <button 
               onClick={initializeDatabase}
-              className="bg-bento-accent text-bento-primary font-bold py-4 px-8 rounded-2xl hover:bg-white transition-all shadow-xl active:scale-[0.98]"
+              disabled={isSettingUp}
+              className={`bg-bento-accent text-bento-primary font-bold py-4 px-8 rounded-2xl transition-all shadow-xl active:scale-[0.98] ${isSettingUp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white'}`}
             >
-              Run Setup
+              {isSettingUp ? 'Setting up...' : 'Run Setup'}
             </button>
           </div>
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
@@ -178,6 +255,73 @@ export default function AdminDashboard() {
             </div>
           </div>
         </button>
+      </div>
+
+      {/* User Loyalty Management */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between pl-1">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-bento-primary tracking-tight">Customer Communities</h2>
+            <div className="px-2 py-0.5 bg-bento-accent/20 rounded-full text-bento-primary text-[10px] font-black uppercase tracking-widest">{users.length} Users</div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {users.map(user => {
+            const freeCoffees = Math.floor((user.coffeeCount || 0) / 10);
+            const progress = (user.coffeeCount || 0) % 10;
+            const hasReward = progress === 0 && (user.coffeeCount || 0) > 0 && progress !== user.coffeeCount; // Simplified logic or just check if they hit a multiple of 10
+            // Actually, Rule: 10 coffees = 11th free. 
+            // So if coffeeCount is 10, next is free.
+            const rewardAvailable = (user.coffeeCount || 0) >= 10;
+
+            return (
+              <div key={user.uid} className="card !p-5 flex flex-col sm:flex-row items-center gap-6 group hover:border-bento-accent/20 transition-all">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="w-12 h-12 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400 group-hover:bg-bento-accent/10 group-hover:text-bento-primary transition-all">
+                    <Users size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-bento-ink text-lg">{user.name || 'Anonymous User'}</h4>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                        <Mail size={10} /> {user.email}
+                      </p>
+                      <div className="h-1 w-1 bg-stone-200 rounded-full" />
+                      <p className="text-[10px] text-bento-accent font-black uppercase tracking-widest flex items-center gap-1">
+                        <Coffee size={10} /> {(user.coffeeCount || 0)} Coffees
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0">
+                  <div className="flex-1 sm:flex-none">
+                    <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-2 text-center sm:text-right">Coffee Progress</p>
+                    <div className="flex items-center gap-1">
+                      {[...Array(10)].map((_, i) => (
+                        <div 
+                          key={i} 
+                          className={`w-4 h-4 rounded-full border-2 transition-all ${
+                            i < ((user.coffeeCount || 0) % 10 || (user.coffeeCount || 0 > 0 && user.coffeeCount % 10 === 0 ? 10 : 0))
+                            ? 'bg-bento-primary border-bento-primary scale-110 shadow-sm shadow-bento-primary/20' 
+                            : 'border-stone-100'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {rewardAvailable && (
+                    <div className="bg-green-50 text-green-600 p-3 rounded-2xl flex items-center justify-center shadow-sm shadow-green-100 animate-pulse">
+                      <Gift size={24} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

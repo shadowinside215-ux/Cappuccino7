@@ -1,37 +1,79 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Product, Category } from '../types';
+import { Product, Category, UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Search, Star, MapPin, Coffee } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function Home() {
+import { useNavigate } from 'react-router-dom';
+
+export default function Home({ userProfile }: { userProfile: UserProfile | null }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  const isEmpty = !loading && categories.length === 0;
+
+  const starterMenu: Product[] = [
+    { id: 'start-1', name: 'Occidental Breakfast', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800', categoryId: 'breakfast', isAvailable: true },
+    { id: 'start-2', name: 'Amazigh Breakfast', price: 48, description: 'Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d\'orange, Balboula, Boisson chaude...', image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?q=80&w=800', categoryId: 'breakfast', isAvailable: true },
+    { id: 'start-3', name: 'Brunch (1 Personne)', price: 87, description: 'Omelette, saucisses, Beghrir, Harcha, Meloui, Miel, Amlou, Fromage, Jus orange, Pancakes Nutella, Boisson chaude...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=80&w=800', categoryId: 'brunch', isAvailable: true }
+  ];
+
+  const starterCategories: Category[] = [
+    { id: 'breakfast', name: '🍳 Breakfast', order: 1 },
+    { id: 'brunch', name: '🥗 Brunch', order: 2 }
+  ];
+
+  const displayCategories = isEmpty ? starterCategories : categories;
+  const displayProducts = isEmpty ? starterMenu : products;
+
+  useEffect(() => {
+    if (userProfile && (userProfile.coffeeCount || 0) >= 10) {
+      toast('☕ Free Coffee Reward Available!', {
+        icon: '🎁',
+        duration: 5000,
+        style: {
+          borderRadius: '1.5rem',
+          background: '#2D241E',
+          color: '#fff',
+          fontWeight: 'bold',
+        },
+      });
+    }
+  }, [userProfile?.coffeeCount]);
 
   useEffect(() => {
     const qCat = query(collection(db, 'categories'), orderBy('order', 'asc'));
     const unsubCat = onSnapshot(qCat, (snapshot) => {
-      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      setCategories(data);
+      // If we have categories but the loading state is stuck, clear it
+      if (data.length > 0) setLoading(false);
     });
 
     const qProd = query(collection(db, 'products'));
     const unsubProd = onSnapshot(qProd, (snapshot) => {
-      setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+      setProducts(data);
       setLoading(false);
     });
+
+    // Timeout safety: if stuck loading for more than 4 seconds, show whatever we have
+    const timer = setTimeout(() => setLoading(false), 4000);
 
     return () => {
       unsubCat();
       unsubProd();
+      clearTimeout(timer);
     };
   }, []);
 
-  const filteredProducts = products.filter(p => {
+  const filteredProducts = displayProducts.filter(p => {
     const matchesCategory = selectedCategory === 'all' || p.categoryId === selectedCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch && p.isAvailable;
@@ -56,10 +98,30 @@ export default function Home() {
     window.dispatchEvent(new Event('cartUpdated'));
   };
 
+  const isAdmin = sessionStorage.getItem('admin_mode') === 'true' || userProfile?.isAdmin;
+
   if (loading) return <div className="text-center py-20">Brewing the menu...</div>;
 
   return (
     <div className="space-y-10">
+      {/* Admin Setup Warning */}
+      {isEmpty && isAdmin && (
+        <div className="card !bg-amber-100 !border-amber-200 !p-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-4 text-amber-900">
+            <div className="p-3 bg-white rounded-2xl shadow-sm italic font-black text-xl">!</div>
+            <div>
+              <p className="font-bold">Menu Setup Required</p>
+              <p className="text-xs opacity-70">The database is currently empty. Initialize the official Cappuccino7 menu.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => navigate('/admin')}
+            className="w-full sm:w-auto bg-amber-900 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all"
+          >
+            Go to Admin Dashboard
+          </button>
+        </div>
+      )}
       {/* Hero Section */}
       <header className="space-y-6">
         <div className="flex flex-col gap-2">
@@ -129,7 +191,7 @@ export default function Home() {
       </div>
 
       {/* Categories */}
-      <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+      <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar" id="menu-list">
         <button
           onClick={() => setSelectedCategory('all')}
           className={`category-btn whitespace-nowrap ${
@@ -140,14 +202,26 @@ export default function Home() {
         >
           All Items
         </button>
-        {categories.map(cat => (
+        {displayCategories.map(cat => (
           <button
             key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`category-btn whitespace-nowrap ${
+            onClick={() => {
+              setSelectedCategory(cat.id);
+              const el = document.getElementById(`cat-${cat.id}`);
+              if (el) {
+                const navHeight = 150; // offset for sticky headers
+                const elementPosition = el.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - navHeight;
+                window.scrollTo({
+                  top: offsetPosition,
+                  behavior: 'smooth'
+                });
+              }
+            }}
+            className={`category-btn whitespace-nowrap transition-all ${
               selectedCategory === cat.id 
-              ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10' 
-              : 'bg-white text-bento-ink'
+              ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10 scale-105' 
+              : 'bg-white text-bento-ink hover:bg-stone-50'
             }`}
           >
             {cat.name}
@@ -155,42 +229,70 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Product Grid - Bento Style */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 pb-12">
-        <AnimatePresence mode="popLayout">
-          {filteredProducts.map((product) => (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              key={product.id}
-              className="card group"
+      {/* Product Display - Prioritized Category Sections */}
+      <div className="space-y-16 pb-24">
+        {displayCategories.map(cat => {
+          const catProducts = displayProducts.filter(p => p.categoryId === cat.id && p.isAvailable);
+          if (catProducts.length === 0) return null;
+
+          // Filter by search query if present
+          const searchFiltered = catProducts.filter(p => 
+            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+          if (searchFiltered.length === 0) return null;
+
+          return (
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              key={cat.id} 
+              id={`cat-${cat.id}`}
+              className="space-y-6"
             >
-              <div className="mb-6 rounded-[20px] overflow-hidden aspect-[16/9] relative">
-                <img
-                  src={product.image || `https://picsum.photos/seed/${product.id}/600/400`}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-full text-bento-primary font-bold shadow-sm">
-                  ${product.price.toFixed(1)}
-                </div>
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">
+                  {cat.name}
+                </h2>
+                <div className="h-px bg-stone-100 w-full" />
               </div>
-              <div className="flex flex-col flex-1">
-                <h3 className="text-2xl font-bold mb-2 group-hover:text-bento-accent transition-colors">{product.name}</h3>
-                <p className="text-stone-500 text-sm mb-6 flex-1">{product.description}</p>
-                <button
-                  onClick={() => addToCart(product)}
-                  className="w-full py-4 bg-bento-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-bento-ink transition-all shadow-md active:scale-[0.98]"
-                >
-                  <Plus size={18} /> Add to Order
-                </button>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8 tabular-nums">
+                {searchFiltered.map((product) => (
+                  <motion.div
+                    layout
+                    key={product.id}
+                    className="card group flex flex-col sm:flex-row !p-0 overflow-hidden hover:border-bento-accent/20 transition-all duration-300"
+                  >
+                    <div className="sm:w-2/5 aspect-[4/3] sm:aspect-square relative overflow-hidden">
+                      <img
+                        src={product.image || `https://picsum.photos/seed/${product.id}/400/400`}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-black text-bento-primary shadow-sm ring-1 ring-black/5">
+                        {product.price} MAD
+                      </div>
+                    </div>
+                    <div className="flex-1 p-6 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold mb-1 group-hover:text-bento-accent transition-colors leading-tight">{product.name}</h3>
+                        <p className="text-stone-400 text-xs line-clamp-2 md:line-clamp-3 leading-relaxed mb-4">{product.description}</p>
+                      </div>
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="w-full py-3 bg-stone-50 text-bento-primary rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all active:scale-[0.98] border border-stone-100 mt-2"
+                      >
+                        Add to Order
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+            </motion.section>
+          );
+        })}
       </div>
     </div>
   );
