@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatc
 import { db } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -268,18 +268,17 @@ export default function AdminDashboard() {
 
         <div className="space-y-3">
           {users.map(user => {
-            const freeCoffees = Math.floor((user.coffeeCount || 0) / 10);
-            const progress = (user.coffeeCount || 0) % 10;
-            const hasReward = progress === 0 && (user.coffeeCount || 0) > 0 && progress !== user.coffeeCount; // Simplified logic or just check if they hit a multiple of 10
-            // Actually, Rule: 10 coffees = 11th free. 
-            // So if coffeeCount is 10, next is free.
-            const rewardAvailable = (user.coffeeCount || 0) >= 10;
+            const itemLoyalty = user.itemLoyalty || {};
+            // Any item with 11 or more points counts as a reward ready to redeem
+            const readyRewards = Object.entries(itemLoyalty)
+              .filter(([_, count]) => (count as number) >= 11)
+              .length;
 
             return (
               <div key={user.uid} className="card !p-5 flex flex-col sm:flex-row items-center gap-6 group hover:border-bento-accent/20 transition-all">
                 <div className="flex items-center gap-4 flex-1">
                   <div className="w-12 h-12 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400 group-hover:bg-bento-accent/10 group-hover:text-bento-primary transition-all">
-                    <Users size={24} />
+                    {readyRewards > 0 ? <Gift className="text-bento-accent animate-bounce" size={24} /> : <Users size={24} />}
                   </div>
                   <div>
                     <h4 className="font-bold text-bento-ink text-lg">{user.name || 'Anonymous User'}</h4>
@@ -289,7 +288,7 @@ export default function AdminDashboard() {
                       </p>
                       <div className="h-1 w-1 bg-stone-200 rounded-full" />
                       <p className="text-[10px] text-bento-accent font-black uppercase tracking-widest flex items-center gap-1">
-                        <Coffee size={10} /> {(user.coffeeCount || 0)} Coffees
+                        <Award size={10} /> {user.points} Points
                       </p>
                     </div>
                   </div>
@@ -297,26 +296,26 @@ export default function AdminDashboard() {
 
                 <div className="flex items-center gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0">
                   <div className="flex-1 sm:flex-none">
-                    <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-2 text-center sm:text-right">Coffee Progress</p>
-                    <div className="flex items-center gap-1">
-                      {[...Array(10)].map((_, i) => (
-                        <div 
-                          key={i} 
-                          className={`w-4 h-4 rounded-full border-2 transition-all ${
-                            i < ((user.coffeeCount || 0) % 10 || (user.coffeeCount || 0 > 0 && user.coffeeCount % 10 === 0 ? 10 : 0))
-                            ? 'bg-bento-primary border-bento-primary scale-110 shadow-sm shadow-bento-primary/20' 
-                            : 'border-stone-100'
-                          }`}
-                        />
-                      ))}
+                    <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1 text-right">Loyalty Status</p>
+                    <div className="flex items-center gap-2">
+                       {readyRewards > 0 ? (
+                         <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100 flex items-center gap-2">
+                           <Gift size={12} /> {readyRewards} Reward(s) Ready
+                         </div>
+                       ) : (
+                         <div className="bg-stone-50 text-stone-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-stone-100">
+                           Collecting Points
+                         </div>
+                       )}
                     </div>
                   </div>
                   
-                  {rewardAvailable && (
-                    <div className="bg-green-50 text-green-600 p-3 rounded-2xl flex items-center justify-center shadow-sm shadow-green-100 animate-pulse">
-                      <Gift size={24} />
-                    </div>
-                  )}
+                  <button 
+                    onClick={() => toast.success(`Viewing details for ${user.name}...`)}
+                    className="p-3 bg-stone-50 text-stone-300 hover:bg-bento-primary hover:text-white rounded-2xl transition-all"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
                 </div>
               </div>
             );

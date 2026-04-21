@@ -32,6 +32,7 @@ export default function Cart() {
   };
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleCheckout = async () => {
     if (!auth.currentUser) {
@@ -52,10 +53,8 @@ export default function Cart() {
 
     setLoading(true);
     try {
-      // Get user settings for points
-      const settingsSnap = await getDoc(doc(db, 'settings', 'global'));
-      const settings = settingsSnap.data() || { pointsRate: 1 };
-      const pointsEarned = Math.floor(total * settings.pointsRate);
+      // Points earned = 1 point per menu item
+      const pointsEarned = totalItems;
 
       const orderData = {
         userId: auth.currentUser.uid,
@@ -160,7 +159,7 @@ export default function Cart() {
           </div>
           <div className="text-right">
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">Points Earned</p>
-            <p className="text-lg font-bold text-bento-accent">+{Math.floor(total)} pts</p>
+            <p className="text-lg font-bold text-bento-accent">+{totalItems} pts</p>
           </div>
         </div>
       </div>

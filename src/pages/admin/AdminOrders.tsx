@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Order, OrderStatus } from '../../types';
+import { Order, OrderStatus, UserProfile } from '../../types';
 import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -24,11 +24,22 @@ export default function AdminOrders() {
     try {
       await updateDoc(doc(db, 'orders', order.id), { status: newStatus });
       
-      // If delivered, award points and increment coffee count
+      // If delivered, award points and increment individual item counts
       if (newStatus === 'delivered' && order.status !== 'delivered') {
         const userRef = doc(db, 'users', order.userId);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data() as UserProfile | undefined;
         
-        // Logic for coffee loyalty rule
+        const currentItemLoyalty = userData?.itemLoyalty || {};
+        const newItemLoyalty = { ...currentItemLoyalty };
+        
+        order.items.forEach(item => {
+          const currentCount = newItemLoyalty[item.productId] || 0;
+          // Increment count for each unit purchased
+          newItemLoyalty[item.productId] = currentCount + item.quantity;
+        });
+
+        // Also legacy coffee count (optional but keeping for broad metrics)
         const coffeeKeywords = ['coffee', 'cappuccino', 'latte', 'espresso', 'café', 'machiato', 'boisson chaude'];
         const coffeeCountInOrder = order.items.reduce((acc, item) => {
           const isCoffee = coffeeKeywords.some(kw => item.name.toLowerCase().includes(kw));
@@ -37,11 +48,17 @@ export default function AdminOrders() {
 
         await updateDoc(userRef, {
           points: increment(order.pointsEarned),
-          coffeeCount: increment(coffeeCountInOrder)
+          coffeeCount: increment(coffeeCountInOrder),
+          itemLoyalty: newItemLoyalty
         });
         
-        if (coffeeCountInOrder > 0) {
-          toast.success(`Awarded ${coffeeCountInOrder} coffee points to ${order.customerName}!`);
+        // Check for "Reward Threshold" (11 points) for any item in this order
+        const rewardTriggers = order.items.filter(item => (newItemLoyalty[item.productId] || 0) >= 11);
+        if (rewardTriggers.length > 0) {
+          toast.success(`🎉 ${order.customerName} earned a reward for: ${rewardTriggers.map(i => i.name).join(', ')}!`, {
+            duration: 6000,
+            icon: '🎁'
+          });
         } else {
           toast.success(`Points awarded to ${order.customerName}!`);
         }

@@ -5,7 +5,8 @@ export interface UserProfile {
   name: string;
   email: string;
   points: number;
-  coffeeCount: number; // For the 10 + 1 free coffee rule
+  coffeeCount: number; // Keep for legacy or general coffee tracking
+  itemLoyalty: Record<string, number>; // productId -> count mapping
   isAdmin: boolean;
   createdAt: string;
 }
