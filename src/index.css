@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+  
+  --color-bento-bg: #F5F2ED;
+  --color-bento-ink: #2D241E;
+  --color-bento-primary: #5A3E2B;
+  --color-bento-accent: #D4A373;
+  --color-bento-card-bg: #FFFFFF;
+  --color-bento-card-border: rgba(90, 62, 43, 0.1);
+  
+  /* Brown palette for compatibility with previous code if needed */
+  --color-brown-50: #FDFBF9;
+  --color-brown-100: #F0EBE5;
+  --color-brown-200: #EADCD0;
+  --color-brown-600: #5A3E2B;
+  --color-brown-700: #4A3324;
+  --color-brown-950: #2D241E;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-bento-bg text-bento-ink selection:bg-bento-accent/30;
+  }
+  
+  h1, h2, h3, h4, .font-serif {
+    @apply font-serif;
+  }
+}
+
+.card {
+  @apply bg-white border border-bento-card-border rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-6 flex flex-col transition-all duration-300;
+}
+
+.accent-card {
+  @apply bg-bento-primary text-bento-bg border-0;
+}
+
+.status-pill {
+  @apply bg-[#E8F5E9] text-[#2E7D32] px-3 py-1 rounded-xl text-xs font-semibold uppercase tracking-wider;
+}
+
+.category-btn {
+  @apply border border-bento-primary rounded-full px-4 py-1.5 text-sm transition-all duration-200 hover:bg-bento-primary hover:text-white cursor-pointer;
+}
+
+.progress-bar {
+  @apply h-2 bg-white/20 rounded-full overflow-hidden;
+}
+
+.progress-fill {
+  @apply h-full bg-bento-accent transition-all duration-500;
+}
+
+.bento-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4;
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

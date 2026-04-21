@@ -1,0 +1,6 @@
+{
+  "name": "Cappuccino7",
+  "description": "The official app for Cappuccino7 Café. Order delicious coffee, breakfast, and desserts for delivery or takeaway in Salé. Join our loyalty program today.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["PWA", "Real-time Ordering", "Loyalty System"]
+}
