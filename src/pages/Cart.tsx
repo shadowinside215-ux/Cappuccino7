@@ -6,7 +6,10 @@ import { OrderItem, OrderStatus } from '../types';
 import { Minus, Plus, Trash2, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { useTranslation } from 'react-i18next';
+
 export default function Cart() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -104,13 +107,13 @@ export default function Cart() {
         <div className="bg-white p-8 rounded-full mb-6">
           <Trash2 size={48} className="text-gray-300" />
         </div>
-        <h2 className="text-2xl font-bold text-brown-950 mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 mb-8">Ready to order some delicious coffee?</p>
+        <h2 className="text-2xl font-bold text-brown-950 mb-2">{t('empty_cart')}</h2>
+        <p className="text-gray-500 mb-8">Ready to order some delicious items?</p>
         <button 
           onClick={() => navigate('/')}
-          className="bg-brown-600 text-white px-8 py-3 rounded-2xl font-medium shadow-md shadow-brown-200"
+          className="bg-bento-primary text-white px-8 py-3 rounded-2xl font-medium shadow-md shadow-bento-primary/20"
         >
-          Browse Menu
+          {t('browse_menu')}
         </button>
       </div>
     );
@@ -118,7 +121,7 @@ export default function Cart() {
 
   return (
     <div className="space-y-10">
-      <h1 className="text-4xl font-bold text-bento-primary">Your Order</h1>
+      <h1 className="text-4xl font-bold text-bento-primary">{t('cart')}</h1>
 
       <div className="card !p-0 overflow-hidden">
         <div className="p-6 space-y-6">
@@ -158,22 +161,22 @@ export default function Cart() {
             <p className="text-4xl font-bold text-bento-primary">{total} MAD</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">Points Earned</p>
-            <p className="text-lg font-bold text-bento-accent">+{totalItems} pts</p>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('loyalty_perk')}</p>
+            <p className="text-lg font-bold text-bento-accent">+{totalItems} {t('reward_points')}</p>
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
         <label className="block text-xs font-bold text-stone-400 uppercase tracking-[0.2em] ml-1">
-          Delivery Logistics
+          {t('delivery_point')}
         </label>
         <div className="flex gap-3">
           <input
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="Search address or use GPS..."
+            placeholder={t('search_placeholder')}
             className="flex-1 bg-white border border-bento-card-border rounded-2xl py-4 px-6 shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300"
           />
           <button
@@ -190,7 +193,7 @@ export default function Cart() {
         disabled={loading}
         className="w-full bg-bento-primary text-white py-6 rounded-[2rem] font-bold text-xl shadow-2xl shadow-bento-primary/20 hover:bg-bento-ink transition-all disabled:opacity-50 active:scale-[0.98]"
       >
-        {loading ? 'Confirming...' : `Confirm Order • ${total} MAD`}
+        {loading ? '...' : `${t('confirm_order')} • ${total} MAD`}
       </button>
     </div>
   );

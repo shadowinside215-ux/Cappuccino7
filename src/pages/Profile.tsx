@@ -6,7 +6,10 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { useTranslation } from 'react-i18next';
+
 export default function Profile({ userProfile }: { userProfile: UserProfile | null }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loyaltyProducts, setLoyaltyProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +48,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   return (
     <div className="space-y-8 pb-32">
       <div className="flex justify-between items-start">
-        <h1 className="text-4xl font-bold text-bento-primary">My Account</h1>
+        <h1 className="text-4xl font-bold text-bento-primary">{t('my_account')}</h1>
         <button 
           onClick={handleLogout}
           className="p-2 text-stone-300 hover:text-red-500 transition-colors"
@@ -65,7 +68,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
           
           <div className="w-full pt-8 border-t border-stone-50 flex justify-around">
             <div className="text-center">
-              <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1">Total Points</p>
+              <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1">{t('total_points')}</p>
               <p className="text-xl font-black text-bento-primary">{userProfile.points}</p>
             </div>
             <div className="text-center">
@@ -132,7 +135,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-bento-ink truncate">{product.name}</h4>
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-1">
-                      {rewardReady ? "🎁 Reward Earned" : `${count}/11 Units Collected`}
+                      {rewardReady ? `🎁 ${t('reward_earned')}` : `${count}/11 ${t('units_collected')}`}
                     </p>
                     
                     <div className="mt-3 flex gap-1">

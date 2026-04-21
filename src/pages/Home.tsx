@@ -8,7 +8,10 @@ import toast from 'react-hot-toast';
 
 import { useNavigate } from 'react-router-dom';
 
+import { useTranslation } from 'react-i18next';
+
 export default function Home({ userProfile }: { userProfile: UserProfile | null }) {
+  const { t, i18n } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -100,7 +103,20 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
   const isAdmin = sessionStorage.getItem('admin_mode') === 'true' || userProfile?.isAdmin;
 
-  if (loading) return <div className="text-center py-20">Brewing the menu...</div>;
+  const getTranslatedCategory = (catName: string) => {
+    const name = catName.toLowerCase();
+    if (name.includes('breakfast')) return t('categories.breakfast');
+    if (name.includes('brunch')) return t('categories.brunch');
+    if (name.includes('drinks')) return t('categories.drinks');
+    if (name.includes('fast food')) return t('categories.fast_food');
+    if (name.includes('healthy')) return t('categories.healthy');
+    if (name.includes('desserts')) return t('categories.desserts');
+    if (name.includes('ice cream')) return t('categories.ice_cream');
+    if (name.includes('signature')) return t('categories.signature');
+    return catName;
+  };
+
+  if (loading) return <div className="text-center py-20 italic text-stone-400">...</div>;
 
   return (
     <div className="space-y-10">
@@ -110,7 +126,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           <div className="flex items-center gap-4 text-amber-900">
             <div className="p-3 bg-white rounded-2xl shadow-sm italic font-black text-xl">!</div>
             <div>
-              <p className="font-bold">Menu Setup Required</p>
+              <p className="font-bold">{t('setup_required')}</p>
               <p className="text-xs opacity-70">The database is currently empty. Initialize the official Cappuccino7 menu.</p>
             </div>
           </div>
@@ -118,14 +134,14 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             onClick={() => navigate('/admin')}
             className="w-full sm:w-auto bg-amber-900 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all"
           >
-            Go to Admin Dashboard
+            {t('dashboard')}
           </button>
         </div>
       )}
       {/* Hero Section */}
       <header className="space-y-6">
         <div className="flex flex-col gap-2">
-          <h1 className="text-6xl font-bold italic text-bento-primary tracking-tighter">Cappuccino7</h1>
+          <h1 className="text-6xl font-bold italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</h1>
           <div className="flex items-center gap-2 text-stone-600 bg-stone-100 w-fit px-3 py-1 rounded-full text-xs font-bold ring-1 ring-stone-200">
             <span className="text-bento-accent">★ 4.8</span>
             <span>(2,777 reviews)</span>
@@ -148,7 +164,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             }}
             className="bg-bento-primary text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-bento-primary/20 flex items-center gap-2 hover:bg-bento-ink transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
           >
-            Order Now <Plus size={18} />
+            {t('quick_order')} <Plus size={18} />
           </button>
           <button 
             onClick={() => {
@@ -157,7 +173,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             }}
             className="bg-white border-2 border-stone-100 text-bento-primary px-8 py-4 rounded-xl font-bold shadow-sm flex items-center gap-2 hover:bg-stone-50 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
           >
-            View Menu <Coffee size={18} className="text-bento-accent" />
+            {t('view_menu')} <Coffee size={18} className="text-bento-accent" />
           </button>
         </div>
       </header>
@@ -180,13 +196,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
       {/* Search */}
       <div className="relative pt-4" id="menu-grid">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+        <Search className={`absolute ${i18n.language === 'ar' ? 'right-5' : 'left-5'} top-1/2 -translate-y-1/2 text-stone-400`} size={18} />
         <input
           type="text"
           placeholder="Explore our menu..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-white border border-bento-card-border rounded-2xl py-4 pl-14 pr-6 shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300"
+          className={`w-full bg-white border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300`}
         />
       </div>
 
@@ -200,7 +216,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             : 'bg-white text-bento-ink'
           }`}
         >
-          All Items
+          {t('menu')}
         </button>
         {displayCategories.map(cat => (
           <button
@@ -224,7 +240,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               : 'bg-white text-bento-ink hover:bg-stone-50'
             }`}
           >
-            {cat.name}
+            {getTranslatedCategory(cat.name)}
           </button>
         ))}
       </div>
@@ -252,7 +268,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             >
               <div className="flex items-center gap-4">
                 <h2 className="text-xl font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">
-                  {cat.name}
+                  {getTranslatedCategory(cat.name)}
                 </h2>
                 <div className="h-px bg-stone-100 w-full" />
               </div>
