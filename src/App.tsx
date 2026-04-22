@@ -4,9 +4,10 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
 import { auth, db } from './lib/firebase';
-import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages } from 'lucide-react';
+import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon } from 'lucide-react';
 import { UserProfile } from './types';
 
 // Pages
@@ -52,36 +53,29 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
 
 function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   const location = useLocation();
-  const isAdmin = userProfile?.isAdmin;
   const { t } = useTranslation();
 
   if (location.pathname === '/login') return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-bento-card-border px-4 py-3 z-50 sm:top-0 sm:bottom-auto sm:border-t-0 sm:border-b">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-4 py-3 z-[50] sm:hidden">
       <div className="max-w-4xl mx-auto flex justify-around items-center">
         <Link to="/" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/' ? 'text-bento-primary' : 'text-stone-400'}`}>
-          <Coffee size={22} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
-          <span className="text-[9px] mt-1 font-bold uppercase tracking-widest hidden sm:block">{t('menu')}</span>
+          <Coffee size={24} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
+          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('menu')}</span>
         </Link>
         <Link to="/cart" className={`flex flex-col items-center p-2 transition-colors relative ${location.pathname === '/cart' ? 'text-bento-primary' : 'text-stone-400'}`}>
-          <ShoppingCart size={22} strokeWidth={location.pathname === '/cart' ? 2.5 : 2} />
-          <span className="text-[9px] mt-1 font-bold uppercase tracking-widest hidden sm:block">{t('cart')}</span>
+          <ShoppingCart size={24} strokeWidth={location.pathname === '/cart' ? 2.5 : 2} />
+          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('cart')}</span>
         </Link>
         <Link to="/orders" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/orders' ? 'text-bento-primary' : 'text-stone-400'}`}>
-          <ListOrdered size={22} strokeWidth={location.pathname === '/orders' ? 2.5 : 2} />
-          <span className="text-[9px] mt-1 font-bold uppercase tracking-widest hidden sm:block">{t('orders')}</span>
+          <ListOrdered size={24} strokeWidth={location.pathname === '/orders' ? 2.5 : 2} />
+          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('orders')}</span>
         </Link>
         <Link to="/profile" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/profile' ? 'text-bento-primary' : 'text-stone-400'}`}>
-          <UserIcon size={22} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} />
-          <span className="text-[9px] mt-1 font-bold uppercase tracking-widest hidden sm:block">{t('profile')}</span>
+          <UserIcon size={24} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} />
+          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('profile')}</span>
         </Link>
-        {isAdmin && (
-          <Link to="/admin" className={`flex flex-col items-center p-2 transition-colors ${location.pathname.startsWith('/admin') ? 'text-bento-primary' : 'text-stone-400'}`}>
-            <LayoutDashboard size={22} strokeWidth={location.pathname.startsWith('/admin') ? 2.5 : 2} />
-            <span className="text-[9px] mt-1 font-bold uppercase tracking-widest hidden sm:block">{t('admin')}</span>
-          </Link>
-        )}
       </div>
     </nav>
   );
@@ -90,10 +84,12 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
 function AppContent({ user, userProfile, loading }: { user: User | null, userProfile: UserProfile | null, loading: boolean }) {
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
     document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    setIsMenuOpen(false);
   };
 
   useEffect(() => {
@@ -110,56 +106,163 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
     );
   }
 
+  const isAdmin = userProfile?.isAdmin;
+
   return (
     <div className="min-h-screen bg-bento-bg pb-24 sm:pb-0 sm:pt-20">
       <Toaster position="top-center" />
       
-      {/* Global Language Switcher - Always Visible */}
-      <div className="fixed top-4 right-4 sm:right-6 lg:right-12 z-[100] flex gap-1 sm:gap-2">
-        {['en', 'fr', 'ar'].map((lang) => (
-          <button
-            key={lang}
-            onClick={() => changeLanguage(lang)}
-            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-lg backdrop-blur-md border ${
-              i18n.language === lang 
-              ? 'bg-bento-primary text-white border-bento-primary' 
-              : 'bg-white/80 text-stone-400 border-stone-100 hover:text-bento-primary hover:border-bento-primary/30'
-            }`}
-          >
-            {lang === 'ar' ? 'عربي' : lang.toUpperCase()}
-          </button>
-        ))}
-      </div>
+      {/* Universal Header - Responsive */}
+      <header className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-b border-stone-100 z-[60] py-4 px-6">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <Link to="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+            <span className="text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
+          </Link>
 
-      {location.pathname !== '/login' && (
-        <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-b border-stone-100 z-40 sm:hidden">
-          <div className="px-6 py-4 flex justify-between items-center pr-24">
-            <div className="flex items-center gap-3">
-              <span className="text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
+          <div className="flex items-center gap-6">
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center gap-4 border-r border-stone-100 pr-6 mr-2">
+              <Link to="/" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+                <Coffee size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('menu')}</span>
+              </Link>
+              <Link to="/cart" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/cart' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+                <ShoppingCart size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('cart')}</span>
+              </Link>
+              <Link to="/orders" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/orders' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+                <ListOrdered size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('orders')}</span>
+              </Link>
+              <Link to="/profile" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/profile' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+                <UserIcon size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('profile')}</span>
+              </Link>
+              {isAdmin && (
+                <Link to="/admin" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname.startsWith('/admin') ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+                  <LayoutDashboard size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{t('admin')}</span>
+                </Link>
+              )}
             </div>
-            {(userProfile?.points !== undefined || userProfile?.coffeeCount !== undefined) && (
-              <div className="flex gap-2">
-                {userProfile?.coffeeCount !== undefined && (
-                  <div className="bg-amber-100 border border-amber-200 px-3 py-1 rounded-full flex items-center gap-2">
+
+            {/* Points Summary for logged in users */}
+            {userProfile && (
+              <div className="hidden sm:flex gap-3">
+                {userProfile.coffeeCount !== undefined && (
+                  <div className="bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100">
                     <Coffee size={14} className="text-amber-700" />
-                    <span className="text-[10px] font-black text-amber-900">{userProfile.coffeeCount}/10</span>
+                    <span className="text-[10px] font-black text-amber-900 leading-none">{userProfile.coffeeCount}/10</span>
                   </div>
                 )}
-                {userProfile?.points !== undefined && (
-                  <div className="bg-bento-accent/10 border border-bento-accent/20 px-3 py-1 rounded-full flex items-center gap-2">
-                    <Award size={14} className="text-bento-accent" />
-                    <span className="text-[10px] font-black text-bento-primary">{userProfile.points} {t('reward_points')}</span>
-                  </div>
-                )}
+                <div className="bg-stone-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-stone-100">
+                  <Award size={14} className="text-bento-accent" />
+                  <span className="text-[10px] font-black text-bento-primary leading-none">{userProfile.points} {t('reward_points')}</span>
+                </div>
               </div>
             )}
+
+            {/* Desktop Language Switcher - Compact */}
+            <div className="hidden sm:flex gap-1">
+              {['en', 'fr', 'ar'].map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => changeLanguage(lang)}
+                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${
+                    i18n.language === lang 
+                    ? 'bg-bento-primary text-white border-bento-primary shadow-sm' 
+                    : 'bg-white text-stone-400 border-stone-100 hover:border-bento-primary/30'
+                  }`}
+                >
+                  {lang === 'ar' ? 'عربي' : lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {/* Mobile Menu Toggle (3 Dots) */}
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 text-bento-primary bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors sm:hidden"
+            >
+              {isMenuOpen ? <X size={24} /> : <MoreVertical size={24} />}
+            </button>
           </div>
-        </header>
-      )}
-      {/* Redundant Switcher Removed */}
+        </div>
+      </header>
+
+      {/* Mobile Overlay Menu */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="fixed inset-0 z-[70] bg-white flex flex-col p-8 sm:hidden overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-12">
+              <span className="text-2xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
+              <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-stone-50 rounded-2xl">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-2 flex-grow">
+              <Link onClick={() => setIsMenuOpen(false)} to="/" className="flex items-center gap-4 p-5 rounded-2xl bg-stone-50 text-bento-primary font-bold text-lg">
+                <HomeIcon /> <span>{t('menu')}</span>
+              </Link>
+              <Link onClick={() => setIsMenuOpen(false)} to="/cart" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+                <ShoppingCart /> <span>{t('cart')}</span>
+              </Link>
+              <Link onClick={() => setIsMenuOpen(false)} to="/orders" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+                <ListOrdered /> <span>{t('orders')}</span>
+              </Link>
+              <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+                <UserIcon /> <span>{t('profile')}</span>
+              </Link>
+              {isAdmin && (
+                <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+                  <LayoutDashboard /> <span>{t('admin')}</span>
+                </Link>
+              )}
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-stone-100">
+              <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest mb-4">Choose Language</p>
+              <div className="grid grid-cols-3 gap-3">
+                {['en', 'fr', 'ar'].map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => changeLanguage(lang)}
+                    className={`py-4 rounded-2xl text-xs font-black uppercase transition-all flex flex-col items-center gap-2 border ${
+                      i18n.language === lang 
+                      ? 'bg-bento-primary text-white border-bento-primary shadow-lg' 
+                      : 'bg-stone-50 text-stone-400 border-stone-100'
+                    }`}
+                  >
+                    <Languages size={18} />
+                    {lang === 'ar' ? 'عربي' : lang.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {userProfile && (
+              <div className="mt-8 p-6 bg-bento-primary rounded-[32px] text-white flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] font-bold text-white/50 uppercase tracking-[0.2em] mb-1">Your Rewards</p>
+                  <p className="text-xl font-black">{userProfile.points} Points</p>
+                </div>
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                  <Award size={24} className="text-bento-accent" />
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
-      <main className={`max-w-4xl mx-auto px-6 py-10 ${location.pathname !== '/login' && !location.pathname.startsWith('/admin/login') ? 'pt-24 sm:pt-10' : ''}`}>
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 sm:pt-10 no-scrollbar`}>
         <Routes>
           <Route path="/" element={<Home userProfile={userProfile} />} />
           <Route path="/login" element={<Login />} />

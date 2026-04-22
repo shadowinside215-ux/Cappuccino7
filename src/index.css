@@ -22,6 +22,10 @@
 }
 
 @layer base {
+  html, body {
+    @apply overflow-x-hidden w-full;
+  }
+  
   body {
     @apply font-sans bg-bento-bg text-bento-ink selection:bg-bento-accent/30;
   }

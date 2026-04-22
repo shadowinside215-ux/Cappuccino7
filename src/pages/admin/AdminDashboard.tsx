@@ -54,6 +54,60 @@ export default function AdminDashboard() {
     return () => unsubOrders();
   }, []);
 
+  const addSupplements = async () => {
+    if (isSettingUp) return;
+    setIsSettingUp(true);
+    try {
+      const catsSnap = await getDocs(collection(db, 'categories'));
+      const categories = catsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
+      
+      const categoryName = "THE EXTRA'S";
+      let targetCat = categories.find(c => c.name.toUpperCase() === categoryName);
+      
+      const batch = writeBatch(db);
+      
+      if (!targetCat) {
+        const catRef = doc(collection(db, 'categories'));
+        targetCat = { id: catRef.id, name: categoryName, order: 9 };
+        batch.set(catRef, { name: categoryName, order: 9 });
+      }
+
+      const supplementItems = [
+        { name: '🥤 Eau minérale', price: 5 },
+        { name: '🍗 Dinde fumée', price: 15 },
+        { name: '🍯 Amlou', price: 10 },
+        { name: '🍫 Nutella', price: 12 },
+        { name: '🍓 Confiture', price: 10 },
+        { name: '🧀 Fromage', price: 10 },
+        { name: '🧀 Fromage (jaune / cheese slice)', price: 15 },
+        { name: '🫒 Huile d’olive', price: 10 }
+      ];
+
+      let count = 0;
+      for (const item of supplementItems) {
+        const prodRef = doc(collection(db, 'products'));
+        batch.set(prodRef, {
+          name: item.name,
+          price: item.price,
+          description: `Add-on: ${item.name}`,
+          categoryId: targetCat.id,
+          isAvailable: true,
+          image: `https://picsum.photos/seed/${item.name}/400/400`
+        });
+        count++;
+      }
+
+      await batch.commit();
+      toast.success(`Successfully added ${count} items to ${categoryName}!`);
+      setStats(prev => ({ ...prev, totalItems: prev.totalItems + count }));
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to add extras');
+    } finally {
+      setIsSettingUp(false);
+    }
+  };
+
   const initializeDatabase = async () => {
     if (isSettingUp) return;
     setIsSettingUp(true);
@@ -69,7 +123,20 @@ export default function AdminDashboard() {
         { name: '🥒 Healthy Meals', order: 5 },
         { name: '🍰 Desserts', order: 6 },
         { name: '🍦 Ice Cream', order: 7 },
-        { name: '⭐ Signature Menu', order: 8 }
+        { name: '⭐ Signature Menu', order: 8 },
+        { name: "✨ THE EXTRA'S", order: 9 }
+      ];
+
+      // Supplements for add-on
+      const supplementItems = [
+        { name: '🥤 Eau minérale', price: 5 },
+        { name: '🍗 Dinde fumée', price: 15 },
+        { name: '🍯 Amlou', price: 10 },
+        { name: '🍫 Nutella', price: 12 },
+        { name: '🍓 Confiture', price: 10 },
+        { name: '🧀 Fromage', price: 10 },
+        { name: '🧀 Fromage (jaune / cheese slice)', price: 15 },
+        { name: '🫒 Huile d’olive', price: 10 }
       ];
 
       // Mapping for specific required data
@@ -130,6 +197,7 @@ export default function AdminDashboard() {
         else if (cat.name.includes('Desserts')) items = dessertItems;
         else if (cat.name.includes('Ice Cream')) items = iceCreamItems;
         else if (cat.name.includes('Signature')) items = [breakfastItems[6]]; // Feature the namesake
+        else if (cat.name.includes("EXTRA'S")) items = supplementItems;
 
         items.forEach(item => {
           const prodRef = doc(collection(db, 'products'));
@@ -188,6 +256,23 @@ export default function AdminDashboard() {
             </button>
           </div>
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+        </div>
+      )}
+
+      {/* Supplement Quick Add */}
+      {!isEmpty && (
+        <div className="card !bg-white border-dashed border-2 border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-6 p-8">
+          <div>
+            <h4 className="font-bold text-lg text-bento-primary">Update "THE EXTRA'S" Category</h4>
+            <p className="text-stone-400 text-xs">Instantly add essential supplements and sides to a dedicated section.</p>
+          </div>
+          <button 
+            onClick={addSupplements}
+            disabled={isSettingUp}
+            className="w-full sm:w-auto bg-stone-50 border border-stone-100 text-bento-primary px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all disabled:opacity-50"
+          >
+            {isSettingUp ? '...' : 'Add Extras'}
+          </button>
         </div>
       )}
 

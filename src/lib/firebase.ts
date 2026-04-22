@@ -10,13 +10,20 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(defa
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Connection test
+// Connection test with enhanced logging
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
+    console.log("Firebase connection established successfully.");
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration or internet connection.");
+    if (error instanceof Error) {
+      if (error.message.includes('the client is offline')) {
+        console.error("Firebase connection failed: The client is offline. Check your internet connection.");
+      } else if (error.message.includes('code=unavailable')) {
+        console.error("Firebase connection failed: Backend is unavailable. This may be due to a transient networking issue or the Firestore API being disabled/provisioned.");
+      } else {
+        console.error("Firebase connection error:", error.message);
+      }
     }
   }
 }

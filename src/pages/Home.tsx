@@ -3,7 +3,8 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Product, Category, UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Search, Star, MapPin, Coffee } from 'lucide-react';
+import { useRef } from 'react';
+import { Plus, Search, Star, MapPin, Coffee, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useNavigate } from 'react-router-dom';
@@ -102,6 +103,17 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   };
 
   const isAdmin = sessionStorage.getItem('admin_mode') === 'true' || userProfile?.isAdmin;
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategories = (direction: 'left' | 'right') => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = 200;
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const getTranslatedCategory = (catName: string) => {
     const name = catName.toLowerCase();
@@ -113,6 +125,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
     if (name.includes('desserts')) return t('categories.desserts');
     if (name.includes('ice cream')) return t('categories.ice_cream');
     if (name.includes('signature')) return t('categories.signature');
+    if (name.includes('extra')) return t('categories.extras');
     return catName;
   };
 
@@ -207,42 +220,63 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       </div>
 
       {/* Categories */}
-      <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar" id="menu-list">
-        <button
-          onClick={() => setSelectedCategory('all')}
-          className={`category-btn whitespace-nowrap ${
-            selectedCategory === 'all' 
-            ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10' 
-            : 'bg-white text-bento-ink'
-          }`}
+      <div className="relative group/nav">
+        {/* Navigation Arrows - Desktop Only */}
+        <button 
+          onClick={() => scrollCategories('left')}
+          className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-10 h-10 bg-white shadow-xl rounded-full items-center justify-center border border-stone-100 text-bento-primary opacity-0 group-hover/nav:opacity-100 transition-opacity hover:bg-stone-50"
         >
-          {t('menu')}
+          <ChevronLeft size={20} />
         </button>
-        {displayCategories.map(cat => (
+        
+        <div 
+          ref={categoryScrollRef}
+          className="flex gap-3 overflow-x-auto pb-4 pt-1 no-scrollbar scroll-smooth" 
+          id="menu-list"
+        >
           <button
-            key={cat.id}
-            onClick={() => {
-              setSelectedCategory(cat.id);
-              const el = document.getElementById(`cat-${cat.id}`);
-              if (el) {
-                const navHeight = 150; // offset for sticky headers
-                const elementPosition = el.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - navHeight;
-                window.scrollTo({
-                  top: offsetPosition,
-                  behavior: 'smooth'
-                });
-              }
-            }}
-            className={`category-btn whitespace-nowrap transition-all ${
-              selectedCategory === cat.id 
-              ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10 scale-105' 
-              : 'bg-white text-bento-ink hover:bg-stone-50'
+            onClick={() => setSelectedCategory('all')}
+            className={`category-btn whitespace-nowrap ${
+              selectedCategory === 'all' 
+              ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10' 
+              : 'bg-white text-bento-ink'
             }`}
           >
-            {getTranslatedCategory(cat.name)}
+            {t('menu')}
           </button>
-        ))}
+          {displayCategories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => {
+                setSelectedCategory(cat.id);
+                const el = document.getElementById(`cat-${cat.id}`);
+                if (el) {
+                  const navHeight = 150; // offset for sticky headers
+                  const elementPosition = el.getBoundingClientRect().top;
+                  const offsetPosition = elementPosition + window.pageYOffset - navHeight;
+                  window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                  });
+                }
+              }}
+              className={`category-btn whitespace-nowrap transition-all ${
+                selectedCategory === cat.id 
+                ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10 scale-105' 
+                : 'bg-white text-bento-ink hover:bg-stone-50'
+              }`}
+            >
+              {getTranslatedCategory(cat.name)}
+            </button>
+          ))}
+        </div>
+
+        <button 
+          onClick={() => scrollCategories('right')}
+          className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-10 h-10 bg-white shadow-xl rounded-full items-center justify-center border border-stone-100 text-bento-primary opacity-0 group-hover/nav:opacity-100 transition-opacity hover:bg-stone-50"
+        >
+          <ChevronRight size={20} />
+        </button>
       </div>
 
       {/* Product Display - Prioritized Category Sections */}

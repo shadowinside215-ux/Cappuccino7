@@ -42,7 +42,8 @@ const resources = {
         "healthy": "Healthy Meals",
         "desserts": "Desserts",
         "ice_cream": "Ice Cream",
-        "signature": "Signature Menu"
+        "signature": "Signature Menu",
+        "extras": "THE EXTRA'S"
       }
     }
   },
@@ -85,7 +86,8 @@ const resources = {
         "healthy": "Plats Équilibrés",
         "desserts": "Desserts",
         "ice_cream": "Glaces",
-        "signature": "Menu Signature"
+        "signature": "Menu Signature",
+        "extras": "LES SUPPLÉMENTS"
       }
     }
   },
@@ -128,7 +130,8 @@ const resources = {
         "healthy": "وجبات صحية",
         "desserts": "حلويات",
         "ice_cream": "آيس كريم",
-        "signature": "قائمة التوقيع"
+        "signature": "قائمة التوقيع",
+        "extras": "الإضافات"
       }
     }
   }
