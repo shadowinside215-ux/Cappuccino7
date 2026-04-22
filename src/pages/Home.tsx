@@ -332,18 +332,22 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         {product.price} DH
                       </div>
                     </div>
-                    <div className="flex-1 p-6 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold mb-1 group-hover:text-bento-accent transition-colors leading-tight">{product.name}</h3>
-                        <p className="text-stone-400 text-xs line-clamp-2 md:line-clamp-3 leading-relaxed mb-4">{product.description}</p>
-                      </div>
-                      <button
-                        onClick={() => addToCart(product)}
-                        className="w-full py-3 bg-stone-50 text-bento-primary rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all active:scale-[0.98] border border-stone-100 mt-2"
-                      >
-                        Add to Order
-                      </button>
-                    </div>
+                     <div className="flex-1 p-6 flex flex-col justify-between">
+                       <div>
+                         <h3 className="text-xl font-bold mb-1 group-hover:text-bento-accent transition-colors leading-tight">
+                           {t(`products.${product.name}`, product.name)}
+                         </h3>
+                         <p className="text-stone-400 text-xs line-clamp-2 md:line-clamp-3 leading-relaxed mb-4">
+                           {t(`descriptions.${product.name}`, product.description)}
+                         </p>
+                       </div>
+                       <button
+                         onClick={() => addToCart(product)}
+                         className="w-full py-3 bg-stone-50 text-bento-primary rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all active:scale-[0.98] border border-stone-100 mt-2"
+                       >
+                         {t('add_to_cart')}
+                       </button>
+                     </div>
                   </motion.div>
                 ))}
               </div>

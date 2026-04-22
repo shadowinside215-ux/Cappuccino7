@@ -61,7 +61,7 @@ export default function Orders() {
                   </p>
                 </div>
                 <div className="bg-stone-50 px-5 py-3 rounded-2xl border border-stone-100 min-w-[120px] text-center">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1 leading-none">Total Paid</p>
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1 leading-none">{t('total_paid')}</p>
                   <p className="text-2xl font-black text-bento-primary leading-none">{order.total} DH</p>
                 </div>
               </div>
@@ -70,7 +70,7 @@ export default function Orders() {
                 <div className="bg-[#FDFBF9] p-5 rounded-2xl border border-stone-100">
                   <div className="flex items-center gap-3 mb-4">
                     <Truck size={18} className="text-bento-accent" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-stone-500">Delivery Point</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-stone-500">{t('delivery_point')}</p>
                   </div>
                   <p className="text-sm font-medium text-bento-ink leading-relaxed line-clamp-2">
                     {order.address}
@@ -81,7 +81,7 @@ export default function Orders() {
                     <Award size={18} />
                     <span>+{order.pointsEarned} Points</span>
                   </div>
-                  <p className="text-[10px] text-stone-400 uppercase font-bold tracking-widest mt-1">Loyalty Perk</p>
+                  <p className="text-[10px] text-stone-400 uppercase font-bold tracking-widest mt-1">{t('loyalty_perk')}</p>
                 </div>
               </div>
 
@@ -91,7 +91,7 @@ export default function Orders() {
                     <div className="w-6 h-6 rounded-full bg-bento-primary text-white text-[10px] flex items-center justify-center font-bold">
                       {item.quantity}
                     </div>
-                    <span className="text-xs font-bold text-bento-primary">{item.name}</span>
+                    <span className="text-xs font-bold text-bento-primary">{t(`products.${item.name}`, item.name)}</span>
                   </div>
                 ))}
               </div>

@@ -64,7 +64,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             {userProfile.name.charAt(0).toUpperCase()}
           </div>
           <h2 className="text-2xl font-black text-bento-ink mb-1">{userProfile.name}</h2>
-          <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mb-8">Premium Customer</p>
+          <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mb-8">{t('premium_customer')}</p>
           
           <div className="w-full pt-8 border-t border-stone-50 flex justify-around">
             <div className="text-center">
@@ -72,7 +72,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
               <p className="text-xl font-black text-bento-primary">{userProfile.points}</p>
             </div>
             <div className="text-center">
-              <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1">Status</p>
+              <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1">{t('status')}</p>
               <p className="text-xl font-black text-bento-accent">Gold</p>
             </div>
           </div>
@@ -90,7 +90,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             <div className="flex items-end gap-6">
               <p className="text-6xl font-black">{userProfile.coffeeCount || 0}</p>
               <div className="mb-2">
-                <p className="text-xs opacity-70 font-medium">Total artisan coffees enjoyed</p>
+                <p className="text-xs opacity-70 font-medium">{t('total_artisan')}</p>
                 <div className="flex gap-1 mt-2">
                    {[...Array(5)].map((_, i) => (
                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400' : 'bg-white/20'}`} />
@@ -106,19 +106,19 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
       {/* Item-Specific Loyalty Rewards */}
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-xs font-black text-stone-300 uppercase tracking-[0.4em] pl-1">Specific Item Rewards</h2>
+          <h2 className="text-xs font-black text-stone-300 uppercase tracking-[0.4em] pl-1">{t('specific_rewards')}</h2>
           <div className="h-px bg-stone-100 flex-1" />
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20 text-stone-400 gap-2">
             <Loader2 className="animate-spin" size={20} />
-            <span className="text-sm font-medium">Authenticating loyalty data...</span>
+            <span className="text-sm font-medium">{t('auth_loyalty')}</span>
           </div>
         ) : loyaltyProducts.length === 0 ? (
           <div className="card !py-16 text-center border-dashed">
-            <p className="text-stone-400 font-bold italic mb-2 text-sm">Every 11th item is free!</p>
-            <p className="text-[10px] text-stone-300 uppercase tracking-widest">Start ordering to collect points per item</p>
+            <p className="text-stone-400 font-bold italic mb-2 text-sm">{t('loyalty_info')}</p>
+            <p className="text-[10px] text-stone-300 uppercase tracking-widest">{t('loyalty_start')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -133,7 +133,9 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                     <img src={product.image} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-bento-ink truncate">{product.name}</h4>
+                    <h4 className="font-bold text-bento-ink truncate">
+                      {t(`products.${product.name}`, product.name)}
+                    </h4>
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-1">
                       {rewardReady ? `🎁 ${t('reward_earned')}` : `${count}/11 ${t('units_collected')}`}
                     </p>

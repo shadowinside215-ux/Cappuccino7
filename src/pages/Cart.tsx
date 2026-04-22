@@ -108,7 +108,7 @@ export default function Cart() {
           <Trash2 size={48} className="text-gray-300" />
         </div>
         <h2 className="text-2xl font-bold text-brown-950 mb-2">{t('empty_cart')}</h2>
-        <p className="text-gray-500 mb-8">Ready to order some delicious items?</p>
+        <p className="text-gray-500 mb-8">{t('empty_cart_msg')}</p>
         <button 
           onClick={() => navigate('/')}
           className="bg-bento-primary text-white px-8 py-3 rounded-2xl font-medium shadow-md shadow-bento-primary/20"
@@ -131,8 +131,10 @@ export default function Cart() {
                 {item.quantity}x
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-lg text-bento-ink leading-tight">{item.name}</h3>
-                <p className="text-stone-400 text-sm font-medium tracking-wide">Premium Roast</p>
+                <h3 className="font-bold text-lg text-bento-ink leading-tight">
+                  {t(`products.${item.name}`, item.name)}
+                </h3>
+                <p className="text-stone-400 text-sm font-medium tracking-wide">Premium Selection</p>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <p className="font-bold text-bento-primary">{(item.price * item.quantity)} DH</p>
@@ -157,12 +159,12 @@ export default function Cart() {
         
         <div className="p-8 bg-stone-50 border-t border-stone-100 flex justify-between items-center">
           <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">Total Amount</p>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('total_paid')}</p>
             <p className="text-4xl font-bold text-bento-primary">{total} DH</p>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('loyalty_perk')}</p>
-            <p className="text-lg font-bold text-bento-accent">+{totalItems} {t('reward_points')}</p>
+            <p className="text-lg font-bold text-bento-accent">+{total} {t('reward_points')}</p>
           </div>
         </div>
       </div>
