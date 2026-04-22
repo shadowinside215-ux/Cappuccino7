@@ -83,8 +83,13 @@ export default function AdminDashboard() {
         { name: '🫒 Huile d’olive', price: 10 }
       ];
 
+      const productsSnap = await getDocs(collection(db, 'products'));
+      const existingProducts = productsSnap.docs.map(doc => doc.data().name);
+
       let count = 0;
       for (const item of supplementItems) {
+        if (existingProducts.includes(item.name)) continue;
+
         const prodRef = doc(collection(db, 'products'));
         batch.set(prodRef, {
           name: item.name,
@@ -98,11 +103,130 @@ export default function AdminDashboard() {
       }
 
       await batch.commit();
-      toast.success(`Successfully added ${count} items to ${categoryName}!`);
+      if (count > 0) {
+        toast.success(`Successfully added ${count} items to ${categoryName}!`);
+      } else {
+        toast.success(`Extras are already up to date!`);
+      }
       setStats(prev => ({ ...prev, totalItems: prev.totalItems + count }));
     } catch (err) {
       console.error(err);
       toast.error('Failed to add extras');
+    } finally {
+      setIsSettingUp(false);
+    }
+  };
+
+  const addBeverages = async () => {
+    if (isSettingUp) return;
+    setIsSettingUp(true);
+    try {
+      const batch = writeBatch(db);
+      
+      const catsSnap = await getDocs(collection(db, 'categories'));
+      const existingCats = catsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
+
+      const beverageCategories = [
+        { name: '☕ Coffee', order: 10, items: [
+          { name: 'Lait chaud', price: 14 },
+          { name: 'Espresso', price: 14 },
+          { name: 'Café americain', price: 15 },
+          { name: 'Lait parfumé', price: 14 },
+          { name: 'Café crème', price: 15 },
+          { name: 'Nespresso', price: 15 },
+          { name: 'Latte Macchiato', price: 16 },
+          { name: 'Double Expresso', price: 18 },
+          { name: 'Cappuccino Italien', price: 18 },
+          { name: 'Chocolat chaud', price: 18 },
+          { name: 'Cappuccino viennois', price: 25 },
+          { name: 'Café au miel', price: 18 }
+        ]},
+        { name: '🍵 Thé & infusions', order: 11, items: [
+          { name: 'Thé à la menthe', price: 14 },
+          { name: 'Lipton', price: 14 },
+          { name: 'Verveine', price: 14 },
+          { name: 'Infusion thé bio', price: 16 }
+        ]},
+        { name: '🔥 Special hot drinks', order: 12, items: [
+          { name: 'Mocaccino', price: 20 },
+          { name: 'Noisette Macchiato', price: 20 },
+          { name: 'Caramel Macchiato', price: 22 },
+          { name: 'Chocolat viennois', price: 22 },
+          { name: 'Chocolat Fondue', price: 28 },
+          { name: 'Chocolat Bresilien', price: 30 }
+        ]},
+        { name: '🧊 Iced latté', order: 13, items: [
+          { name: 'Caramel & cream', price: 25 },
+          { name: 'Noisette', price: 25 },
+          { name: 'Happy moka', price: 25 }
+        ]},
+        { name: '🍹 Ice Tea', order: 14, items: [
+          { name: 'Pêche', price: 30 },
+          { name: 'Citron', price: 30 },
+          { name: 'Framboise', price: 30 }
+        ]},
+        { name: '🧃 Jus', order: 15, items: [
+          { name: 'Orange', price: 25 },
+          { name: 'Citron', price: 25 },
+          { name: 'Carotte', price: 25 },
+          { name: 'Pomme', price: 25 },
+          { name: 'Banane', price: 25 },
+          { name: 'Mangue', price: 25 },
+          { name: 'Fraise', price: 25 },
+          { name: 'Ananas', price: 25 },
+          { name: 'Kiwi', price: 25 },
+          { name: 'Panaché', price: 35 },
+          { name: 'Avocat fruits secs', price: 30 },
+          { name: 'Zazaa', price: 48 }
+        ]},
+        { name: '🧊 Frappuccinos coffee', order: 16, items: [
+          { name: 'Caramel & Cream', price: 35 },
+          { name: 'Caramel Beurre salé', price: 35 },
+          { name: 'Moka Chocolate', price: 35 },
+          { name: 'Noisette', price: 35 },
+          { name: 'Amaretto', price: 35 }
+        ]}
+      ];
+
+      let count = 0;
+      const productsSnap = await getDocs(collection(db, 'products'));
+      const existingProducts = productsSnap.docs.map(doc => doc.data().name);
+
+      for (const cat of beverageCategories) {
+        let catId = existingCats.find(c => c.name === cat.name)?.id;
+        
+        if (!catId) {
+          const catRef = doc(collection(db, 'categories'));
+          catId = catRef.id;
+          batch.set(catRef, { name: cat.name, order: cat.order });
+        }
+        
+        for (const item of cat.items) {
+          if (existingProducts.includes(item.name)) continue;
+
+          const prodRef = doc(collection(db, 'products'));
+          batch.set(prodRef, {
+            name: item.name,
+            price: item.price,
+            description: `${cat.name} selection`,
+            categoryId: catId,
+            isAvailable: true,
+            image: `https://picsum.photos/seed/${item.name}/400/400`
+          });
+          count++;
+        }
+      }
+
+      await batch.commit();
+      if (count > 0) {
+        toast.success(`Successfully added ${count} drink items!`);
+      } else {
+        toast.success(`Menu is already up to date!`);
+      }
+      setStats(prev => ({ ...prev, totalItems: prev.totalItems + count }));
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to add beverages');
     } finally {
       setIsSettingUp(false);
     }
@@ -272,6 +396,23 @@ export default function AdminDashboard() {
             className="w-full sm:w-auto bg-stone-50 border border-stone-100 text-bento-primary px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all disabled:opacity-50"
           >
             {isSettingUp ? '...' : 'Add Extras'}
+          </button>
+        </div>
+      )}
+
+      {/* Beverage Quick Add */}
+      {!isEmpty && (
+        <div className="card !bg-white border-dashed border-2 border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-6 p-8">
+          <div>
+            <h4 className="font-bold text-lg text-bento-primary">Update Beverages Menu</h4>
+            <p className="text-stone-400 text-xs">Instantly add the full selection of Coffee, Tea, Juices, and Frappuccinos.</p>
+          </div>
+          <button 
+            onClick={addBeverages}
+            disabled={isSettingUp}
+            className="w-full sm:w-auto bg-stone-50 border border-stone-100 text-bento-primary px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all disabled:opacity-50"
+          >
+            {isSettingUp ? '...' : 'Add Beverages'}
           </button>
         </div>
       )}

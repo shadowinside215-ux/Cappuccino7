@@ -43,7 +43,14 @@ const resources = {
         "desserts": "Desserts",
         "ice_cream": "Ice Cream",
         "signature": "Signature Menu",
-        "extras": "THE EXTRA'S"
+        "extras": "THE EXTRA'S",
+        "coffee": "☕ Coffee",
+        "tea": "🍵 Tea & Infusions",
+        "special_hot": "🔥 Special Hot Drinks",
+        "iced_latte": "🧊 Iced Latté",
+        "ice_tea": "🍹 Ice Tea",
+        "jus": "🧃 Juices",
+        "frappuccino": "🧊 Frappuccinos"
       }
     }
   },
@@ -87,7 +94,14 @@ const resources = {
         "desserts": "Desserts",
         "ice_cream": "Glaces",
         "signature": "Menu Signature",
-        "extras": "LES SUPPLÉMENTS"
+        "extras": "LES SUPPLÉMENTS",
+        "coffee": "☕ Café",
+        "tea": "🍵 Thé & Infusions",
+        "special_hot": "🔥 Boissons Chaudes Spéciales",
+        "iced_latte": "🧊 Iced Latté",
+        "ice_tea": "🍹 Ice Tea",
+        "jus": "🧃 Jus",
+        "frappuccino": "🧊 Frappuccinos"
       }
     }
   },
@@ -131,7 +145,14 @@ const resources = {
         "desserts": "حلويات",
         "ice_cream": "آيس كريم",
         "signature": "قائمة التوقيع",
-        "extras": "الإضافات"
+        "extras": "الإضافات",
+        "coffee": "☕ القهوة",
+        "tea": "🍵 الشاي والمشروبات العشبية",
+        "special_hot": "🔥 مشروبات ساخنة خاصة",
+        "iced_latte": "🧊 لاتي مثلج",
+        "ice_tea": "🍹 شاي مثلج",
+        "jus": "🧃 عصائر",
+        "frappuccino": "🧊 فرابوتشينو"
       }
     }
   }

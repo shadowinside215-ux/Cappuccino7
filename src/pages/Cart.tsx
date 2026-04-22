@@ -135,7 +135,7 @@ export default function Cart() {
                 <p className="text-stone-400 text-sm font-medium tracking-wide">Premium Roast</p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <p className="font-bold text-bento-primary">{(item.price * item.quantity)} MAD</p>
+                <p className="font-bold text-bento-primary">{(item.price * item.quantity)} DH</p>
                 <div className="flex items-center gap-3 bg-stone-50 rounded-full px-3 py-1 ring-1 ring-stone-100">
                   <button 
                     onClick={() => updateQuantity(item.productId, -1)}
@@ -158,7 +158,7 @@ export default function Cart() {
         <div className="p-8 bg-stone-50 border-t border-stone-100 flex justify-between items-center">
           <div>
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">Total Amount</p>
-            <p className="text-4xl font-bold text-bento-primary">{total} MAD</p>
+            <p className="text-4xl font-bold text-bento-primary">{total} DH</p>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('loyalty_perk')}</p>
@@ -193,7 +193,7 @@ export default function Cart() {
         disabled={loading}
         className="w-full bg-bento-primary text-white py-6 rounded-[2rem] font-bold text-xl shadow-2xl shadow-bento-primary/20 hover:bg-bento-ink transition-all disabled:opacity-50 active:scale-[0.98]"
       >
-        {loading ? '...' : `${t('confirm_order')} • ${total} MAD`}
+        {loading ? '...' : `${t('confirm_order')} • ${total} DH`}
       </button>
     </div>
   );

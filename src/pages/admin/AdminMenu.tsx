@@ -10,6 +10,7 @@ export default function AdminMenu() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<string | null>(null); // null, 'new', or productId
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
@@ -108,13 +109,12 @@ export default function AdminMenu() {
   };
 
   const deleteProduct = async (id: string) => {
-    if (confirm('Are you sure you want to delete this menu item?')) {
-      try { 
-        await deleteDoc(doc(db, 'products', id)); 
-        toast.success('Product removed'); 
-      }
-      catch (err) { toast.error('Delete failed'); }
+    try { 
+      await deleteDoc(doc(db, 'products', id)); 
+      toast.success('Product removed');
+      setConfirmDeleteId(null);
     }
+    catch (err) { toast.error('Delete failed'); }
   };
 
   return (
@@ -153,7 +153,7 @@ export default function AdminMenu() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <input 
-                    type="number" step="0.01" placeholder="Price (MAD)" required
+                    type="number" step="0.01" placeholder="Price (DH)" required
                     value={newItem.price || ''} onChange={e => setNewItem({...newItem, price: parseFloat(e.target.value)})}
                     className="w-full bg-stone-50 border border-stone-100 rounded-xl p-4 focus:ring-2 focus:ring-bento-accent transition-all outline-none"
                   />
@@ -260,32 +260,52 @@ export default function AdminMenu() {
                       </div>
                       <div className="flex-1 min-w-0 text-left">
                         <h3 className="font-bold text-bento-ink truncate leading-tight">{product.name}</h3>
-                        <p className="text-xs font-black text-bento-accent mt-1">{product.price} MAD</p>
+                        <p className="text-xs font-black text-bento-accent mt-1">{product.price} DH</p>
                         <p className="text-[10px] text-stone-400 truncate mt-1">{product.description || 'No description provided'}</p>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <button 
-                          onClick={() => {
-                            setEditingId(product.id);
-                            setEditItem(product);
-                          }}
-                          className="p-2 rounded-xl text-stone-400 bg-stone-50 hover:bg-stone-100 transition-colors"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => toggleAvailability(product)}
-                          className={`p-2 rounded-xl transition-all ${product.isAvailable ? 'text-green-600 bg-green-50 shadow-sm shadow-green-100' : 'text-stone-300 bg-stone-50'}`}
-                        >
-                          <Check size={18} />
-                        </button>
-                        <button 
-                          onClick={() => deleteProduct(product.id)}
-                          className="p-2 rounded-xl text-red-400 bg-red-50 hover:bg-red-100 transition-colors"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                        <div className="flex flex-col gap-2 relative">
+                          <button 
+                            onClick={() => {
+                              setEditingId(product.id);
+                              setEditItem(product);
+                            }}
+                            className="p-2 rounded-xl text-stone-400 bg-stone-50 hover:bg-stone-100 transition-colors"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button 
+                            onClick={() => toggleAvailability(product)}
+                            className={`p-2 rounded-xl transition-all ${product.isAvailable ? 'text-green-600 bg-green-50 shadow-sm shadow-green-100' : 'text-stone-300 bg-stone-50'}`}
+                          >
+                            <Check size={18} />
+                          </button>
+                          
+                          {confirmDeleteId === product.id ? (
+                            <div className="absolute right-0 bottom-0 flex flex-col gap-1 z-10">
+                              <button 
+                                onClick={() => deleteProduct(product.id)}
+                                className="p-2 rounded-xl text-white bg-red-600 hover:bg-red-700 shadow-lg animate-in fade-in zoom-in"
+                                title="Confirm Delete"
+                              >
+                                <Trash2 size={18} />
+                                <span className="text-[6px] font-black uppercase tracking-widest block">DEL?</span>
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="p-1 rounded-lg text-stone-500 bg-stone-200 hover:bg-stone-300"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => setConfirmDeleteId(product.id)}
+                              className="p-2 rounded-xl text-red-400 bg-red-50 hover:bg-red-100 transition-colors"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                        </div>
                     </div>
 
                     {editingId === product.id && (

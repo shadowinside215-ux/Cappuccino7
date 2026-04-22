@@ -116,7 +116,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
       <header className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-b border-stone-100 z-[60] py-4 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-            <span className="text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
+            <span className="text-lg sm:text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -200,7 +200,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
             className="fixed inset-0 z-[70] bg-white flex flex-col p-8 sm:hidden overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-12">
-              <span className="text-2xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
+              <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
               <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-stone-50 rounded-2xl">
                 <X size={24} />
               </button>

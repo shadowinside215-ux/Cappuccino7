@@ -126,6 +126,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
     if (name.includes('ice cream')) return t('categories.ice_cream');
     if (name.includes('signature')) return t('categories.signature');
     if (name.includes('extra')) return t('categories.extras');
+    if (name.includes('coffee')) return t('categories.coffee');
+    if (name.includes('tea')) return t('categories.tea');
+    if (name.includes('hot drinks')) return t('categories.special_hot');
+    if (name.includes('iced latté')) return t('categories.iced_latte');
+    if (name.includes('ice tea')) return t('categories.ice_tea');
+    if (name.includes('jus')) return t('categories.jus');
+    if (name.includes('frappuccino')) return t('categories.frappuccino');
     return catName;
   };
 
@@ -322,7 +329,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-black text-bento-primary shadow-sm ring-1 ring-black/5">
-                        {product.price} MAD
+                        {product.price} DH
                       </div>
                     </div>
                     <div className="flex-1 p-6 flex flex-col justify-between">

@@ -111,7 +111,7 @@ export default function AdminOrders() {
                 </div>
                 
                 <div className="flex flex-col items-end md:w-48">
-                  <p className="text-3xl font-black text-brown-950 mb-1">{order.total.toFixed(0)} MAD</p>
+                  <p className="text-3xl font-black text-brown-950 mb-1">{order.total.toFixed(0)} DH</p>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full">
                     {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -145,7 +145,7 @@ export default function AdminOrders() {
             {orders.filter(o => o.status === 'delivered').slice(0, 5).map(o => (
               <div key={o.id} className="bg-white/50 p-4 rounded-2xl flex justify-between items-center text-sm">
                 <span className="font-bold">{o.customerName}</span>
-                <span className="text-gray-400">delivered • {o.total.toFixed(0)} MAD</span>
+                <span className="text-gray-400">delivered • {o.total.toFixed(0)} DH</span>
               </div>
             ))}
           </div>
