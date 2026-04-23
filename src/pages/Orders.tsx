@@ -20,9 +20,13 @@ export default function Orders() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const isGuest = auth.currentUser?.isAnonymous;
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || isGuest) {
+      setLoading(false);
+      return;
+    }
 
     const q = query(
       collection(db, 'orders'),
@@ -36,9 +40,35 @@ export default function Orders() {
     });
 
     return unsubscribe;
-  }, []);
+  }, [isGuest]);
 
-  if (loading) return <div className="text-center py-20">Loading your orders...</div>;
+  if (loading) return <div className="text-center py-20 flex items-center justify-center gap-2">
+    <div className="w-5 h-5 border-2 border-bento-primary border-t-transparent rounded-full animate-spin" />
+    <span>Loading your orders...</span>
+  </div>;
+
+  if (isGuest) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-8 px-6 text-center">
+        <div className="p-8 bg-stone-50 rounded-[40px] text-stone-300 shadow-xl shadow-stone-900/5">
+          <Truck size={64} strokeWidth={2.5} />
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-3xl font-black text-stone-900 uppercase italic tracking-tight">Order History</h1>
+          <p className="text-stone-500 font-medium max-w-sm">
+            You're currently browsing as a guest. <br />
+            Sign in to keep track of your previous orders and loyalty points!
+          </p>
+        </div>
+        <button 
+          onClick={() => window.location.href = '/login'}
+          className="w-full max-w-xs bg-bento-primary text-white py-5 px-8 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl shadow-bento-primary/20 active:scale-95 transition-all"
+        >
+          Sign In to Access History
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 pb-12">

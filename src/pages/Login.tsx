@@ -50,9 +50,21 @@ export default function Login() {
 
       toast.success('Welcome back!');
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Google login failed.');
+      let message = 'Google login failed.';
+      
+      if (error.code === 'auth/unauthorized-domain') {
+        message = 'This domain is not authorized. Please add it to your Firebase Console under Auth > Settings > Authorized Domains.';
+      } else if (error.code === 'auth/popup-blocked') {
+        message = 'Login popup was blocked. Please enable popups and try again.';
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        message = 'Login window was closed before completion.';
+      } else if (error.message) {
+        message = error.message;
+      }
+      
+      toast.error(message);
     } finally {
       setLoading(false);
     }
