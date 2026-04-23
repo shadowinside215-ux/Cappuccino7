@@ -328,8 +328,15 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-black text-bento-primary shadow-sm ring-1 ring-black/5">
-                        {product.price} DH
+                      <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                        <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-black text-bento-primary shadow-sm ring-1 ring-black/5">
+                          {product.price} DH
+                        </div>
+                        {userProfile && (userProfile.itemLoyalty?.[product.id] || 0) > 0 && (
+                          <div className="bg-bento-accent px-2 py-1 rounded-lg text-[8px] font-black text-bento-primary shadow-sm ring-1 ring-black/5 uppercase tracking-tighter">
+                            Level {userProfile.itemLoyalty?.[product.id]}
+                          </div>
+                        )}
                       </div>
                     </div>
                      <div className="flex-1 p-6 flex flex-col justify-between">

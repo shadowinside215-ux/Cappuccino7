@@ -172,15 +172,15 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                       {t(`products.${product.name}`, product.name)}
                     </h4>
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-1">
-                      {rewardReady ? `🎁 ${t('reward_earned')}` : `${count}/11 ${t('units_collected')}`}
+                      {rewardReady ? `🎁 ${t('reward_earned')}` : `Level ${count} • Next goal at 11`}
                     </p>
                     
-                    <div className="mt-3 flex gap-1">
+                    <div className="mt-3 flex gap-1 h-1.5">
                       {[...Array(11)].map((_, i) => (
                         <div 
                           key={i} 
-                          className={`flex-1 h-1.5 rounded-full transition-all ${
-                            i < (rewardReady && progress === 0 ? 11 : count) 
+                          className={`flex-1 rounded-full transition-all ${
+                            i < (rewardReady ? 11 : count % 11) 
                             ? 'bg-bento-primary' 
                             : 'bg-stone-100'
                           }`} 

@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { OrderItem, OrderStatus } from '../types';
+import { OrderItem, OrderStatus, UserProfile } from '../types';
 import { Minus, Plus, Trash2, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useTranslation } from 'react-i18next';
 
-export default function Cart() {
+export default function Cart({ userProfile }: { userProfile: UserProfile | null }) {
   const { t } = useTranslation();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [address, setAddress] = useState('');
@@ -72,6 +72,23 @@ export default function Cart() {
 
       await addDoc(collection(db, 'orders'), orderData);
       
+      // Update User Profile with new point system
+      if (!isGuest) {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        
+        // Prepare updates for each item loyalty
+        const loyaltyUpdates: Record<string, any> = {
+          points: increment(pointsEarned)
+        };
+        
+        items.forEach(item => {
+          // Use dot notation to increment inside the map
+          loyaltyUpdates[`itemLoyalty.${item.productId}`] = increment(item.quantity);
+        });
+        
+        await updateDoc(userRef, loyaltyUpdates);
+      }
+
       localStorage.removeItem('cart');
       setItems([]);
       
@@ -143,7 +160,14 @@ export default function Cart() {
                 <h3 className="font-bold text-lg text-bento-ink leading-tight">
                   {t(`products.${item.name}`, item.name)}
                 </h3>
-                <p className="text-stone-400 text-sm font-medium tracking-wide">Premium Selection</p>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <p className="text-stone-400 text-xs font-medium tracking-wide">Premium Selection</p>
+                  {userProfile && !userProfile.isAnonymous && (
+                    <span className="text-[10px] font-black bg-bento-accent/10 text-bento-primary px-2 py-0.5 rounded-lg uppercase tracking-tighter ring-1 ring-bento-accent/20">
+                      Level {userProfile.itemLoyalty?.[item.productId] || 0}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <p className="font-bold text-bento-primary">{(item.price * item.quantity)} DH</p>

@@ -278,7 +278,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
         <Routes>
           <Route path="/" element={user ? <Home userProfile={userProfile} /> : <Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/cart" element={<Cart />} />
+          <Route path="/cart" element={<Cart userProfile={userProfile} />} />
           <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
           <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
           
