@@ -431,7 +431,7 @@ export default function AdminDashboard() {
           <div className="p-3 bg-green-50 text-green-600 rounded-2xl w-fit mb-6">
             <TrendingUp size={24} />
           </div>
-          <p className="text-4xl font-black text-bento-primary mb-1">${stats.todayRevenue.toFixed(0)}</p>
+          <p className="text-4xl font-black text-bento-primary mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
           <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Today's Revenue</p>
         </div>
 

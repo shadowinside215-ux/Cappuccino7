@@ -199,12 +199,12 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             {auth.currentUser?.isAnonymous ? (
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-amber-500 uppercase tracking-[0.2em]">{t('loyalty_perk')}</p>
-                <p className="text-xs font-medium text-stone-400 max-w-[200px]">Sign in to save these {total} points!</p>
+                <p className="text-xs font-medium text-stone-400 max-w-[200px]">Sign in to save these {totalItems} points!</p>
               </div>
             ) : (
               <>
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('loyalty_perk')}</p>
-                <p className="text-lg font-bold text-bento-accent">+{total} {t('reward_points')}</p>
+                <p className="text-lg font-bold text-bento-accent">+{totalItems} {t('reward_points')}</p>
               </>
             )}
           </div>

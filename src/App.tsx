@@ -58,7 +58,7 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   if (location.pathname === '/login') return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-4 py-3 z-[50] sm:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-4 py-3 z-[50] lg:hidden">
       <div className="max-w-4xl mx-auto flex justify-around items-center">
         <Link to="/" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/' ? 'text-bento-primary' : 'text-stone-400'}`}>
           <Coffee size={24} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
@@ -123,7 +123,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
 
           <div className="flex items-center gap-6">
             {/* Desktop Navigation Links */}
-            <div className="hidden md:flex items-center gap-4 border-r border-stone-100 pr-6 mr-2">
+            <div className="hidden lg:flex items-center gap-4 border-r border-stone-100 pr-6 mr-2">
               <Link to="/" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
                 <Coffee size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('menu')}</span>
@@ -150,7 +150,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
 
             {/* Points Summary for logged in users */}
             {userProfile ? (
-              <div className="hidden sm:flex gap-3">
+              <div className="hidden lg:flex gap-3">
                 {userProfile.coffeeCount !== undefined && (
                   <div className="bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100">
                     <Coffee size={14} className="text-amber-700" />
@@ -165,7 +165,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
             ) : (
               <Link 
                 to="/login"
-                className="hidden sm:flex items-center gap-2 bg-amber-50 text-amber-900 px-4 py-2 rounded-xl border border-amber-100 hover:bg-amber-100 transition-colors"
+                className="hidden lg:flex items-center gap-2 bg-amber-50 text-amber-900 px-4 py-2 rounded-xl border border-amber-100 hover:bg-amber-100 transition-colors"
               >
                 <Award size={16} />
                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">Login for Rewards</span>
@@ -173,7 +173,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
             )}
 
             {/* Desktop Language Switcher - Compact */}
-            <div className="hidden sm:flex gap-1">
+            <div className="hidden lg:flex gap-1">
               {['en', 'fr', 'ar'].map((lang) => (
                 <button
                   key={lang}
@@ -192,7 +192,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
             {/* Mobile Menu Toggle (3 Dots) */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 text-bento-primary bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors sm:hidden"
+              className="p-2 text-bento-primary bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors lg:hidden"
             >
               {isMenuOpen ? <X size={24} /> : <MoreVertical size={24} />}
             </button>
@@ -207,7 +207,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed inset-0 z-[70] bg-white flex flex-col p-8 sm:hidden overflow-y-auto"
+            className="fixed inset-0 z-[70] bg-white flex flex-col p-8 lg:hidden overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-12">
               <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
@@ -274,7 +274,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
       </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
-      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 sm:pt-10 no-scrollbar`}>
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 no-scrollbar`}>
         <Routes>
           <Route path="/" element={user ? <Home userProfile={userProfile} /> : <Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
