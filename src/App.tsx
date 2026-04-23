@@ -68,10 +68,12 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
           <ShoppingCart size={24} strokeWidth={location.pathname === '/cart' ? 2.5 : 2} />
           <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('cart')}</span>
         </Link>
-        <Link to="/orders" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/orders' ? 'text-bento-primary' : 'text-stone-400'}`}>
-          <ListOrdered size={24} strokeWidth={location.pathname === '/orders' ? 2.5 : 2} />
-          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('orders')}</span>
-        </Link>
+        {auth.currentUser && !auth.currentUser.isAnonymous && (
+          <Link to="/orders" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/orders' ? 'text-bento-primary' : 'text-stone-400'}`}>
+            <ListOrdered size={24} strokeWidth={location.pathname === '/orders' ? 2.5 : 2} />
+            <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('orders')}</span>
+          </Link>
+        )}
         <Link to="/profile" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/profile' ? 'text-bento-primary' : 'text-stone-400'}`}>
           <UserIcon size={24} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} />
           <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('profile')}</span>
@@ -147,7 +149,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
             </div>
 
             {/* Points Summary for logged in users */}
-            {userProfile && (
+            {userProfile ? (
               <div className="hidden sm:flex gap-3">
                 {userProfile.coffeeCount !== undefined && (
                   <div className="bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100">
@@ -160,6 +162,14 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
                   <span className="text-[10px] font-black text-bento-primary leading-none">{userProfile.points} {t('reward_points')}</span>
                 </div>
               </div>
+            ) : (
+              <Link 
+                to="/login"
+                className="hidden sm:flex items-center gap-2 bg-amber-50 text-amber-900 px-4 py-2 rounded-xl border border-amber-100 hover:bg-amber-100 transition-colors"
+              >
+                <Award size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest leading-none">Login for Rewards</span>
+              </Link>
             )}
 
             {/* Desktop Language Switcher - Compact */}
@@ -213,9 +223,11 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
               <Link onClick={() => setIsMenuOpen(false)} to="/cart" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
                 <ShoppingCart /> <span>{t('cart')}</span>
               </Link>
-              <Link onClick={() => setIsMenuOpen(false)} to="/orders" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
-                <ListOrdered /> <span>{t('orders')}</span>
-              </Link>
+              {user && !user.isAnonymous && (
+                <Link onClick={() => setIsMenuOpen(false)} to="/orders" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+                  <ListOrdered /> <span>{t('orders')}</span>
+                </Link>
+              )}
               <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
                 <UserIcon /> <span>{t('profile')}</span>
               </Link>
@@ -264,7 +276,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
       <Navbar userProfile={userProfile} />
       <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 sm:pt-10 no-scrollbar`}>
         <Routes>
-          <Route path="/" element={<Home userProfile={userProfile} />} />
+          <Route path="/" element={user ? <Home userProfile={userProfile} /> : <Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
@@ -301,7 +313,7 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u) {
+      if (u && !u.isAnonymous) {
         const docSnap = await getDoc(doc(db, 'users', u.uid));
         if (docSnap.exists()) {
           setUserProfile(docSnap.data() as UserProfile);

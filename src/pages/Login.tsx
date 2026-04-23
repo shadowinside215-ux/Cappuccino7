@@ -1,59 +1,274 @@
-import { signInWithPopup } from 'firebase/auth';
+import React, { useState } from 'react';
+import { 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInAnonymously,
+  updateProfile
+} from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
-import { Coffee } from 'lucide-react';
+import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
+
+type AuthMode = 'initial' | 'email-login' | 'email-signup';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<AuthMode>('initial');
+  const [loading, setLoading] = useState(false);
+  
+  // Form states
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
+    setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
-      // Check if user profile exists
       const userRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(userRef);
 
       if (!docSnap.exists()) {
-        // Create initial profile
         await setDoc(userRef, {
           uid: user.uid,
-          name: user.displayName || 'Friend',
+          name: user.displayName || 'Guest User',
           email: user.email,
           points: 0,
+          coffeeCount: 0,
+          itemLoyalty: {},
           isAdmin: false,
+          isAnonymous: false,
           createdAt: new Date().toISOString()
         });
       }
 
-      toast.success('Welcome to Caffeino!');
+      toast.success('Welcome back!');
       navigate('/');
     } catch (error) {
       console.error(error);
-      toast.error('Login failed. Please try again.');
+      toast.error('Google login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestAccess = async () => {
+    setLoading(true);
+    try {
+      await signInAnonymously(auth);
+      toast.success('Browsing as guest');
+      navigate('/');
+    } catch (error) {
+      console.error(error);
+      toast.error('Guest access failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      if (mode === 'email-signup') {
+        if (!name) throw new Error('Please enter your name');
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        const user = result.user;
+        
+        await updateProfile(user, { displayName: name });
+        
+        // Create profile
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          name: name,
+          email: user.email,
+          points: 0,
+          coffeeCount: 0,
+          itemLoyalty: {},
+          isAdmin: false,
+          isAnonymous: false,
+          createdAt: new Date().toISOString()
+        });
+        
+        toast.success('Account created successfully!');
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast.success('Welcome back!');
+      }
+      navigate('/');
+    } catch (error: any) {
+      console.error(error);
+      const message = error.code === 'auth/user-not-found' ? 'User not found.' :
+                      error.code === 'auth/wrong-password' ? 'Invalid password.' :
+                      error.code === 'auth/email-already-in-use' ? 'Email already in use.' :
+                      error.message;
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center text-center px-4">
-      <div className="mb-8 p-6 bg-brown-600 text-white rounded-full">
-        <Coffee size={64} />
-      </div>
-      <h1 className="text-4xl font-bold mb-4 text-brown-950">Welcome to Caffeino</h1>
-      <p className="text-gray-600 mb-12 max-w-xs">
-        Join our loyalty program and order your favorite coffee in just a few taps.
-      </p>
-      
-      <button
-        onClick={handleLogin}
-        className="w-full max-w-sm flex items-center justify-center gap-3 bg-white border border-gray-300 py-3 px-6 rounded-xl shadow-sm hover:bg-gray-50 transition-colors font-medium"
-      >
-        <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-        Sign in with Google
-      </button>
+    <div className="min-h-[85vh] flex flex-col items-center justify-center px-6 max-w-md mx-auto">
+      <AnimatePresence mode="wait">
+        {mode === 'initial' ? (
+          <motion.div 
+            key="initial"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full space-y-8 flex flex-col items-center"
+          >
+            <div className="p-5 bg-bento-primary rounded-[32px] text-white shadow-2xl shadow-bento-primary/20">
+              <Coffee size={48} strokeWidth={2.5} />
+            </div>
+            
+            <div className="text-center space-y-3">
+              <h1 className="text-4xl font-black text-stone-900 tracking-tight italic uppercase">Cappuccino7</h1>
+              <p className="text-stone-500 font-medium leading-relaxed">
+                Premium coffee, shared moments. <br />
+                Login to earn ☕ rewards.
+              </p>
+            </div>
+
+            <div className="w-full space-y-3">
+              <button
+                disabled={loading}
+                onClick={handleGoogleLogin}
+                className="w-full flex items-center justify-center gap-4 bg-white border border-stone-100 py-4 px-6 rounded-[24px] shadow-sm hover:shadow-md active:scale-95 transition-all font-black uppercase text-xs tracking-widest text-stone-700"
+              >
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                Continue with Google
+              </button>
+
+              <button
+                disabled={loading}
+                onClick={() => setMode('email-login')}
+                className="w-full flex items-center justify-center gap-4 bg-stone-900 text-white py-4 px-6 rounded-[24px] shadow-xl shadow-stone-200 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
+              >
+                <Mail size={18} />
+                Login with Email
+              </button>
+
+              <div className="relative py-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-stone-100"></div>
+                </div>
+                <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
+                  <span className="bg-bento-bg px-4 text-stone-400 font-black">Or</span>
+                </div>
+              </div>
+
+              <button
+                disabled={loading}
+                onClick={handleGuestAccess}
+                className="w-full flex items-center justify-center gap-4 bg-stone-100 text-stone-600 py-4 px-6 rounded-[24px] hover:bg-stone-200 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
+              >
+                Continue as Guest
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="email"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="w-full space-y-6"
+          >
+            <button 
+              onClick={() => setMode('initial')}
+              className="flex items-center gap-2 text-stone-400 hover:text-bento-primary transition-colors font-black uppercase text-[10px] tracking-widest"
+            >
+              <ChevronLeft size={16} /> Back
+            </button>
+
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-stone-900 uppercase italic">
+                {mode === 'email-login' ? 'Login' : 'Create Account'}
+              </h2>
+              <p className="text-stone-400 text-sm font-medium">
+                {mode === 'email-login' ? 'Enter your credentials to continue.' : 'Join the club and start earning points.'}
+              </p>
+            </div>
+
+            <form onSubmit={handleEmailAuth} className="space-y-4">
+              {mode === 'email-signup' && (
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-black tracking-widest text-stone-400 ml-2">Name</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={18} />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your Full Name"
+                      className="w-full pl-12 pr-4 py-4 bg-white border border-stone-100 rounded-2xl focus:ring-2 focus:ring-bento-primary/20 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-black tracking-widest text-stone-400 ml-2">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={18} />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="hello@example.com"
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-stone-100 rounded-2xl focus:ring-2 focus:ring-bento-primary/20 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-black tracking-widest text-stone-400 ml-2">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={18} />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-stone-100 rounded-2xl focus:ring-2 focus:ring-bento-primary/20 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-4 flex items-center justify-center gap-3 bg-bento-primary text-white py-5 px-6 rounded-3xl shadow-xl shadow-bento-primary/20 active:scale-95 transition-all font-black uppercase text-xs tracking-widest disabled:opacity-50"
+              >
+                {loading ? 'Processing...' : mode === 'email-login' ? 'Sign In' : 'Sign Up'}
+                <ArrowRight size={18} />
+              </button>
+            </form>
+
+            <div className="text-center pt-4">
+              <button
+                onClick={() => setMode(mode === 'email-login' ? 'email-signup' : 'email-login')}
+                className="text-stone-400 hover:text-bento-primary text-xs font-black uppercase tracking-widest"
+              >
+                {mode === 'email-login' ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

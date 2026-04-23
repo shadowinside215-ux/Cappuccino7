@@ -39,7 +39,7 @@ export default function Cart() {
 
   const handleCheckout = async () => {
     if (!auth.currentUser) {
-      toast.error('Please login to place an order');
+      toast.error('Please login or continue as guest to place an order');
       navigate('/login');
       return;
     }
@@ -56,12 +56,12 @@ export default function Cart() {
 
     setLoading(true);
     try {
-      // Points earned = 1 point per menu item
       const pointsEarned = totalItems;
+      const isGuest = auth.currentUser.isAnonymous;
 
       const orderData = {
         userId: auth.currentUser.uid,
-        customerName: auth.currentUser.displayName || 'Customer',
+        customerName: auth.currentUser.displayName || (isGuest ? 'Guest' : 'Customer'),
         items: items,
         total: total,
         status: 'pending' as OrderStatus,
@@ -74,7 +74,16 @@ export default function Cart() {
       
       localStorage.removeItem('cart');
       setItems([]);
-      toast.success('Order placed successfully!');
+      
+      if (isGuest) {
+        toast.success('Order placed! Create an account to save your points ☕', {
+          duration: 6000,
+          icon: '✨'
+        });
+      } else {
+        toast.success('Order placed successfully!');
+      }
+      
       navigate('/orders');
     } catch (error) {
       console.error(error);
@@ -157,14 +166,23 @@ export default function Cart() {
           ))}
         </div>
         
-        <div className="p-8 bg-stone-50 border-t border-stone-100 flex justify-between items-center">
+        <div className="p-8 bg-stone-50 border-t border-stone-100 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('total_paid')}</p>
             <p className="text-4xl font-bold text-bento-primary">{total} DH</p>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('loyalty_perk')}</p>
-            <p className="text-lg font-bold text-bento-accent">+{total} {t('reward_points')}</p>
+          <div className="text-center sm:text-right">
+            {auth.currentUser?.isAnonymous ? (
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-[0.2em]">{t('loyalty_perk')}</p>
+                <p className="text-xs font-medium text-stone-400 max-w-[200px]">Sign in to save these {total} points!</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('loyalty_perk')}</p>
+                <p className="text-lg font-bold text-bento-accent">+{total} {t('reward_points')}</p>
+              </>
+            )}
           </div>
         </div>
       </div>

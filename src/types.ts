@@ -8,6 +8,7 @@ export interface UserProfile {
   coffeeCount: number; // Keep for legacy or general coffee tracking
   itemLoyalty: Record<string, number>; // productId -> count mapping
   isAdmin: boolean;
+  isAnonymous?: boolean;
   createdAt: string;
 }
 

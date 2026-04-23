@@ -13,6 +13,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   const navigate = useNavigate();
   const [loyaltyProducts, setLoyaltyProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const isGuest = auth.currentUser?.isAnonymous;
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -22,7 +23,6 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
 
       setLoading(true);
       try {
-        // Fetch up to 10 products for loyalty display
         const q = query(collection(db, 'products'));
         const snap = await getDocs(q);
         const allProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
@@ -39,11 +39,46 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
 
   const handleLogout = async () => {
     await auth.signOut();
-    toast.success('Logged out successfully');
+    toast.success('Session ended');
     navigate('/login');
   };
 
-  if (!userProfile) return <div className="text-center py-20">Loading profile...</div>;
+  if (isGuest) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-8 px-6 text-center">
+        <div className="p-8 bg-amber-50 rounded-[40px] text-amber-600 shadow-xl shadow-amber-900/5">
+          <Award size={64} strokeWidth={2.5} />
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-3xl font-black text-stone-900 uppercase italic tracking-tight">Join the Club!</h1>
+          <p className="text-stone-500 font-medium max-w-sm">
+            Log in to start earning rewards ☕ <br />
+            Every coffee counts towards a free one!
+          </p>
+        </div>
+        <button 
+          onClick={() => navigate('/login')}
+          className="w-full max-w-xs bg-bento-primary text-white py-5 px-8 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl shadow-bento-primary/20 active:scale-95 transition-all"
+        >
+          Sign In or Create Account
+        </button>
+        <button 
+          onClick={handleLogout}
+          className="text-stone-400 font-bold uppercase text-[10px] tracking-widest hover:text-red-500 transition-colors"
+        >
+          End Guest Session
+        </button>
+      </div>
+    );
+  }
+
+  if (!userProfile) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+         <Loader2 className="animate-spin text-bento-primary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-32">
