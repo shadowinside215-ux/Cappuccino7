@@ -55,7 +55,25 @@ export default function Login() {
       let message = 'Google login failed.';
       
       if (error.code === 'auth/unauthorized-domain') {
-        message = 'This domain is not authorized. Please add it to your Firebase Console under Auth > Settings > Authorized Domains.';
+        const domain = window.location.hostname;
+        message = `This domain (${domain}) is not authorized. Please add it to your Firebase Console under Auth > Settings > Authorized Domains.`;
+        
+        // Custom toast with copy button for easier troubleshooting
+        toast((t) => (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">{message}</p>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(domain);
+                toast.success('Domain copied!', { id: 'copy-success' });
+              }}
+              className="bg-bento-primary text-white text-[10px] py-1 px-3 rounded-lg font-bold uppercase tracking-widest self-start"
+            >
+              Copy Domain
+            </button>
+          </div>
+        ), { duration: 10000, id: 'unauthorized-domain-toast' });
+        return; // Already showed custom toast
       } else if (error.code === 'auth/popup-blocked') {
         message = 'Login popup was blocked. Please enable popups and try again.';
       } else if (error.code === 'auth/popup-closed-by-user') {
