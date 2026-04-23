@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { db, auth } from '../lib/firebase';
 import { Order } from '../types';
 import { Clock, CheckCircle2, ChevronRight, Package, Truck, Coffee, Award } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
@@ -16,6 +17,7 @@ const StatusIcon = ({ status }: { status: string }) => {
 };
 
 export default function Orders() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
