@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { Product, Category, UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRef } from 'react';
-import { Plus, Search, Star, MapPin, Coffee, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Star, MapPin, Coffee, ChevronLeft, ChevronRight, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useNavigate } from 'react-router-dom';
@@ -58,12 +58,17 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       setCategories(data);
       // If we have categories but the loading state is stuck, clear it
       if (data.length > 0) setLoading(false);
+    }, (error) => {
+      console.error("Home categories listener error:", error);
     });
 
     const qProd = query(collection(db, 'products'));
     const unsubProd = onSnapshot(qProd, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
       setProducts(data);
+      setLoading(false);
+    }, (error) => {
+      console.error("Home products listener error:", error);
       setLoading(false);
     });
 
@@ -329,15 +334,18 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                        <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-black text-bento-primary shadow-sm ring-1 ring-black/5">
+                        <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-xl text-[11px] font-black text-bento-primary shadow-sm ring-1 ring-black/5">
                           {product.price} DH
                         </div>
-                        {userProfile && (userProfile.itemLoyalty?.[product.id] || 0) > 0 && (
-                          <div className="bg-bento-accent px-2 py-1 rounded-lg text-[8px] font-black text-bento-primary shadow-sm ring-1 ring-black/5 uppercase tracking-tighter">
-                            Level {userProfile.itemLoyalty?.[product.id]}
-                          </div>
-                        )}
                       </div>
+
+                      {/* Loyalty Badge - Small Tab at bottom */}
+                      {userProfile && (userProfile.itemLoyalty?.[product.id] || 0) > 0 && (
+                        <div className="absolute bottom-3 left-3 bg-amber-500 text-white px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 flex items-center gap-1.5 ring-2 ring-white/30 backdrop-blur-sm">
+                          <Award size={10} strokeWidth={3} />
+                          <span>{userProfile.itemLoyalty?.[product.id]} {userProfile.itemLoyalty?.[product.id] === 1 ? 'Point' : 'Points'}</span>
+                        </div>
+                      )}
                     </div>
                      <div className="flex-1 p-6 flex flex-col justify-between">
                        <div>

@@ -27,9 +27,13 @@ export default function AdminMenu() {
   useEffect(() => {
     const unsubCat = onSnapshot(query(collection(db, 'categories'), orderBy('order')), (snap) => {
       setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() } as Category)));
+    }, (error) => {
+      console.error("Admin menu categories listener error:", error);
     });
     const unsubProd = onSnapshot(collection(db, 'products'), (snap) => {
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+    }, (error) => {
+      console.error("Admin menu products listener error:", error);
     });
     return () => { unsubCat(); unsubProd(); };
   }, []);

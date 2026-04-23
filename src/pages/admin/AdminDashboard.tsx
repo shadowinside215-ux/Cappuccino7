@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatch } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award } from 'lucide-react';
@@ -19,6 +19,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!auth.currentUser) return;
+
     // Active Orders listener
     const qActive = query(collection(db, 'orders'));
     const unsubOrders = onSnapshot(qActive, (snapshot) => {
@@ -32,6 +34,8 @@ export default function AdminDashboard() {
       }, 0);
 
       setStats(prev => ({ ...prev, activeOrders: activeCount, todayRevenue: todayTotal }));
+    }, (error) => {
+      console.error("Admin dashboard orders listener error:", error);
     });
 
     const fetchStats = async () => {

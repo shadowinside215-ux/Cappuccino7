@@ -16,6 +16,9 @@ export default function AdminOrders() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
       setLoading(false);
+    }, (error) => {
+      console.error("Admin orders listener error:", error);
+      setLoading(false);
     });
     return unsubscribe;
   }, []);
