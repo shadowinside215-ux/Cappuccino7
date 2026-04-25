@@ -27,37 +27,83 @@ export default function AdminDashboard() {
     }
     setIsSeeding(true);
     try {
-      // 1. Create Categories
-      const burgerCatRef = await addDoc(collection(db, 'categories'), { name: '🍔 Burgers', order: 100 });
-      const sandwichCatRef = await addDoc(collection(db, 'categories'), { name: '🥪 Sandwiches', order: 110 });
-      const pizzaCatRef = await addDoc(collection(db, 'categories'), { name: '🍕 Pizza', order: 120 });
+      const batch = writeBatch(db);
+      const catsSnap = await getDocs(collection(db, 'categories'));
+      const existingCats = catsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
       
-      const burgerCatId = burgerCatRef.id;
-      const sandwichCatId = sandwichCatRef.id;
-      const pizzaCatId = pizzaCatRef.id;
-
-      const products = [
-        { name: 'Burger Furri', price: 45, categoryId: burgerCatId, description: 'Viande hachée, Jambon, Fromage, Tomate, Oignon, Laitue, Sauce blanche, Eau minérale included', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Burger Viande hachée', price: 45, categoryId: burgerCatId, description: 'Viande hachée, Laitue, Fromage, Tomate, Oignon', image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Chicken Burger', price: 40, categoryId: burgerCatId, description: 'Poulet haché, Fromage, Tomate, Oignon, Laitue, Soda ou Eau minérale included', image: 'https://images.unsplash.com/photo-1606755962773-b324e0a13086?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Chicken Kids Burger', price: 35, categoryId: burgerCatId, description: 'Mini burger: Poulet haché, Fromage, Tomate, Oignon, Laitue', image: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Beef Kids Burger', price: 38, categoryId: burgerCatId, description: 'Mini burger: Viande hachée, Fromage, Tomate, Laitue', image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Sandwich Thon (froids)', price: 35, categoryId: sandwichCatId, description: 'Oignon, Laitue, Tomate, Fromage, Sauce fraîcheur', image: 'https://images.unsplash.com/photo-1553909489-cd47e0907d3f?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Sandwich Jambon (froids)', price: 35, categoryId: sandwichCatId, description: 'Laitue, Tomate, Fromage, Sauce mayonnaise, Moutarde', image: 'https://images.unsplash.com/photo-1521390188846-e2a3a97453aa?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Sandwich Viande hachée (chauds)', price: 45, categoryId: sandwichCatId, description: 'Viande hachée, Fromage, Tomate, Laitue, Sauce fromage crème', image: 'https://images.unsplash.com/photo-1539252554452-da00ad54da0b?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Sandwich Poulet (chauds)', price: 40, categoryId: sandwichCatId, description: 'Poulet, Tomate, Laitue, Oignon, Olives vertes, Sauce pistou', image: 'https://images.unsplash.com/photo-1481068131515-9c3027cb9595?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Margherita', price: 30, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Olives noires, Poivrons, Oignon, Mozzarella', image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pizza Thon', price: 35, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Thon, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pizza Poulet', price: 40, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Poulet, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pizza Viande hachée', price: 45, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Viande hachée, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pizza Quatre Saisons', price: 50, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Poulet, Viande hachée, Charcuterie, Hotdog, Thon, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80', isAvailable: true }
+      const categoryConfigs = [
+        { name: '🍔 Burgers', order: 100 },
+        { name: '🥪 Sandwiches', order: 110 },
+        { name: '🍕 Pizza', order: 120 },
+        { name: '🥘 Plats gourmands', order: 130 },
+        { name: '🍝 Pâtes', order: 140 }
       ];
 
+      const catMap: Record<string, string> = {};
+
+      for (const config of categoryConfigs) {
+        let catId = existingCats.find(c => c.name === config.name)?.id;
+        if (!catId) {
+          const newCatRef = doc(collection(db, 'categories'));
+          batch.set(newCatRef, config);
+          catId = newCatRef.id;
+        }
+        catMap[config.name] = catId;
+      }
+
+      const productsSnap = await getDocs(collection(db, 'products'));
+      const existingProds = productsSnap.docs.map(doc => doc.data().name);
+
+      const products = [
+        // Burgers
+        { name: 'Burger Furri', price: 45, categoryId: catMap['🍔 Burgers'], description: 'Viande hachée, Jambon, Fromage, Tomate, Oignon, Laitue, Sauce blanche, Eau minérale included', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Burger Viande hachée', price: 45, categoryId: catMap['🍔 Burgers'], description: 'Viande hachée, Laitue, Fromage, Tomate, Oignon', image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Chicken Burger', price: 40, categoryId: catMap['🍔 Burgers'], description: 'Poulet haché, Fromage, Tomate, Oignon, Laitue, Soda ou Eau minérale included', image: 'https://images.unsplash.com/photo-1606755962773-b324e0a13086?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Chicken Kids Burger', price: 35, categoryId: catMap['🍔 Burgers'], description: 'Mini burger: Poulet haché, Fromage, Tomate, Oignon, Laitue', image: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Beef Kids Burger', price: 38, categoryId: catMap['🍔 Burgers'], description: 'Mini burger: Viande hachée, Fromage, Tomate, Laitue', image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        
+        // Sandwiches
+        { name: 'Sandwich Thon (froids)', price: 35, categoryId: catMap['🥪 Sandwiches'], description: 'Oignon, Laitue, Tomate, Fromage, Sauce fraîcheur', image: 'https://images.unsplash.com/photo-1553909489-cd47e0907d3f?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Sandwich Jambon (froids)', price: 35, categoryId: catMap['🥪 Sandwiches'], description: 'Laitue, Tomate, Fromage, Sauce mayonnaise, Moutarde', image: 'https://images.unsplash.com/photo-1521390188846-e2a3a97453aa?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Sandwich Viande hachée (chauds)', price: 45, categoryId: catMap['🥪 Sandwiches'], description: 'Viande hachée, Fromage, Tomate, Laitue, Sauce fromage crème', image: 'https://images.unsplash.com/photo-1539252554452-da00ad54da0b?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Sandwich Poulet (chauds)', price: 40, categoryId: catMap['🥪 Sandwiches'], description: 'Poulet, Tomate, Laitue, Oignon, Olives vertes, Sauce pistou', image: 'https://images.unsplash.com/photo-1481068131515-9c3027cb9595?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        
+        // Pizza
+        { name: 'Margherita', price: 30, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Olives noires, Poivrons, Oignon, Mozzarella', image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pizza Thon', price: 35, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Thon, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pizza Poulet', price: 40, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Poulet, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pizza Viande hachée', price: 45, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Viande hachée, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pizza Quatre Saisons', price: 50, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Poulet, Viande hachée, Charcuterie, Hotdog, Thon, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        
+        // Plats gourmands
+        { name: 'Émincé de Boeuf', price: 55, categoryId: catMap['🥘 Plats gourmands'], description: 'Boeuf avec sauce du chef et garniture légumes sautée', image: 'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Émincé de Poulet', price: 45, categoryId: catMap['🥘 Plats gourmands'], description: 'Poulet with crème champignons and garniture légumes sautée', image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pasticcio Poulet', price: 37, categoryId: catMap['🥘 Plats gourmands'], description: 'Pasticcio au poulet gratiné', image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pasticcio Dinde Fumé', price: 32, categoryId: catMap['🥘 Plats gourmands'], description: 'Pasticcio à la dinde fumée gratiné', image: 'https://images.unsplash.com/photo-1544333346-6473919e2776?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        
+        // Pâtes
+        { name: 'Alfredo', price: 48, categoryId: catMap['🍝 Pâtes'], description: 'Poulet champignon fromage. Choix de Tagliatélle, Spaghetti ou Penné', image: 'https://images.unsplash.com/photo-1645112481338-331408a2a95c?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Napolitaine', price: 48, categoryId: catMap['🍝 Pâtes'], description: 'Sauce pistou. Choix de Tagliatélle, Spaghetti ou Penné', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Bolognaise', price: 42, categoryId: catMap['🍝 Pâtes'], description: 'Sauce bolognaise traditionnelle. Choix de Tagliatélle, Spaghetti ou Penné', image: 'https://images.unsplash.com/photo-1598866539627-9a6983001l5?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Carbonara', price: 52, categoryId: catMap['🍝 Pâtes'], description: 'Sauce carbonara crémeuse. Choix de Tagliatélle, Spaghetti ou Penné', image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Lasagne Bolognaise', price: 68, categoryId: catMap['🍝 Pâtes'], description: 'Lasagne au four à la bolognaise', image: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?auto=format&fit=crop&w=800&q=80', isAvailable: true }
+      ];
+
+      let addedCount = 0;
       for (const p of products) {
-        await addDoc(collection(db, 'products'), p);
+        if (!existingProds.includes(p.name)) {
+          const prodRef = doc(collection(db, 'products'));
+          batch.set(prodRef, p);
+          addedCount++;
+        }
       }
       
-      toast.success('All new menu items added successfully!');
+      await batch.commit();
+      if (addedCount > 0) {
+        toast.success(`${addedCount} new menu items added successfully!`);
+      } else {
+        toast.success('Menu is already up to date!');
+      }
     } catch (err) {
       console.error(err);
       toast.error('Failed to seed items. Check console for details.');

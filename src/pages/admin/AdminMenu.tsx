@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FormEvent, useRef } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { Product, Category } from '../../types';
 import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut } from 'lucide-react';
@@ -59,6 +59,7 @@ export default function AdminMenu() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<string | null>(null); // null, 'new', or productId
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
@@ -229,6 +230,27 @@ export default function AdminMenu() {
     }
   };
 
+  const deleteCategory = async (categoryId: string, categoryName: string) => {
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Delete all products in this category
+      const catProducts = products.filter(p => p.categoryId === categoryId);
+      catProducts.forEach(product => {
+        batch.delete(doc(db, 'products', product.id));
+      });
+      
+      // 2. Delete the category itself
+      batch.delete(doc(db, 'categories', categoryId));
+      
+      await batch.commit();
+      toast.success(`Category "${categoryName}" and its ${catProducts.length} items deleted`);
+      setConfirmDeleteCatId(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `categories/${categoryId}`);
+    }
+  };
+
   return (
     <div className="space-y-10 pb-24">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -372,13 +394,37 @@ export default function AdminMenu() {
       <div className="space-y-12">
         {categories.map(cat => {
           const catProducts = products.filter(p => p.categoryId === cat.id);
-          if (catProducts.length === 0 && !isAdding) return null;
-
           return (
             <section key={cat.id} className="space-y-6">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 group/cat">
                 <h2 className="text-sm font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap">{cat.name}</h2>
                 <div className="h-px bg-stone-100 w-full" />
+                <div className="flex items-center gap-2">
+                  {confirmDeleteCatId === cat.id ? (
+                    <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2">
+                      <button 
+                        onClick={() => deleteCategory(cat.id, cat.name)}
+                        className="bg-red-500 text-white px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-red-600 transition-colors shadow-sm"
+                      >
+                        Confirm Delete Category
+                      </button>
+                      <button 
+                        onClick={() => setConfirmDeleteCatId(null)}
+                        className="bg-stone-200 text-stone-500 p-1 rounded-lg hover:bg-stone-300 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setConfirmDeleteCatId(cat.id)}
+                      className="opacity-0 group-hover/cat:opacity-100 p-2 text-stone-300 hover:text-red-400 transition-all"
+                      title="Delete entire category"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {catProducts.map(product => (
