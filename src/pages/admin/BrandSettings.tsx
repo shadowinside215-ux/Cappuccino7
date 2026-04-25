@@ -135,7 +135,7 @@ export default function BrandSettings() {
               <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Brand Identity Logo</label>
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-bento-primary hover:bg-stone-100 transition-all group overflow-hidden relative"
+                className="w-full aspect-video bg-white border-2 border-dashed border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-bento-primary hover:bg-stone-50 transition-all group overflow-hidden relative"
               >
                 {isUploading ? (
                   <div className="flex flex-col items-center gap-2">
@@ -144,7 +144,9 @@ export default function BrandSettings() {
                   </div>
                 ) : logoUrl ? (
                   <>
-                    <img src={logoUrl} className="w-full h-full object-contain p-8" alt="Logo preview" />
+                    <div className="w-40 h-40 rounded-full overflow-hidden border border-stone-100 shadow-sm p-2 bg-white">
+                      <img src={logoUrl} className="w-full h-full object-contain" alt="Logo preview" />
+                    </div>
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="flex flex-col items-center gap-2">
                         <Upload className="text-white" size={32} />
@@ -204,14 +206,14 @@ export default function BrandSettings() {
             
             <div className="space-y-8">
               <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg overflow-hidden bg-white p-0.5">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-white p-0.5">
                   <img src={logoUrl} alt="Preview" className="w-full h-full object-contain" />
                 </div>
                 <span className="font-black italic uppercase tracking-tighter text-sm">Cappuccino7</span>
               </div>
 
               <div className="p-8 bg-white rounded-3xl shadow-lg flex flex-col items-center gap-4">
-                <div className="w-16 h-16 rounded-[20px] overflow-hidden shadow-md p-1 bg-white border border-stone-100">
+                <div className="w-20 h-20 rounded-full overflow-hidden shadow-md p-1 bg-white border border-stone-100">
                   <img src={logoUrl} alt="Preview" className="w-full h-full object-contain" />
                 </div>
                 <div className="h-2 w-24 bg-stone-100 rounded-full" />

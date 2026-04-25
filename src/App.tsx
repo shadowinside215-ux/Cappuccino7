@@ -131,11 +131,11 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       <header className="fixed top-0 left-0 right-0 bg-bento-card-bg/90 backdrop-blur-xl border-b border-stone-100 dark:border-white/5 z-[60] py-4 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
-            <div className="w-8 h-8 rounded-lg overflow-hidden border border-stone-100 dark:border-white/5 shadow-sm">
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-100 dark:border-white/5 shadow-sm bg-white">
               <img 
                 src={brand.logoUrl} 
                 alt="Logo" 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
             <span className="text-lg sm:text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
@@ -235,11 +235,11 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           >
             <div className="flex justify-between items-center mb-12">
               <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
-                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
+                <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
                   <img 
                     src={brand.logoUrl} 
                     alt="Logo" 
-                    className="w-full h-full object-contain rounded-lg"
+                    className="w-full h-full object-contain rounded-full"
                   />
                 </div>
                 <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>

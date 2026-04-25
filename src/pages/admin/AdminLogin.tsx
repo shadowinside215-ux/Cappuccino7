@@ -63,11 +63,11 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center -mt-20">
       <div className="card w-full max-w-md !p-10 space-y-8 bg-white border-2 border-bento-primary/10 shadow-2xl">
         <div className="text-center space-y-4">
-          <div className="w-24 h-24 bg-white rounded-[32px] overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 mx-auto rotate-3">
+          <div className="w-28 h-28 bg-white rounded-full overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 mx-auto rotate-3 border-2 border-stone-50">
              <img 
                src={brand.logoUrl} 
                alt="Management Logo" 
-               className="w-full h-full object-contain rounded-[28px]"
+               className="w-full h-full object-contain rounded-full"
              />
           </div>
           <div>

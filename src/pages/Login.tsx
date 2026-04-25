@@ -158,11 +158,11 @@ export default function Login() {
             exit={{ opacity: 0, y: -20 }}
             className="w-full space-y-8 flex flex-col items-center"
           >
-            <div className="w-24 h-24 bg-white rounded-[32px] overflow-hidden shadow-2xl shadow-bento-primary/20 p-1">
+            <div className="w-28 h-28 bg-white rounded-full overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 border-2 border-stone-50">
               <img 
                 src={brand.logoUrl} 
                 alt="Cappuccino7 Logo" 
-                className="w-full h-full object-contain rounded-[28px]"
+                className="w-full h-full object-contain rounded-full"
                 onError={(e) => {
                   // Fallback if the URL fails
                   e.currentTarget.src = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80";
