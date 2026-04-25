@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../lib/firebase';
+import { useBrandSettings } from '../lib/brand';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -19,6 +20,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>('initial');
   const [loading, setLoading] = useState(false);
+  const { settings: brand } = useBrandSettings();
   
   // Form states
   const [email, setEmail] = useState('');
@@ -156,8 +158,16 @@ export default function Login() {
             exit={{ opacity: 0, y: -20 }}
             className="w-full space-y-8 flex flex-col items-center"
           >
-            <div className="p-5 bg-bento-primary rounded-[32px] text-white shadow-2xl shadow-bento-primary/20">
-              <Coffee size={48} strokeWidth={2.5} />
+            <div className="w-24 h-24 bg-white rounded-[32px] overflow-hidden shadow-2xl shadow-bento-primary/20 p-1">
+              <img 
+                src={brand.logoUrl} 
+                alt="Cappuccino7 Logo" 
+                className="w-full h-full object-contain rounded-[28px]"
+                onError={(e) => {
+                  // Fallback if the URL fails
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80";
+                }}
+              />
             </div>
             
             <div className="text-center space-y-3">

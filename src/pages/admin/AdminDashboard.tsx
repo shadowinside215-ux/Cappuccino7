@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatc
 import { db, auth } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -410,6 +410,21 @@ export default function AdminDashboard() {
             </div>
             <div className="p-4 bg-stone-100 rounded-full group-hover:bg-bento-primary group-hover:text-white transition-all">
               <SettingsIcon size={32} className="transition-colors" />
+            </div>
+          </div>
+        </button>
+
+        <button 
+          onClick={() => navigate('/admin/brand')}
+          className="card !p-8 border-2 border-bento-accent group hover:bg-amber-50 hover:scale-[1.02] md:col-span-2"
+        >
+          <div className="flex items-center justify-between">
+            <div className="text-left">
+              <h3 className="text-2xl font-bold mb-1">Brand & Logo</h3>
+              <p className="text-stone-400 text-sm">Update app logo and branding</p>
+            </div>
+            <div className="p-4 bg-amber-50 rounded-full group-hover:bg-bento-accent group-hover:text-bento-primary transition-all">
+              <Palette size={32} className="transition-colors" />
             </div>
           </div>
         </button>

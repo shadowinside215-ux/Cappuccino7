@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
 import { auth, db } from './lib/firebase';
 import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon } from 'lucide-react';
+import { useBrandSettings } from './lib/brand';
 import { UserProfile } from './types';
 
 // Pages
@@ -20,6 +21,7 @@ import AdminMenu from './pages/admin/AdminMenu';
 import AdminOrders from './pages/admin/AdminOrders';
 import Login from './pages/Login';
 import AdminLogin from './pages/admin/AdminLogin';
+import BrandSettings from './pages/admin/BrandSettings';
 import Settings from './pages/Settings';
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
@@ -96,6 +98,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { settings: brand } = useBrandSettings();
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
@@ -127,7 +130,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       {/* Universal Header - Responsive */}
       <header className="fixed top-0 left-0 right-0 bg-bento-card-bg/90 backdrop-blur-xl border-b border-stone-100 dark:border-white/5 z-[60] py-4 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+          <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
+            <div className="w-8 h-8 rounded-lg overflow-hidden border border-stone-100 dark:border-white/5 shadow-sm">
+              <img 
+                src={brand.logoUrl} 
+                alt="Logo" 
+                className="w-full h-full object-cover"
+              />
+            </div>
             <span className="text-lg sm:text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
           </Link>
 
@@ -224,7 +234,16 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             className="fixed inset-0 z-[70] bg-bento-bg flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
           >
             <div className="flex justify-between items-center mb-12">
-              <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
+              <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
+                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
+                  <img 
+                    src={brand.logoUrl} 
+                    alt="Logo" 
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                </div>
+                <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
+              </Link>
               <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-stone-50 rounded-2xl">
                 <X size={24} />
               </button>
@@ -305,6 +324,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
           <Route path="/admin/menu" element={<AdminGuard userProfile={userProfile}><AdminMenu /></AdminGuard>} />
           <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
+          <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />
         </Routes>
       </main>
 

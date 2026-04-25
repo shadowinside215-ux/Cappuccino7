@@ -90,6 +90,18 @@
       "schema": "Settings",
       "description": "Global app settings."
     },
+    "settings/brand": {
+      "schema": {
+        "title": "Brand Settings",
+        "type": "object",
+        "properties": {
+          "logoUrl": { "type": "string" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["logoUrl"]
+      },
+      "description": "App logo and branding settings."
+    },
     "admins/{adminId}": {
       "schema": { "type": "object", "properties": { "email": { "type": "string" } } },
       "description": "Admin users list."

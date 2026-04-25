@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail } from 'lucide-react';
 import { auth } from '../../lib/firebase';
+import { useBrandSettings } from '../../lib/brand';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import toast from 'react-hot-toast';
 
@@ -10,6 +11,7 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFirebaseAuthed, setIsFirebaseAuthed] = useState(false);
+  const { settings: brand } = useBrandSettings();
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -61,8 +63,12 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center -mt-20">
       <div className="card w-full max-w-md !p-10 space-y-8 bg-white border-2 border-bento-primary/10 shadow-2xl">
         <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-bento-primary text-white rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-bento-primary/20 rotate-3">
-            <ShieldCheck size={40} />
+          <div className="w-24 h-24 bg-white rounded-[32px] overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 mx-auto rotate-3">
+             <img 
+               src={brand.logoUrl} 
+               alt="Management Logo" 
+               className="w-full h-full object-contain rounded-[28px]"
+             />
           </div>
           <div>
             <h1 className="text-4xl font-black italic text-bento-primary tracking-tighter">Cappuccino7</h1>
