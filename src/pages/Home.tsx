@@ -138,6 +138,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
     if (name.includes('ice tea')) return t('categories.ice_tea');
     if (name.includes('jus')) return t('categories.jus');
     if (name.includes('frappuccino')) return t('categories.frappuccino');
+    if (name.includes('salades')) return t('categories.salades');
     return catName;
   };
 
@@ -167,7 +168,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       <header className="space-y-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-6xl font-bold italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</h1>
-          <div className="flex items-center gap-2 text-stone-600 bg-stone-100 w-fit px-3 py-1 rounded-full text-xs font-bold ring-1 ring-stone-200">
+          <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-stone-900 w-fit px-3 py-1 rounded-full text-xs font-bold ring-1 ring-stone-200 dark:ring-white/5">
             <span className="text-bento-accent">★ 4.8</span>
             <span>(2,777 reviews)</span>
           </div>
@@ -196,7 +197,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               const el = document.getElementById('menu-grid');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="bg-white border-2 border-stone-100 text-bento-primary px-8 py-4 rounded-xl font-bold shadow-sm flex items-center gap-2 hover:bg-stone-50 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
+            className="bg-bento-card-bg border-2 border-stone-100 dark:border-white/5 text-bento-primary px-8 py-4 rounded-xl font-bold shadow-sm flex items-center gap-2 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
           >
             {t('view_menu')} <Coffee size={18} className="text-bento-accent" />
           </button>
@@ -205,16 +206,16 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
       {/* Trust Elements - Bento Style */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card !p-5 bg-stone-50/50 border-dashed">
-          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest mb-3 italic">"Verified Local Favorite"</p>
+        <div className="card !p-5 bg-bento-card-bg border-dashed">
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Verified Local Favorite"</p>
           <p className="text-sm font-bold text-bento-primary leading-tight">"Great experience, friendly staff and relaxing atmosphere."</p>
         </div>
-        <div className="card !p-5 bg-stone-50/50 border-dashed">
-          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest mb-3 italic">"Best Breakfast in Salé"</p>
+        <div className="card !p-5 bg-bento-card-bg border-dashed">
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Best Breakfast in Salé"</p>
           <p className="text-sm font-bold text-bento-primary leading-tight">"The breakfast sets are high quality and coffee is perfect every time."</p>
         </div>
-        <div className="card !p-5 bg-stone-50/50 border-dashed">
-          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest mb-3 italic">"Community Hub"</p>
+        <div className="card !p-5 bg-bento-card-bg border-dashed">
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Community Hub"</p>
           <p className="text-sm font-bold text-bento-primary leading-tight">"Clean, modern and perfect for watching games with friends."</p>
         </div>
       </div>
@@ -227,7 +228,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           placeholder="Explore our menu..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className={`w-full bg-white border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300`}
+          className={`w-full bg-bento-card-bg border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300 dark:placeholder:text-stone-600`}
         />
       </div>
 
@@ -236,7 +237,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         {/* Navigation Arrows - Desktop Only */}
         <button 
           onClick={() => scrollCategories('left')}
-          className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-10 h-10 bg-white shadow-xl rounded-full items-center justify-center border border-stone-100 text-bento-primary opacity-0 group-hover/nav:opacity-100 transition-opacity hover:bg-stone-50"
+          className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-10 h-10 bg-bento-card-bg shadow-xl rounded-full items-center justify-center border border-stone-100 dark:border-white/5 text-bento-primary opacity-0 group-hover/nav:opacity-100 transition-opacity hover:bg-stone-50 dark:hover:bg-stone-900"
         >
           <ChevronLeft size={20} />
         </button>
@@ -251,7 +252,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             className={`category-btn whitespace-nowrap ${
               selectedCategory === 'all' 
               ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10' 
-              : 'bg-white text-bento-ink'
+              : 'bg-bento-card-bg text-bento-ink'
             }`}
           >
             {t('menu')}
@@ -275,7 +276,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               className={`category-btn whitespace-nowrap transition-all ${
                 selectedCategory === cat.id 
                 ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10 scale-105' 
-                : 'bg-white text-bento-ink hover:bg-stone-50'
+                : 'bg-bento-card-bg text-bento-ink hover:bg-stone-50 dark:hover:bg-stone-900'
               }`}
             >
               {getTranslatedCategory(cat.name)}
@@ -285,7 +286,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
         <button 
           onClick={() => scrollCategories('right')}
-          className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-10 h-10 bg-white shadow-xl rounded-full items-center justify-center border border-stone-100 text-bento-primary opacity-0 group-hover/nav:opacity-100 transition-opacity hover:bg-stone-50"
+          className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-10 h-10 bg-bento-card-bg shadow-xl rounded-full items-center justify-center border border-stone-100 dark:border-white/5 text-bento-primary opacity-0 group-hover/nav:opacity-100 transition-opacity hover:bg-stone-50 dark:hover:bg-stone-900"
         >
           <ChevronRight size={20} />
         </button>
@@ -316,7 +317,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 <h2 className="text-xl font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">
                   {getTranslatedCategory(cat.name)}
                 </h2>
-                <div className="h-px bg-stone-100 w-full" />
+                <div className="h-px bg-stone-100 dark:bg-white/5 w-full" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8 tabular-nums">
@@ -334,7 +335,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                        <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-xl text-[11px] font-black text-bento-primary shadow-sm ring-1 ring-black/5">
+                        <div className="bg-bento-card-bg/90 backdrop-blur-sm px-2.5 py-1.5 rounded-xl text-[11px] font-black text-bento-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5">
                           {product.price} DH
                         </div>
                       </div>
@@ -358,7 +359,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                        </div>
                        <button
                          onClick={() => addToCart(product)}
-                         className="w-full py-3 bg-stone-50 text-bento-primary rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all active:scale-[0.98] border border-stone-100 mt-2"
+                         className="w-full py-3 bg-bento-card-bg text-bento-primary rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all active:scale-[0.98] border border-stone-100 dark:border-white/5 mt-2"
                        >
                          {t('add_to_cart')}
                        </button>

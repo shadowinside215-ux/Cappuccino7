@@ -9,31 +9,58 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isSpecificAdminEmail() {
+      return isSignedIn() && (
+        request.auth.token.email.matches('(?i)dragonballsam86@gmail.com') ||
+        request.auth.token.email.matches('(?i)client@example.com')
+      );
+    }
+
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == "dragonballsam86@gmail.com" ||
+        isSpecificAdminEmail() ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128;
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
     }
 
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
       allow create: if isSignedIn() && request.auth.uid == userId && 
-                    request.resource.data.points == 0 && 
-                    (request.resource.data.isAdmin == false || request.auth.token.email == "dragonballsam86@gmail.com");
-      allow update: if isAdmin() || 
-                    (isSignedIn() && request.auth.uid == userId && 
-                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'points', 'itemLoyalty', 'coffeeCount']));
+                    incoming().points == 0 && 
+                    (incoming().isAdmin == false || isSpecificAdminEmail());
+      allow update: if (isAdmin() || (isSignedIn() && request.auth.uid == userId)) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'points', 'itemLoyalty', 'coffeeCount', 'isAdmin']);
     }
 
     match /admins/{adminId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isSpecificAdminEmail() || (isAdmin() && adminId == request.auth.uid);
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.price is number && data.price >= 0 &&
+             data.categoryId is string &&
+             (data.image == null || (data.image is string && data.image.size() < 1000)) &&
+             (data.description == null || (data.description is string && data.description.size() < 500)) &&
+             (data.isAvailable == null || data.isAvailable is bool);
     }
 
     match /categories/{categoryId} {
@@ -43,7 +70,14 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if isAdmin() && isValidProduct(incoming());
+      allow update: if isAdmin() && (
+        // Check if the resulting document is valid
+        isValidProduct(request.resource.data) &&
+        // And only allowed fields are being touched
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'price', 'categoryId', 'image', 'isAvailable'])
+      );
+      allow delete: if isAdmin();
     }
 
     match /orders/{orderId} {

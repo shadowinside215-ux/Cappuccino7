@@ -5,14 +5,14 @@
   --font-serif: "Playfair Display", serif;
   --font-sans: "Inter", sans-serif;
   
-  --color-bento-bg: #F5F2ED;
-  --color-bento-ink: #2D241E;
-  --color-bento-primary: #5A3E2B;
-  --color-bento-accent: #D4A373;
-  --color-bento-card-bg: #FFFFFF;
-  --color-bento-card-border: rgba(90, 62, 43, 0.1);
+  --color-bento-bg: var(--bento-bg);
+  --color-bento-ink: var(--bento-ink);
+  --color-bento-primary: var(--bento-primary);
+  --color-bento-accent: var(--bento-accent);
+  --color-bento-card-bg: var(--bento-card-bg);
+  --color-bento-card-border: var(--bento-card-border);
   
-  /* Brown palette for compatibility with previous code if needed */
+  /* Brown palette for compatibility */
   --color-brown-50: #FDFBF9;
   --color-brown-100: #F0EBE5;
   --color-brown-200: #EADCD0;
@@ -22,8 +22,26 @@
 }
 
 @layer base {
+  :root {
+    --bento-bg: #F5F2ED;
+    --bento-ink: #2D241E;
+    --bento-primary: #5A3E2B;
+    --bento-accent: #D4A373;
+    --bento-card-bg: #FFFFFF;
+    --bento-card-border: rgba(90, 62, 43, 0.1);
+  }
+
+  .dark {
+    --bento-bg: #000000; /* Black */
+    --bento-ink: #F5F2ED; /* Off-white for readability */
+    --bento-primary: #D4A373; /* Using accent as primary in dark for better visibility */
+    --bento-accent: #B08D74; 
+    --bento-card-bg: #1A120B; /* Dark brown */
+    --bento-card-border: rgba(212, 163, 115, 0.15);
+  }
+
   html, body {
-    @apply overflow-x-hidden w-full;
+    @apply overflow-x-hidden w-full transition-colors duration-300;
   }
   
   body {
@@ -36,7 +54,7 @@
 }
 
 .card {
-  @apply bg-white border border-bento-card-border rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-6 flex flex-col transition-all duration-300;
+  @apply bg-bento-card-bg border border-bento-card-border rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-6 flex flex-col transition-all duration-300;
 }
 
 .accent-card {

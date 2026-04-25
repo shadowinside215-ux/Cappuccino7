@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
 import { auth, db } from './lib/firebase';
-import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon } from 'lucide-react';
+import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon } from 'lucide-react';
 import { UserProfile } from './types';
 
 // Pages
@@ -20,6 +20,7 @@ import AdminMenu from './pages/admin/AdminMenu';
 import AdminOrders from './pages/admin/AdminOrders';
 import Login from './pages/Login';
 import AdminLogin from './pages/admin/AdminLogin';
+import Settings from './pages/Settings';
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
   const [isAdminDocument, setIsAdminDocument] = useState<boolean | null>(null);
@@ -27,7 +28,9 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
   useEffect(() => {
     const checkAdmin = async () => {
       const isAdminMode = sessionStorage.getItem('admin_mode') === 'true';
-      if (isAdminMode) {
+      const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+      
+      if (isAdminMode || isCreator) {
         setIsAdminDocument(true);
         return;
       }
@@ -58,7 +61,7 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   if (location.pathname === '/login') return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-4 py-3 z-[50] lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-bento-card-bg border-t border-stone-100 dark:border-white/5 px-4 py-3 z-[50] lg:hidden">
       <div className="max-w-4xl mx-auto flex justify-around items-center">
         <Link to="/" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/' ? 'text-bento-primary' : 'text-stone-400'}`}>
           <Coffee size={24} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
@@ -83,7 +86,13 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   );
 }
 
-function AppContent({ user, userProfile, loading }: { user: User | null, userProfile: UserProfile | null, loading: boolean }) {
+function AppContent({ user, userProfile, loading, theme, setTheme }: { 
+  user: User | null, 
+  userProfile: UserProfile | null, 
+  loading: boolean,
+  theme: 'light' | 'dark',
+  setTheme: (theme: 'light' | 'dark') => void
+}) {
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -107,15 +116,16 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
       </div>
     );
   }
-
-  const isAdmin = userProfile?.isAdmin;
+  
+  const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+  const isAdmin = userProfile?.isAdmin || isCreator;
 
   return (
     <div className="min-h-screen bg-bento-bg pb-24 sm:pb-0 sm:pt-20">
       <Toaster position="top-center" />
       
       {/* Universal Header - Responsive */}
-      <header className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-b border-stone-100 z-[60] py-4 px-6">
+      <header className="fixed top-0 left-0 right-0 bg-bento-card-bg/90 backdrop-blur-xl border-b border-stone-100 dark:border-white/5 z-[60] py-4 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
             <span className="text-lg sm:text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
@@ -136,9 +146,13 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
                 <ListOrdered size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('orders')}</span>
               </Link>
-              <Link to="/profile" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/profile' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+              <Link to="/profile" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/profile' ? 'bg-stone-50 dark:bg-stone-900 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
                 <UserIcon size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('profile')}</span>
+              </Link>
+              <Link to="/settings" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/settings' ? 'bg-stone-50 dark:bg-stone-900 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+                <SettingsIcon size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('settings', { defaultValue: 'Settings' })}</span>
               </Link>
               {isAdmin && (
                 <Link to="/admin" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname.startsWith('/admin') ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
@@ -157,7 +171,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
                     <span className="text-[10px] font-black text-amber-900 leading-none">{userProfile.coffeeCount}/10</span>
                   </div>
                 )}
-                <div className="bg-stone-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-stone-100">
+                <div className="bg-bento-card-bg px-3 py-1.5 rounded-xl flex items-center gap-2 border border-stone-100 dark:border-white/5">
                   <Award size={14} className="text-bento-accent" />
                   <span className="text-[10px] font-black text-bento-primary leading-none">{userProfile.points} {t('reward_points')}</span>
                 </div>
@@ -181,7 +195,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
                   className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${
                     i18n.language === lang 
                     ? 'bg-bento-primary text-white border-bento-primary shadow-sm' 
-                    : 'bg-white text-stone-400 border-stone-100 hover:border-bento-primary/30'
+                    : 'bg-bento-card-bg text-stone-400 border-stone-100 dark:border-white/5 hover:border-bento-primary/30'
                   }`}
                 >
                   {lang === 'ar' ? 'عربي' : lang.toUpperCase()}
@@ -207,7 +221,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed inset-0 z-[70] bg-white flex flex-col p-8 lg:hidden overflow-y-auto"
+            className="fixed inset-0 z-[70] bg-bento-bg flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
           >
             <div className="flex justify-between items-center mb-12">
               <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
@@ -217,22 +231,25 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
             </div>
 
             <div className="space-y-2 flex-grow">
-              <Link onClick={() => setIsMenuOpen(false)} to="/" className="flex items-center gap-4 p-5 rounded-2xl bg-stone-50 text-bento-primary font-bold text-lg">
+              <Link onClick={() => setIsMenuOpen(false)} to="/" className="flex items-center gap-4 p-5 rounded-2xl bg-stone-50 dark:bg-stone-900 text-bento-primary font-bold text-lg">
                 <HomeIcon /> <span>{t('menu')}</span>
               </Link>
-              <Link onClick={() => setIsMenuOpen(false)} to="/cart" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+              <Link onClick={() => setIsMenuOpen(false)} to="/cart" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 dark:hover:bg-stone-900 text-bento-primary font-bold text-lg">
                 <ShoppingCart /> <span>{t('cart')}</span>
               </Link>
               {user && !user.isAnonymous && (
-                <Link onClick={() => setIsMenuOpen(false)} to="/orders" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+                <Link onClick={() => setIsMenuOpen(false)} to="/orders" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 dark:hover:bg-stone-900 text-bento-primary font-bold text-lg">
                   <ListOrdered /> <span>{t('orders')}</span>
                 </Link>
               )}
-              <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+              <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 dark:hover:bg-stone-900 text-bento-primary font-bold text-lg">
                 <UserIcon /> <span>{t('profile')}</span>
               </Link>
+              <Link onClick={() => setIsMenuOpen(false)} to="/settings" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 dark:hover:bg-stone-900 text-bento-primary font-bold text-lg">
+                <SettingsIcon /> <span>{t('settings', { defaultValue: 'Settings' })}</span>
+              </Link>
               {isAdmin && (
-                <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 text-bento-primary font-bold text-lg">
+                <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-50 dark:hover:bg-stone-900 text-bento-primary font-bold text-lg">
                   <LayoutDashboard /> <span>{t('admin')}</span>
                 </Link>
               )}
@@ -281,6 +298,7 @@ function AppContent({ user, userProfile, loading }: { user: User | null, userPro
           <Route path="/cart" element={<Cart userProfile={userProfile} />} />
           <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
           <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
+          <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -309,6 +327,18 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
@@ -349,7 +379,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AppContent user={user} userProfile={userProfile} loading={loading} />
+      <AppContent user={user} userProfile={userProfile} loading={loading} theme={theme} setTheme={setTheme} />
     </BrowserRouter>
   );
 }

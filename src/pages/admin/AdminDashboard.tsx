@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatch, addDoc } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -15,8 +15,77 @@ export default function AdminDashboard() {
   });
   const [isEmpty, setIsEmpty] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(false);
+  const [isRegisteringAdmin, setIsRegisteringAdmin] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const navigate = useNavigate();
+
+  const seedNewItems = async () => {
+    if (!auth.currentUser) {
+      toast.error('You must be signed in to seed items');
+      return;
+    }
+    setIsSeeding(true);
+    try {
+      // 1. Create Categories
+      const burgerCatRef = await addDoc(collection(db, 'categories'), { name: '🍔 Burgers', order: 100 });
+      const sandwichCatRef = await addDoc(collection(db, 'categories'), { name: '🥪 Sandwiches', order: 110 });
+      const pizzaCatRef = await addDoc(collection(db, 'categories'), { name: '🍕 Pizza', order: 120 });
+      
+      const burgerCatId = burgerCatRef.id;
+      const sandwichCatId = sandwichCatRef.id;
+      const pizzaCatId = pizzaCatRef.id;
+
+      const products = [
+        { name: 'Burger Furri', price: 45, categoryId: burgerCatId, description: 'Viande hachée, Jambon, Fromage, Tomate, Oignon, Laitue, Sauce blanche, Eau minérale included', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Burger Viande hachée', price: 45, categoryId: burgerCatId, description: 'Viande hachée, Laitue, Fromage, Tomate, Oignon', image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Chicken Burger', price: 40, categoryId: burgerCatId, description: 'Poulet haché, Fromage, Tomate, Oignon, Laitue, Soda ou Eau minérale included', image: 'https://images.unsplash.com/photo-1606755962773-b324e0a13086?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Chicken Kids Burger', price: 35, categoryId: burgerCatId, description: 'Mini burger: Poulet haché, Fromage, Tomate, Oignon, Laitue', image: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Beef Kids Burger', price: 38, categoryId: burgerCatId, description: 'Mini burger: Viande hachée, Fromage, Tomate, Laitue', image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Sandwich Thon (froids)', price: 35, categoryId: sandwichCatId, description: 'Oignon, Laitue, Tomate, Fromage, Sauce fraîcheur', image: 'https://images.unsplash.com/photo-1553909489-cd47e0907d3f?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Sandwich Jambon (froids)', price: 35, categoryId: sandwichCatId, description: 'Laitue, Tomate, Fromage, Sauce mayonnaise, Moutarde', image: 'https://images.unsplash.com/photo-1521390188846-e2a3a97453aa?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Sandwich Viande hachée (chauds)', price: 45, categoryId: sandwichCatId, description: 'Viande hachée, Fromage, Tomate, Laitue, Sauce fromage crème', image: 'https://images.unsplash.com/photo-1539252554452-da00ad54da0b?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Sandwich Poulet (chauds)', price: 40, categoryId: sandwichCatId, description: 'Poulet, Tomate, Laitue, Oignon, Olives vertes, Sauce pistou', image: 'https://images.unsplash.com/photo-1481068131515-9c3027cb9595?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Margherita', price: 30, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Olives noires, Poivrons, Oignon, Mozzarella', image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pizza Thon', price: 35, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Thon, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pizza Poulet', price: 40, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Poulet, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pizza Viande hachée', price: 45, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Viande hachée, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&w=800&q=80', isAvailable: true },
+        { name: 'Pizza Quatre Saisons', price: 50, categoryId: pizzaCatId, description: 'Sauce tomate, Fromage, Poulet, Viande hachée, Charcuterie, Hotdog, Thon, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80', isAvailable: true }
+      ];
+
+      for (const p of products) {
+        await addDoc(collection(db, 'products'), p);
+      }
+      
+      toast.success('All new menu items added successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to seed items. Check console for details.');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const registerAdmin = async () => {
+    if (!auth.currentUser) {
+      toast.error('You must be signed in to register as admin');
+      return;
+    }
+    setIsRegisteringAdmin(true);
+    try {
+      await setDoc(doc(db, 'admins', auth.currentUser.uid), {
+        email: auth.currentUser.email,
+        registeredAt: new Date().toISOString(),
+        role: 'super_admin'
+      });
+      toast.success('Admin permissions registered successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to register admin permissions. You might not have the required email.');
+    } finally {
+      setIsRegisteringAdmin(false);
+    }
+  };
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -57,184 +126,6 @@ export default function AdminDashboard() {
 
     return () => unsubOrders();
   }, []);
-
-  const addSupplements = async () => {
-    if (isSettingUp) return;
-    setIsSettingUp(true);
-    try {
-      const catsSnap = await getDocs(collection(db, 'categories'));
-      const categories = catsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
-      
-      const categoryName = "THE EXTRA'S";
-      let targetCat = categories.find(c => c.name.toUpperCase() === categoryName);
-      
-      const batch = writeBatch(db);
-      
-      if (!targetCat) {
-        const catRef = doc(collection(db, 'categories'));
-        targetCat = { id: catRef.id, name: categoryName, order: 9 };
-        batch.set(catRef, { name: categoryName, order: 9 });
-      }
-
-      const supplementItems = [
-        { name: '🥤 Eau minérale', price: 5 },
-        { name: '🍗 Dinde fumée', price: 15 },
-        { name: '🍯 Amlou', price: 10 },
-        { name: '🍫 Nutella', price: 12 },
-        { name: '🍓 Confiture', price: 10 },
-        { name: '🧀 Fromage', price: 10 },
-        { name: '🧀 Fromage (jaune / cheese slice)', price: 15 },
-        { name: '🫒 Huile d’olive', price: 10 }
-      ];
-
-      const productsSnap = await getDocs(collection(db, 'products'));
-      const existingProducts = productsSnap.docs.map(doc => doc.data().name);
-
-      let count = 0;
-      for (const item of supplementItems) {
-        if (existingProducts.includes(item.name)) continue;
-
-        const prodRef = doc(collection(db, 'products'));
-        batch.set(prodRef, {
-          name: item.name,
-          price: item.price,
-          description: `Add-on: ${item.name}`,
-          categoryId: targetCat.id,
-          isAvailable: true,
-          image: `https://picsum.photos/seed/${item.name}/400/400`
-        });
-        count++;
-      }
-
-      await batch.commit();
-      if (count > 0) {
-        toast.success(`Successfully added ${count} items to ${categoryName}!`);
-      } else {
-        toast.success(`Extras are already up to date!`);
-      }
-      setStats(prev => ({ ...prev, totalItems: prev.totalItems + count }));
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to add extras');
-    } finally {
-      setIsSettingUp(false);
-    }
-  };
-
-  const addBeverages = async () => {
-    if (isSettingUp) return;
-    setIsSettingUp(true);
-    try {
-      const batch = writeBatch(db);
-      
-      const catsSnap = await getDocs(collection(db, 'categories'));
-      const existingCats = catsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
-
-      const beverageCategories = [
-        { name: '☕ Coffee', order: 10, items: [
-          { name: 'Lait chaud', price: 14 },
-          { name: 'Espresso', price: 14 },
-          { name: 'Café americain', price: 15 },
-          { name: 'Lait parfumé', price: 14 },
-          { name: 'Café crème', price: 15 },
-          { name: 'Nespresso', price: 15 },
-          { name: 'Latte Macchiato', price: 16 },
-          { name: 'Double Expresso', price: 18 },
-          { name: 'Cappuccino Italien', price: 18 },
-          { name: 'Chocolat chaud', price: 18 },
-          { name: 'Cappuccino viennois', price: 25 },
-          { name: 'Café au miel', price: 18 }
-        ]},
-        { name: '🍵 Thé & infusions', order: 11, items: [
-          { name: 'Thé à la menthe', price: 14 },
-          { name: 'Lipton', price: 14 },
-          { name: 'Verveine', price: 14 },
-          { name: 'Infusion thé bio', price: 16 }
-        ]},
-        { name: '🔥 Special hot drinks', order: 12, items: [
-          { name: 'Mocaccino', price: 20 },
-          { name: 'Noisette Macchiato', price: 20 },
-          { name: 'Caramel Macchiato', price: 22 },
-          { name: 'Chocolat viennois', price: 22 },
-          { name: 'Chocolat Fondue', price: 28 },
-          { name: 'Chocolat Bresilien', price: 30 }
-        ]},
-        { name: '🧊 Iced latté', order: 13, items: [
-          { name: 'Caramel & cream', price: 25 },
-          { name: 'Noisette', price: 25 },
-          { name: 'Happy moka', price: 25 }
-        ]},
-        { name: '🍹 Ice Tea', order: 14, items: [
-          { name: 'Pêche', price: 30 },
-          { name: 'Citron', price: 30 },
-          { name: 'Framboise', price: 30 }
-        ]},
-        { name: '🧃 Jus', order: 15, items: [
-          { name: 'Orange', price: 25 },
-          { name: 'Citron', price: 25 },
-          { name: 'Carotte', price: 25 },
-          { name: 'Pomme', price: 25 },
-          { name: 'Banane', price: 25 },
-          { name: 'Mangue', price: 25 },
-          { name: 'Fraise', price: 25 },
-          { name: 'Ananas', price: 25 },
-          { name: 'Kiwi', price: 25 },
-          { name: 'Panaché', price: 35 },
-          { name: 'Avocat fruits secs', price: 30 },
-          { name: 'Zazaa', price: 48 }
-        ]},
-        { name: '🧊 Frappuccinos coffee', order: 16, items: [
-          { name: 'Caramel & Cream', price: 35 },
-          { name: 'Caramel Beurre salé', price: 35 },
-          { name: 'Moka Chocolate', price: 35 },
-          { name: 'Noisette', price: 35 },
-          { name: 'Amaretto', price: 35 }
-        ]}
-      ];
-
-      let count = 0;
-      const productsSnap = await getDocs(collection(db, 'products'));
-      const existingProducts = productsSnap.docs.map(doc => doc.data().name);
-
-      for (const cat of beverageCategories) {
-        let catId = existingCats.find(c => c.name === cat.name)?.id;
-        
-        if (!catId) {
-          const catRef = doc(collection(db, 'categories'));
-          catId = catRef.id;
-          batch.set(catRef, { name: cat.name, order: cat.order });
-        }
-        
-        for (const item of cat.items) {
-          if (existingProducts.includes(item.name)) continue;
-
-          const prodRef = doc(collection(db, 'products'));
-          batch.set(prodRef, {
-            name: item.name,
-            price: item.price,
-            description: `${cat.name} selection`,
-            categoryId: catId,
-            isAvailable: true,
-            image: `https://picsum.photos/seed/${item.name}/400/400`
-          });
-          count++;
-        }
-      }
-
-      await batch.commit();
-      if (count > 0) {
-        toast.success(`Successfully added ${count} drink items!`);
-      } else {
-        toast.success(`Menu is already up to date!`);
-      }
-      setStats(prev => ({ ...prev, totalItems: prev.totalItems + count }));
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to add beverages');
-    } finally {
-      setIsSettingUp(false);
-    }
-  };
 
   const initializeDatabase = async () => {
     if (isSettingUp) return;
@@ -356,10 +247,35 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-end">
-        <div>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 pl-1">Administrative Overview</p>
-          <h1 className="text-4xl font-bold text-bento-primary">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate('/')}
+            className="p-3 bg-stone-100 dark:bg-stone-800 rounded-2xl text-stone-500 hover:text-bento-primary transition-colors"
+            title="Exit Admin Console"
+          >
+            <LogOut size={24} />
+          </button>
+          <div>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 pl-1">Administrative Overview</p>
+            <h1 className="text-4xl font-bold text-bento-primary">Dashboard</h1>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={seedNewItems}
+            disabled={isSeeding}
+            className="bg-bento-primary text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[10px] font-black uppercase tracking-widest"
+          >
+            <Package size={16} /> {isSeeding ? 'Importing...' : 'Import New Menu'}
+          </button>
+          <button 
+            onClick={registerAdmin}
+            disabled={isRegisteringAdmin}
+            className="bg-bento-accent text-bento-primary px-4 py-2 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[10px] font-black uppercase tracking-widest"
+          >
+            <ShieldCheck size={16} /> {isRegisteringAdmin ? '...' : 'Fix Perms'}
+          </button>
         </div>
       </div>
 
@@ -384,40 +300,6 @@ export default function AdminDashboard() {
             </button>
           </div>
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
-        </div>
-      )}
-
-      {/* Supplement Quick Add */}
-      {!isEmpty && (
-        <div className="card !bg-white border-dashed border-2 border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-6 p-8">
-          <div>
-            <h4 className="font-bold text-lg text-bento-primary">Update "THE EXTRA'S" Category</h4>
-            <p className="text-stone-400 text-xs">Instantly add essential supplements and sides to a dedicated section.</p>
-          </div>
-          <button 
-            onClick={addSupplements}
-            disabled={isSettingUp}
-            className="w-full sm:w-auto bg-stone-50 border border-stone-100 text-bento-primary px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all disabled:opacity-50"
-          >
-            {isSettingUp ? '...' : 'Add Extras'}
-          </button>
-        </div>
-      )}
-
-      {/* Beverage Quick Add */}
-      {!isEmpty && (
-        <div className="card !bg-white border-dashed border-2 border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-6 p-8">
-          <div>
-            <h4 className="font-bold text-lg text-bento-primary">Update Beverages Menu</h4>
-            <p className="text-stone-400 text-xs">Instantly add the full selection of Coffee, Tea, Juices, and Frappuccinos.</p>
-          </div>
-          <button 
-            onClick={addBeverages}
-            disabled={isSettingUp}
-            className="w-full sm:w-auto bg-stone-50 border border-stone-100 text-bento-primary px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all disabled:opacity-50"
-          >
-            {isSettingUp ? '...' : 'Add Beverages'}
-          </button>
         </div>
       )}
 

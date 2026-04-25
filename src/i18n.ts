@@ -59,7 +59,8 @@ const resources = {
         "iced_latte": "🧊 Iced Latté",
         "ice_tea": "🍹 Ice Tea",
         "jus": "🧃 Juices",
-        "frappuccino": "🧊 Frappuccinos"
+        "frappuccino": "🧊 Frappuccinos",
+        "salades": "🥗 Salades"
       },
       "products": {
         "Lait chaud": "Hot Milk",
@@ -228,10 +229,10 @@ const resources = {
         "iced_latte": "🧊 Iced Latté",
         "ice_tea": "🍹 Ice Tea",
         "jus": "🧃 Jus",
-        "frappuccino": "🧊 Frappuccinos"
+        "frappuccino": "🧊 Frappuccinos",
+        "salades": "🥗 Salades"
       },
       "products": {
-        "Lait chaud": "Lait chaud",
         "Espresso": "Espresso",
         "Café americain": "Café américain",
         "Lait parfumé": "Lait parfumé",
@@ -397,7 +398,8 @@ const resources = {
         "iced_latte": "🧊 لاتي مثلج",
         "ice_tea": "🍹 شاي مثلج",
         "jus": "🧃 عصائر",
-        "frappuccino": "🧊 فرابوتشينو"
+        "frappuccino": "🧊 فرابوتشينو",
+        "salades": "🥗 السلطات"
       },
       "products": {
         "Lait chaud": "حليب ساخن",

@@ -1,9 +1,57 @@
 import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import { Product, Category } from '../../types';
-import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export default function AdminMenu() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,8 +71,23 @@ export default function AdminMenu() {
     isAvailable: true
   });
   const [editItem, setEditItem] = useState<Partial<Product>>({});
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if user is authenticated in Firebase
+    const checkAuth = () => {
+      const user = auth.currentUser;
+      const isAdminEmail = user?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+      
+      if (!user) {
+        toast.error('You are not signed into Firebase. Please log in on the main site first.', { id: 'auth-warning' });
+      } else if (!isAdminEmail && !sessionStorage.getItem('admin_mode')) {
+        toast.error('Your current Firebase account does not have admin permissions.', { id: 'admin-warning' });
+      }
+    };
+    
+    checkAuth();
+    
     const unsubCat = onSnapshot(query(collection(db, 'categories'), orderBy('order')), (snap) => {
       setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() } as Category)));
     }, (error) => {
@@ -42,11 +105,18 @@ export default function AdminMenu() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check file size (e.g., 5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File is too large. Max 5MB.');
+      return;
+    }
+
     const env = (import.meta as any).env;
     const cloudName = env.VITE_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
     if (!cloudName || !uploadPreset) {
+      console.error("Cloudinary config missing:", { cloudName, uploadPreset });
       toast.error('Cloudinary configuration missing. Please check .env');
       return;
     }
@@ -61,6 +131,12 @@ export default function AdminMenu() {
         `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
         { method: 'POST', body: formData }
       );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Upload failed');
+      }
+
       const data = await response.json();
       if (data.secure_url) {
         if (type === 'new') {
@@ -70,11 +146,11 @@ export default function AdminMenu() {
         }
         toast.success('Image uploaded successfully');
       } else {
-        throw new Error('Upload failed');
+        throw new Error('No secure URL returned');
       }
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to upload image');
+      console.error("Cloudinary upload error:", err);
+      toast.error(`Image upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsUploading(null);
     }
@@ -82,13 +158,39 @@ export default function AdminMenu() {
 
   const handleUpdateItem = async (e: FormEvent) => {
     e.preventDefault();
-    if (!editingId || !editItem.name) return;
+    if (!editingId || !editItem.name) {
+      toast.error('Product name is required');
+      return;
+    }
+
+    // Validate price
+    const finalPrice = typeof editItem.price === 'string' ? parseFloat(editItem.price) : editItem.price;
+    if (isNaN(finalPrice as number) || (finalPrice as number) < 0) {
+      toast.error('Please enter a valid price');
+      return;
+    }
+
     try {
-      await updateDoc(doc(db, 'products', editingId), editItem);
+      // Remove id and potential undefined fields
+      const { id, ...updateData } = editItem as any;
+      // Filter out any metadata or internal fields if any
+      const cleanData = Object.keys(updateData).reduce((acc: any, key) => {
+        if (updateData[key] !== undefined) {
+          acc[key] = updateData[key];
+        }
+        return acc;
+      }, {});
+
+      // Ensure price is a number
+      cleanData.price = finalPrice;
+
+      await updateDoc(doc(db, 'products', editingId), cleanData);
       setEditingId(null);
       setEditItem({});
       toast.success('Product updated successfully!');
-    } catch (err) { toast.error('Update failed'); }
+    } catch (err) { 
+      handleFirestoreError(err, OperationType.UPDATE, `products/${editingId}`);
+    }
   };
 
   const handleAddItem = async (e: FormEvent) => {
@@ -102,14 +204,18 @@ export default function AdminMenu() {
       setIsAdding(false);
       setNewItem({ name: '', description: '', price: 0, categoryId: '', image: '', isAvailable: true });
       toast.success('Product added successfully!');
-    } catch (err) { toast.error('Failed to add product'); }
+    } catch (err) { 
+      handleFirestoreError(err, OperationType.CREATE, 'products');
+    }
   };
 
   const toggleAvailability = async (product: Product) => {
     try {
       await updateDoc(doc(db, 'products', product.id), { isAvailable: !product.isAvailable });
       toast.success(product.isAvailable ? 'Item hidden' : 'Item visible');
-    } catch (err) { toast.error('Update failed'); }
+    } catch (err) { 
+      handleFirestoreError(err, OperationType.UPDATE, `products/${product.id}`);
+    }
   };
 
   const deleteProduct = async (id: string) => {
@@ -118,22 +224,50 @@ export default function AdminMenu() {
       toast.success('Product removed');
       setConfirmDeleteId(null);
     }
-    catch (err) { toast.error('Delete failed'); }
+    catch (err) { 
+      handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
+    }
   };
 
   return (
     <div className="space-y-10 pb-24">
-      <div className="flex justify-between items-end">
-        <div>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 pl-1">Menu Management</p>
-          <h1 className="text-4xl font-bold text-bento-primary tracking-tight">Designer</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate('/admin')}
+            className="p-3 bg-stone-100 dark:bg-stone-800 rounded-2xl text-stone-500 hover:text-bento-primary transition-colors"
+            title="Back to Dashboard"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <div>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 pl-1">Menu Management</p>
+            <h1 className="text-4xl font-bold text-bento-primary tracking-tight">Designer</h1>
+          </div>
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="bg-bento-primary text-white p-4 rounded-2xl flex items-center gap-2 hover:bg-bento-ink transition-all shadow-lg active:scale-95"
-        >
-          <Plus size={20} /> <span className="font-bold uppercase tracking-widest text-xs">Add Item</span>
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => {
+              sessionStorage.removeItem('admin_mode');
+              if (auth.currentUser?.email?.toLowerCase() !== 'dragonballsam86@gmail.com') {
+                navigate('/admin/login');
+              } else {
+                navigate('/admin');
+              }
+              toast.success('Exited designer view');
+            }}
+            className="bg-stone-50 dark:bg-stone-900 text-stone-400 p-4 rounded-2xl flex items-center gap-2 hover:text-red-500 transition-all border border-stone-100 dark:border-white/5 shadow-sm active:scale-95"
+            title="Log out of Section"
+          >
+            <LogOut size={20} /> <span className="font-bold uppercase tracking-widest text-[10px]">Exit Section</span>
+          </button>
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="bg-bento-primary text-white p-4 rounded-2xl flex items-center gap-2 hover:bg-bento-ink transition-all shadow-lg active:scale-95"
+          >
+            <Plus size={20} /> <span className="font-bold uppercase tracking-widest text-xs">Add Item</span>
+          </button>
+        </div>
       </div>
 
       {isAdding && (
