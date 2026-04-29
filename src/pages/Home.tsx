@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { Product, Category, UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRef } from 'react';
-import { Plus, Search, Star, MapPin, Coffee, ChevronLeft, ChevronRight, Award } from 'lucide-react';
+import { Plus, Search, Star, MapPin, Coffee, ChevronLeft, ChevronRight, Award, Utensils, Croissant, Cake, Pizza, Cookie, GlassWater } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useNavigate } from 'react-router-dom';
@@ -145,7 +145,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   if (loading) return <div className="text-center py-20 italic text-stone-400">...</div>;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 relative">
       {/* Admin Setup Warning */}
       {isEmpty && isAdmin && (
         <div className="card !bg-amber-100 !border-amber-200 !p-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -206,15 +206,15 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
       {/* Trust Elements - Bento Style */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card !p-5 bg-bento-card-bg border-dashed">
+        <div className="card !p-5 bg-bento-card-bg/60 border-dashed">
           <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Verified Local Favorite"</p>
           <p className="text-sm font-bold text-bento-primary leading-tight">"Great experience, friendly staff and relaxing atmosphere."</p>
         </div>
-        <div className="card !p-5 bg-bento-card-bg border-dashed">
+        <div className="card !p-5 bg-bento-card-bg/60 border-dashed">
           <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Best Breakfast in Salé"</p>
           <p className="text-sm font-bold text-bento-primary leading-tight">"The breakfast sets are high quality and coffee is perfect every time."</p>
         </div>
-        <div className="card !p-5 bg-bento-card-bg border-dashed">
+        <div className="card !p-5 bg-bento-card-bg/60 border-dashed">
           <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Community Hub"</p>
           <p className="text-sm font-bold text-bento-primary leading-tight">"Clean, modern and perfect for watching games with friends."</p>
         </div>
@@ -228,7 +228,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           placeholder="Explore our menu..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className={`w-full bg-bento-card-bg border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300 dark:placeholder:text-stone-600`}
+          className={`w-full bg-bento-card-bg/60 backdrop-blur-lg border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300 dark:placeholder:text-stone-600`}
         />
       </div>
 
@@ -252,7 +252,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             className={`category-btn whitespace-nowrap ${
               selectedCategory === 'all' 
               ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10' 
-              : 'bg-bento-card-bg text-bento-ink'
+              : 'bg-bento-card-bg/60 text-bento-ink'
             }`}
           >
             {t('menu')}
@@ -276,7 +276,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               className={`category-btn whitespace-nowrap transition-all ${
                 selectedCategory === cat.id 
                 ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10 scale-105' 
-                : 'bg-bento-card-bg text-bento-ink hover:bg-stone-50 dark:hover:bg-stone-900'
+                : 'bg-bento-card-bg/60 text-bento-ink hover:bg-stone-50 dark:hover:bg-stone-900'
               }`}
             >
               {getTranslatedCategory(cat.name)}
@@ -314,9 +314,20 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               className="space-y-6"
             >
               <div className="flex items-center gap-4">
-                <h2 className="text-xl font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">
-                  {getTranslatedCategory(cat.name)}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                    {cat.name.toLowerCase().includes('drink') || cat.name.toLowerCase().includes('coffee') ? (
+                      <Coffee size={16} className="text-amber-600" />
+                    ) : cat.name.toLowerCase().includes('dessert') || cat.name.toLowerCase().includes('cake') ? (
+                      <Cake size={16} className="text-amber-600" />
+                    ) : (
+                      <Utensils size={16} className="text-amber-600" />
+                    )}
+                  </div>
+                  <h2 className="text-xl font-black text-stone-300 dark:text-stone-700 uppercase tracking-[0.4em] whitespace-nowrap pl-1">
+                    {getTranslatedCategory(cat.name)}
+                  </h2>
+                </div>
                 <div className="h-px bg-stone-100 dark:bg-white/5 w-full" />
               </div>
 

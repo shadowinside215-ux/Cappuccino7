@@ -10,7 +10,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { useBrandSettings } from '../lib/brand';
 import { useNavigate } from 'react-router-dom';
-import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft, Utensils, Croissant, Cake, Pizza, Cookie } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
 
@@ -148,7 +148,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col items-center justify-center px-6 max-w-md mx-auto">
+    <div className="min-h-[85vh] flex flex-col items-center justify-center px-6 max-w-md mx-auto relative">
       <AnimatePresence mode="wait">
         {mode === 'initial' ? (
           <motion.div 
@@ -158,7 +158,10 @@ export default function Login() {
             exit={{ opacity: 0, y: -20 }}
             className="w-full space-y-8 flex flex-col items-center"
           >
-            <div className="w-28 h-28 bg-white rounded-full overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 border-2 border-stone-50">
+            <div className="w-28 h-28 bg-white rounded-full overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 border-2 border-stone-50 relative group">
+              <div className="absolute -top-2 -right-2 text-amber-500 rotate-12 transition-transform group-hover:scale-125 z-10">
+                <Coffee size={24} />
+              </div>
               <img 
                 src={brand.logoUrl} 
                 alt="Cappuccino7 Logo" 
@@ -170,7 +173,10 @@ export default function Login() {
               />
             </div>
             
-            <div className="text-center space-y-3">
+            <div className="text-center space-y-3 relative">
+              <div className="absolute -top-6 -right-6 text-amber-500/10 rotate-12">
+                <Utensils size={40} />
+              </div>
               <h1 className="text-4xl font-black text-stone-900 tracking-tight italic uppercase">Cappuccino7</h1>
               <p className="text-stone-500 font-medium leading-relaxed">
                 Premium coffee, shared moments. <br />

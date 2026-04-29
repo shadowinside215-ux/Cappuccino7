@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
 import { auth, db } from './lib/firebase';
-import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon } from 'lucide-react';
+import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon, Utensils, Croissant, Cake, Pizza, Cookie } from 'lucide-react';
 import { useBrandSettings } from './lib/brand';
 import { UserProfile } from './types';
+import { BackgroundIcons } from './components/BackgroundIcons';
 
 // Pages
 import Home from './pages/Home';
@@ -112,10 +113,21 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bento-bg">
-        <div className="animate-spin text-bento-primary">
-          <Coffee size={40} />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bento-bg relative overflow-hidden">
+        <div className="absolute top-20 -left-10 text-stone-100 dark:text-white/5 -z-10 rotate-12">
+          <Coffee size={240} strokeWidth={0.5} />
         </div>
+        <div className="absolute bottom-20 -right-10 text-stone-100 dark:text-white/5 -z-10 -rotate-12">
+          <Croissant size={200} strokeWidth={0.5} />
+        </div>
+        
+        <div className="relative group">
+          <div className="absolute inset-0 bg-bento-primary/10 blur-3xl rounded-full scale-150 animate-pulse" />
+          <div className="animate-spin text-bento-primary relative">
+            <Coffee size={48} strokeWidth={2.5} />
+          </div>
+        </div>
+        <p className="mt-8 text-[10px] font-black uppercase tracking-[0.4em] text-stone-400 animate-pulse">Brewing your experience</p>
       </div>
     );
   }
@@ -124,13 +136,15 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const isAdmin = userProfile?.isAdmin || isCreator;
 
   return (
-    <div className="min-h-screen bg-bento-bg pb-24 sm:pb-0 sm:pt-20">
-      <Toaster position="top-center" />
+    <div className="min-h-screen relative overflow-hidden isolate">
+      <BackgroundIcons />
+      <div className="relative z-10 w-full min-h-screen flex flex-col no-scrollbar">
+        <Toaster position="top-center" />
       
       {/* Universal Header - Responsive */}
-      <header className="fixed top-0 left-0 right-0 bg-bento-card-bg/90 backdrop-blur-xl border-b border-stone-100 dark:border-white/5 z-[60] py-4 px-6">
+      <header className="fixed top-0 left-0 right-0 bg-bento-card-bg/60 backdrop-blur-xl border-b border-stone-100 dark:border-white/5 z-[60] py-4 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
+          <Link to="/" className="flex items-center gap-3 relative" onClick={() => setIsMenuOpen(false)}>
             <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-100 dark:border-white/5 shadow-sm bg-white">
               <img 
                 src={brand.logoUrl} 
@@ -139,6 +153,9 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               />
             </div>
             <span className="text-lg sm:text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
+            <div className="absolute -top-2 -right-6 text-amber-500/20 rotate-12 animate-pulse hidden sm:block">
+              <Coffee size={16} />
+            </div>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -231,10 +248,26 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed inset-0 z-[70] bg-bento-bg flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
+            className="fixed inset-0 z-[70] bg-bento-bg flex flex-col p-8 lg:hidden overflow-y-auto pt-24 relative overflow-hidden"
           >
-            <div className="flex justify-between items-center mb-12">
-              <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
+            {/* Menu Decorative Background */}
+            <div className="absolute top-40 -left-10 text-stone-100 dark:text-white/5 -z-10 rotate-12 opacity-50">
+              <Coffee size={200} strokeWidth={0.5} />
+            </div>
+            <div className="absolute top-2/3 -right-20 text-stone-100 dark:text-white/5 -z-10 -rotate-12 opacity-50">
+              <Pizza size={240} strokeWidth={0.5} />
+            </div>
+            <div className="absolute bottom-10 left-10 text-stone-100 dark:text-white/5 -z-10 rotate-45 opacity-30">
+              <Utensils size={100} strokeWidth={0.5} />
+            </div>
+            <div className="flex justify-between items-center mb-12 relative">
+              <div className="absolute -top-8 -left-8 text-amber-600/10 rotate-12">
+                <Cake size={60} />
+              </div>
+              <div className="absolute top-0 right-10 text-stone-400/5 -rotate-12">
+                <Pizza size={40} />
+              </div>
+              <Link to="/" className="flex items-center gap-3 z-10" onClick={() => setIsMenuOpen(false)}>
                 <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
                   <img 
                     src={brand.logoUrl} 
@@ -310,7 +343,18 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
-      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 no-scrollbar`}>
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 no-scrollbar relative`}>
+        {/* Context-aware floating icons for the main area */}
+        <div className="absolute -top-4 -right-4 text-amber-500/10 rotate-12 pointer-events-none hidden lg:block">
+          <Coffee size={120} strokeWidth={0.5} />
+        </div>
+        <div className="absolute -bottom-8 -left-8 text-stone-400/10 -rotate-12 pointer-events-none hidden lg:block">
+          <Utensils size={100} strokeWidth={0.5} />
+        </div>
+        <div className="absolute top-1/2 -right-8 text-stone-300/5 rotate-45 pointer-events-none hidden xl:block">
+          <Croissant size={80} strokeWidth={0.5} />
+        </div>
+        
         <Routes>
           <Route path="/" element={user ? <Home userProfile={userProfile} /> : <Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
@@ -339,6 +383,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           </Link>
         </footer>
       )}
+      </div>
     </div>
   );
 }
