@@ -180,7 +180,7 @@ export default function Login() {
               <h1 className="text-4xl font-black text-stone-900 tracking-tight italic uppercase">Cappuccino7</h1>
               <p className="text-stone-500 font-medium leading-relaxed">
                 Premium coffee, shared moments. <br />
-                Login to earn ☕ rewards.
+                Login to access your favorites.
               </p>
             </div>
 
@@ -241,7 +241,7 @@ export default function Login() {
                 {mode === 'email-login' ? 'Login' : 'Create Account'}
               </h2>
               <p className="text-stone-400 text-sm font-medium">
-                {mode === 'email-login' ? 'Enter your credentials to continue.' : 'Join the club and start earning points.'}
+                {mode === 'email-login' ? 'Enter your credentials to continue.' : 'Create an account to track your orders.'}
               </p>
             </div>
 
