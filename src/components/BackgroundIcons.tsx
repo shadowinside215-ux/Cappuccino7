@@ -2,15 +2,15 @@ import React from 'react';
 import { Coffee, Utensils, Croissant, Cake, Pizza, Cookie, Soup, GlassWater, Cherry, IceCream } from 'lucide-react';
 
 const icons = [
-  // Top Section
-  { Icon: Coffee, t: '2%', l: '5%', r: '12deg', s: 48, c: 'text-amber-500/20 dark:text-amber-400/30' },
-  { Icon: Croissant, t: '4%', l: '25%', r: '-15deg', s: 52, c: 'text-stone-400/20 dark:text-stone-300/20' },
-  { Icon: Pizza, t: '7%', l: '45%', r: '30deg', s: 64, c: 'text-orange-500/20 dark:text-orange-400/20' },
-  { Icon: Cake, t: '3%', l: '65%', r: '-20deg', s: 44, c: 'text-rose-400/20 dark:text-rose-300/20' },
-  { Icon: GlassWater, t: '8%', l: '85%', r: '10deg', s: 38, c: 'text-blue-400/20 dark:text-blue-300/20' },
-  { Icon: Cookie, t: '12%', l: '15%', r: '45deg', s: 40, c: 'text-amber-600/20 dark:text-amber-500/20' },
-  { Icon: Soup, t: '5%', l: '75%', r: '15deg', s: 42, c: 'text-stone-300/20 dark:text-stone-400/20' },
-  { Icon: Cherry, t: '10%', l: '35%', r: '-45deg', s: 28, c: 'text-red-400/20 dark:text-red-300/20' },
+  // Optimization: Reduce icon count and use simpler transforms
+  { Icon: Coffee, t: '2%', l: '5%', r: '12deg', s: 48, c: 'text-amber-500/10 dark:text-amber-400/20' },
+  { Icon: Croissant, t: '4%', l: '25%', r: '-15deg', s: 52, c: 'text-stone-400/10 dark:text-stone-300/10' },
+  { Icon: Pizza, t: '7%', l: '45%', r: '30deg', s: 64, c: 'text-orange-500/10 dark:text-orange-400/10' },
+  { Icon: Cake, t: '3%', l: '65%', r: '-20deg', s: 44, c: 'text-rose-400/10 dark:text-rose-300/10' },
+  { Icon: GlassWater, t: '8%', l: '85%', r: '10deg', s: 38, c: 'text-blue-400/10 dark:text-blue-300/10' },
+  { Icon: Cookie, t: '12%', l: '15%', r: '45deg', s: 40, c: 'text-amber-600/10 dark:text-amber-500/10' },
+  { Icon: Soup, t: '5%', l: '75%', r: '15deg', s: 42, c: 'text-stone-300/10 dark:text-stone-400/10' },
+  { Icon: Cherry, t: '10%', l: '35%', r: '-45deg', s: 28, c: 'text-red-400/10 dark:text-red-300/10' },
   { Icon: Croissant, t: '1%', l: '90%', r: '15deg', s: 34, c: 'text-stone-200/20' },
   { Icon: Pizza, t: '15%', l: '10%', r: '-25deg', s: 48, c: 'text-orange-300/20' },
   
@@ -84,19 +84,22 @@ export const BackgroundIcons = () => {
       id="bg-icons-container"
     >
       <div className="absolute inset-0">
-        {[...icons, ...icons, ...icons, ...icons, ...icons, ...icons, ...icons, ...icons, ...icons, ...icons].map((item, index) => (
+        {[...icons, ...icons, ...icons, ...icons, ...icons].map((item, index) => (
           <div
             key={index}
-            className={`absolute ${item.c} animate-breathe blur-[0.5px]`}
+            className={`absolute ${item.c} animate-breathe will-change-transform`}
             style={{
-              top: `${(index * 1.05) % 100}%`,
-              left: `${(index * 11.3 + (index % 7) * 1.5) % 100}%`,
-              transform: `rotate(${item.r || (index * 45) + 'deg'})`,
-              animationDelay: `${index * 0.2}s`,
-              animationDuration: `${7 + (index % 5)}s`
+              top: `${(index * 2.8) % 100}%`,
+              left: `${(index * 13.7 + (index % 11) * 3.2) % 96}%`,
+              animationDelay: `${index * 0.4}s`,
+              animationDuration: `${12 + (index % 8)}s`,
+              filter: `drop-shadow(0 0 8px currentColor)`,
+              opacity: 0.15
             }}
           >
-            <item.Icon size={item.s || 32} strokeWidth={1.5} />
+            <div style={{ transform: `rotate(${item.r || (index * 60) + 'deg'})` }}>
+              <item.Icon size={item.s || 32} strokeWidth={1.2} />
+            </div>
           </div>
         ))}
       </div>

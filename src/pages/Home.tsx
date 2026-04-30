@@ -335,10 +335,9 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12 pb-32">
                 {searchFiltered.map((product) => (
-                  <motion.div
-                    layout
+                  <div
                     key={product.id}
-                    className="group flex flex-col bg-[#0D0B0A] hover:bg-[#151210] transition-all duration-500 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 max-w-[360px]"
+                    className="group flex flex-col bg-[#0D0B0A] hover:bg-[#151210] transition-all duration-500 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 max-w-[360px] will-change-transform"
                   >
                     <div className="w-full aspect-[4/3] relative overflow-hidden shrink-0">
                       <img
@@ -346,6 +345,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                         referrerPolicy="no-referrer"
+                        loading="lazy"
                       />
                       <div className="absolute top-6 right-6">
                         <div className="bg-[#1A120B]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-black text-white shadow-2xl border border-white/10 uppercase tracking-widest">
@@ -385,7 +385,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         ADD TO ORDER
                       </button>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </motion.section>

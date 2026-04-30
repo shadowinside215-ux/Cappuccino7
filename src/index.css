@@ -42,10 +42,15 @@
 
   html, body {
     @apply overflow-x-hidden w-full transition-colors duration-300;
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   body {
     @apply font-sans bg-bento-bg text-bento-ink selection:bg-bento-accent/30 min-h-screen;
+    overscroll-behavior-y: none;
   }
 
   /* Breathing animation */

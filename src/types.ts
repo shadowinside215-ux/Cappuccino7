@@ -47,6 +47,7 @@ export interface Order {
     lat: number;
     lng: number;
   };
+  pointsEarned?: number;
   createdAt: any; // Firestore Timestamp
 }
 
