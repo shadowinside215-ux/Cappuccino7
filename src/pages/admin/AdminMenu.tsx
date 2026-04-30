@@ -2,7 +2,7 @@ import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { Product, Category } from '../../types';
-import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut, Coffee, Utensils, Croissant, Cake, Pizza, Cookie } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -252,8 +252,8 @@ export default function AdminMenu() {
   };
 
   return (
-    <div className="space-y-10 pb-24 relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 relative">
+    <div className="space-y-10 pb-24">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/admin')}

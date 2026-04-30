@@ -23,54 +23,29 @@
 
 @layer base {
   :root {
-    --bento-bg: #FFFFFF;
+    --bento-bg: #F5F2ED;
     --bento-ink: #2D241E;
     --bento-primary: #5A3E2B;
     --bento-accent: #D4A373;
     --bento-card-bg: #FFFFFF;
-    --bento-card-border: #E5E7EB;
+    --bento-card-border: rgba(90, 62, 43, 0.1);
   }
 
   .dark {
-    --bento-bg: #000000; /* Pure black */
+    --bento-bg: #000000; /* Black */
     --bento-ink: #F5F2ED; /* Off-white for readability */
     --bento-primary: #D4A373; /* Using accent as primary in dark for better visibility */
     --bento-accent: #B08D74; 
-    --bento-card-bg: #111111; /* Very dark grey card */
-    --bento-card-border: #1F2937;
+    --bento-card-bg: #1A120B; /* Dark brown */
+    --bento-card-border: rgba(212, 163, 115, 0.15);
   }
 
   html, body {
     @apply overflow-x-hidden w-full transition-colors duration-300;
-    scroll-behavior: smooth;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
   
   body {
-    @apply font-sans bg-bento-bg text-bento-ink selection:bg-bento-accent/30 min-h-screen;
-    overscroll-behavior-y: none;
-  }
-
-  /* Breathing animation */
-  @keyframes breathe {
-    0%, 100% { 
-      opacity: 0.3; 
-      transform: scale(1) translateY(0); 
-      rotate: 0deg;
-      filter: drop-shadow(0 0 0px currentColor);
-    }
-    50% { 
-      opacity: 0.7; 
-      transform: scale(1.2) translateY(-15px); 
-      rotate: 5deg;
-      filter: drop-shadow(0 0 15px currentColor);
-    }
-  }
-
-  .animate-breathe {
-    animation: breathe 8s ease-in-out infinite;
+    @apply font-sans bg-bento-bg text-bento-ink selection:bg-bento-accent/30;
   }
   
   h1, h2, h3, h4, .font-serif {
@@ -79,19 +54,19 @@
 }
 
 .card {
-  @apply bg-white/70 dark:bg-stone-900/40 backdrop-blur-3xl border border-bento-card-border/50 rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-6 flex flex-col transition-all duration-300;
+  @apply bg-bento-card-bg border border-bento-card-border rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-6 flex flex-col transition-all duration-300;
 }
 
 .accent-card {
-  @apply bg-bento-primary/90 backdrop-blur-lg text-bento-bg border-0;
+  @apply bg-bento-primary text-bento-bg border-0;
 }
 
 .status-pill {
-  @apply bg-[#E8F5E9]/80 backdrop-blur-sm text-[#2E7D32] px-3 py-1 rounded-xl text-xs font-semibold uppercase tracking-wider;
+  @apply bg-[#E8F5E9] text-[#2E7D32] px-3 py-1 rounded-xl text-xs font-semibold uppercase tracking-wider;
 }
 
 .category-btn {
-  @apply bg-bento-card-bg/40 backdrop-blur-md border border-bento-primary rounded-full px-4 py-1.5 text-sm transition-all duration-200 hover:bg-bento-primary hover:text-white cursor-pointer;
+  @apply border border-bento-primary rounded-full px-4 py-1.5 text-sm transition-all duration-200 hover:bg-bento-primary hover:text-white cursor-pointer;
 }
 
 .progress-bar {

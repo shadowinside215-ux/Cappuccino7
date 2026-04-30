@@ -92,29 +92,29 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile Info Card */}
-        <div className="card flex flex-col items-center justify-center py-10 !bg-bento-card-bg">
+        <div className="card md:col-span-1 flex flex-col items-center justify-center py-10 !bg-white">
           <div className="w-20 h-20 bg-bento-primary rounded-[2rem] flex items-center justify-center text-white text-2xl font-black mb-6 shadow-xl shadow-bento-primary/10">
             {userProfile.name.charAt(0).toUpperCase()}
           </div>
           <h2 className="text-2xl font-black text-bento-ink mb-1">{userProfile.name}</h2>
-          <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mb-4">{t('premium_customer')}</p>
+          <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mb-8">{t('premium_customer')}</p>
           
-          <div className="w-full pt-6 border-t border-stone-50 dark:border-white/5 flex justify-around">
+          <div className="w-full pt-8 border-t border-stone-50 flex justify-around">
             <div className="text-center">
-              <p className="text-[9px] font-black text-stone-300 dark:text-stone-700 uppercase tracking-widest mb-1">{t('total_points')}</p>
+              <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1">{t('total_points')}</p>
               <p className="text-xl font-black text-bento-primary">{userProfile.points}</p>
             </div>
             <div className="text-center">
-              <p className="text-[9px] font-black text-stone-300 dark:text-stone-700 uppercase tracking-widest mb-1">{t('status')}</p>
+              <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1">{t('status')}</p>
               <p className="text-xl font-black text-bento-accent">Gold</p>
             </div>
           </div>
         </div>
 
-        {/* Global Coffee Loyalty */}
-        <div className="card accent-card !bg-amber-900 overflow-hidden relative flex flex-col justify-center p-10">
+        {/* Global Coffee Loyalty (legacy or main highlight) */}
+        <div className="card md:col-span-2 accent-card !bg-amber-900 overflow-hidden relative">
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-white/10 rounded-2xl">
@@ -123,9 +123,9 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
               <h3 className="text-xl font-bold">Cappuccino7 Coffee Club</h3>
             </div>
             <div className="flex items-end gap-6">
-              <p className="text-6xl font-black text-white">{userProfile.coffeeCount || 0}</p>
+              <p className="text-6xl font-black">{userProfile.coffeeCount || 0}</p>
               <div className="mb-2">
-                <p className="text-xs text-white/70 font-medium">{t('total_artisan')}</p>
+                <p className="text-xs opacity-70 font-medium">{t('total_artisan')}</p>
                 <div className="flex gap-1 mt-2">
                    {[...Array(5)].map((_, i) => (
                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400' : 'bg-white/20'}`} />
@@ -134,18 +134,23 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
               </div>
             </div>
           </div>
-          <Coffee size={140} className="absolute -right-8 -bottom-8 opacity-10 -rotate-12 text-white" />
+          <Coffee size={120} className="absolute -right-8 -bottom-8 opacity-5 -rotate-12" />
         </div>
       </div>
 
       {/* Item-Specific Loyalty Rewards */}
-      <div className="space-y-6 pt-8">
+      <div className="space-y-6">
         <div className="flex items-center gap-4">
           <h2 className="text-xs font-black text-stone-300 uppercase tracking-[0.4em] pl-1">{t('specific_rewards')}</h2>
-          <div className="h-px bg-stone-100 flex-1 dark:bg-white/5" />
+          <div className="h-px bg-stone-100 flex-1" />
         </div>
 
-        {loyaltyProducts.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20 text-stone-400 gap-2">
+            <Loader2 className="animate-spin" size={20} />
+            <span className="text-sm font-medium">{t('auth_loyalty')}</span>
+          </div>
+        ) : loyaltyProducts.length === 0 ? (
           <div className="card !py-16 text-center border-dashed">
             <p className="text-stone-400 font-bold italic mb-2 text-sm">{t('loyalty_info')}</p>
             <p className="text-[10px] text-stone-300 uppercase tracking-widest">{t('loyalty_start')}</p>
@@ -154,11 +159,12 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {loyaltyProducts.map(product => {
               const count = userProfile.itemLoyalty?.[product.id] || 0;
+              const progress = count % 11;
               const rewardReady = count >= 11;
 
               return (
                 <div key={product.id} className="card !p-6 flex items-center gap-6 group hover:border-bento-primary/10 transition-all">
-                  <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden flex-shrink-0 ring-4 ring-stone-50 dark:ring-stone-900">
+                  <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden flex-shrink-0 ring-4 ring-stone-50">
                     <img src={product.image} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -176,20 +182,23 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                           className={`flex-1 rounded-full transition-all ${
                             i < (rewardReady ? 11 : count % 11) 
                             ? 'bg-bento-primary' 
-                            : 'bg-stone-100 dark:bg-white/10'
+                            : 'bg-stone-100'
                           }`} 
                         />
                       ))}
                     </div>
                   </div>
+                  {rewardReady && (
+                    <div className="p-3 bg-bento-accent rounded-2xl text-bento-primary animate-pulse">
+                      <Gift size={20} />
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
-
-
 
       {userProfile.isAdmin && (
         <div className="pt-8">

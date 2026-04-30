@@ -7,10 +7,9 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
 import { auth, db } from './lib/firebase';
-import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon, Utensils, Croissant, Cake, Pizza, Cookie } from 'lucide-react';
+import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon } from 'lucide-react';
 import { useBrandSettings } from './lib/brand';
 import { UserProfile } from './types';
-import { BackgroundIcons } from './components/BackgroundIcons';
 
 // Pages
 import Home from './pages/Home';
@@ -64,19 +63,25 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   if (location.pathname === '/login') return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#0D0B0A] border-t border-white/5 px-4 py-4 z-[50] lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-bento-card-bg border-t border-stone-100 dark:border-white/5 px-4 py-3 z-[50] lg:hidden">
       <div className="max-w-4xl mx-auto flex justify-around items-center">
-        <Link to="/" className={`flex flex-col items-center gap-1 transition-all ${location.pathname === '/' ? 'text-[#D4A373]' : 'text-stone-500 hover:text-stone-300'}`}>
-          <Coffee size={28} strokeWidth={3} />
-          <span className="text-[10px] font-black uppercase tracking-[0.1em]">{t('menu')}</span>
+        <Link to="/" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/' ? 'text-bento-primary' : 'text-stone-400'}`}>
+          <Coffee size={24} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
+          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('menu')}</span>
         </Link>
-        <Link to="/cart" className={`flex flex-col items-center gap-1 transition-all relative ${location.pathname === '/cart' ? 'text-[#D4A373]' : 'text-stone-500 hover:text-stone-300'}`}>
-          <ShoppingCart size={28} strokeWidth={3} />
-          <span className="text-[10px] font-black uppercase tracking-[0.1em]">{t('cart')}</span>
+        <Link to="/cart" className={`flex flex-col items-center p-2 transition-colors relative ${location.pathname === '/cart' ? 'text-bento-primary' : 'text-stone-400'}`}>
+          <ShoppingCart size={24} strokeWidth={location.pathname === '/cart' ? 2.5 : 2} />
+          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('cart')}</span>
         </Link>
-        <Link to="/profile" className={`flex flex-col items-center gap-1 transition-all ${location.pathname === '/profile' ? 'text-[#D4A373]' : 'text-stone-500 hover:text-stone-300'}`}>
-          <UserIcon size={28} strokeWidth={3} />
-          <span className="text-[10px] font-black uppercase tracking-[0.1em]">{t('profile')}</span>
+        {auth.currentUser && !auth.currentUser.isAnonymous && (
+          <Link to="/orders" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/orders' ? 'text-bento-primary' : 'text-stone-400'}`}>
+            <ListOrdered size={24} strokeWidth={location.pathname === '/orders' ? 2.5 : 2} />
+            <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('orders')}</span>
+          </Link>
+        )}
+        <Link to="/profile" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/profile' ? 'text-bento-primary' : 'text-stone-400'}`}>
+          <UserIcon size={24} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} />
+          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('profile')}</span>
         </Link>
       </div>
     </nav>
@@ -105,31 +110,12 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  useEffect(() => {
-    if (isMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-  }, [isMenuOpen]);
-
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bento-bg relative overflow-hidden">
-        <div className="absolute top-20 -left-10 text-stone-100 dark:text-white/5 -z-10 rotate-12">
-          <Coffee size={240} strokeWidth={0.5} />
+      <div className="min-h-screen flex items-center justify-center bg-bento-bg">
+        <div className="animate-spin text-bento-primary">
+          <Coffee size={40} />
         </div>
-        <div className="absolute bottom-20 -right-10 text-stone-100 dark:text-white/5 -z-10 -rotate-12">
-          <Croissant size={200} strokeWidth={0.5} />
-        </div>
-        
-        <div className="relative group">
-          <div className="absolute inset-0 bg-bento-primary/10 blur-3xl rounded-full scale-150 animate-pulse" />
-          <div className="animate-spin text-bento-primary relative">
-            <Coffee size={48} strokeWidth={2.5} />
-          </div>
-        </div>
-        <p className="mt-8 text-[10px] font-black uppercase tracking-[0.4em] text-stone-400 animate-pulse">Brewing your experience</p>
       </div>
     );
   }
@@ -138,16 +124,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const isAdmin = userProfile?.isAdmin || isCreator;
 
   return (
-    <div className="min-h-screen relative overflow-hidden isolate bg-bento-bg text-bento-ink transition-colors duration-1000">
-      <BackgroundIcons />
-      <div className="relative z-10 w-full min-h-screen flex flex-col no-scrollbar bg-transparent">
-        <Toaster position="top-center" />
+    <div className="min-h-screen bg-bento-bg pb-24 sm:pb-0 sm:pt-20">
+      <Toaster position="top-center" />
       
       {/* Universal Header - Responsive */}
-      <header className="fixed top-0 left-0 right-0 bg-bento-card-bg/60 backdrop-blur-xl border-b border-stone-100 dark:border-white/5 z-[60] py-4 px-6">
+      <header className="fixed top-0 left-0 right-0 bg-bento-card-bg/90 backdrop-blur-xl border-b border-stone-100 dark:border-white/5 z-[60] py-4 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-3 relative" onClick={() => setIsMenuOpen(false)}>
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-100 dark:border-white/5 shadow-sm bg-stone-50 dark:bg-stone-900">
+          <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-100 dark:border-white/5 shadow-sm bg-white">
               <img 
                 src={brand.logoUrl} 
                 alt="Logo" 
@@ -155,9 +139,6 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               />
             </div>
             <span className="text-lg sm:text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
-            <div className="absolute -top-2 -right-6 text-amber-500/20 rotate-12 animate-pulse hidden sm:block">
-              <Coffee size={16} />
-            </div>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -191,14 +172,13 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               )}
             </div>
 
-
             {/* Points Summary for logged in users */}
-            {userProfile && (
+            {userProfile ? (
               <div className="hidden lg:flex gap-3">
                 {userProfile.coffeeCount !== undefined && (
-                  <div className="bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100 dark:bg-amber-900/10 dark:border-amber-900/20">
+                  <div className="bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100">
                     <Coffee size={14} className="text-amber-700" />
-                    <span className="text-[10px] font-black text-amber-900 dark:text-amber-200 leading-none">{userProfile.coffeeCount}/10</span>
+                    <span className="text-[10px] font-black text-amber-900 leading-none">{userProfile.coffeeCount}/10</span>
                   </div>
                 )}
                 <div className="bg-bento-card-bg px-3 py-1.5 rounded-xl flex items-center gap-2 border border-stone-100 dark:border-white/5">
@@ -206,6 +186,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <span className="text-[10px] font-black text-bento-primary leading-none">{userProfile.points} {t('reward_points')}</span>
                 </div>
               </div>
+            ) : (
+              <Link 
+                to="/login"
+                className="hidden lg:flex items-center gap-2 bg-amber-50 text-amber-900 px-4 py-2 rounded-xl border border-amber-100 hover:bg-amber-100 transition-colors"
+              >
+                <Award size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest leading-none">Login for Rewards</span>
+              </Link>
             )}
 
             {/* Desktop Language Switcher - Compact */}
@@ -240,31 +228,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-white dark:bg-black overflow-y-auto no-scrollbar"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="fixed inset-0 z-[70] bg-bento-bg flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
           >
-            <div className="min-h-screen flex flex-col p-8 pt-24 relative overflow-hidden">
-            {/* Menu Decorative Background */}
-            <div className="absolute top-40 -left-10 text-stone-100 dark:text-white/5 -z-10 rotate-12 opacity-50">
-              <Coffee size={200} strokeWidth={0.5} />
-            </div>
-            <div className="absolute top-2/3 -right-20 text-stone-100 dark:text-white/5 -z-10 -rotate-12 opacity-50">
-              <Pizza size={240} strokeWidth={0.5} />
-            </div>
-            <div className="absolute bottom-10 left-10 text-stone-100 dark:text-white/5 -z-10 rotate-45 opacity-30">
-              <Utensils size={100} strokeWidth={0.5} />
-            </div>
-            <div className="flex justify-between items-center mb-12 relative">
-              <div className="absolute -top-8 -left-8 text-amber-600/10 rotate-12">
-                <Cake size={60} />
-              </div>
-              <div className="absolute top-0 right-10 text-stone-400/5 -rotate-12">
-                <Pizza size={40} />
-              </div>
-              <Link to="/" className="flex items-center gap-3 z-10" onClick={() => setIsMenuOpen(false)}>
-                <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-stone-50 dark:bg-stone-900">
+            <div className="flex justify-between items-center mb-12">
+              <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
+                <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
                   <img 
                     src={brand.logoUrl} 
                     alt="Logo" 
@@ -303,42 +274,43 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               )}
             </div>
 
-            {/* Mobile Overlay Menu Footer */}
-            <div className="mt-8 pt-8 space-y-4">
-               {userProfile && (
-                 <div className="p-6 bg-bento-primary rounded-[32px] text-white flex items-center justify-between">
-                   <div>
-                     <p className="text-[9px] font-bold text-white/50 uppercase tracking-[0.2em] mb-1">Your Rewards</p>
-                     <p className="text-xl font-black">{userProfile.points} Points</p>
-                   </div>
-                   <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                     <Award size={24} className="text-bento-accent" />
-                   </div>
-                 </div>
-               )}
-               <div className="bg-bento-primary/5 rounded-[32px] p-8 text-center border border-bento-primary/10">
-                  <p className="text-sm font-bold text-bento-primary mb-1 italic">"The Best artisan coffee in town"</p>
-                  <p className="text-[10px] text-stone-400 uppercase tracking-widest">Visit us in Salé, Palace Taha</p>
-               </div>
+            <div className="mt-8 pt-8 border-t border-stone-100">
+              <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest mb-4">Choose Language</p>
+              <div className="grid grid-cols-3 gap-3">
+                {['en', 'fr', 'ar'].map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => changeLanguage(lang)}
+                    className={`py-4 rounded-2xl text-xs font-black uppercase transition-all flex flex-col items-center gap-2 border ${
+                      i18n.language === lang 
+                      ? 'bg-bento-primary text-white border-bento-primary shadow-lg' 
+                      : 'bg-stone-50 text-stone-400 border-stone-100'
+                    }`}
+                  >
+                    <Languages size={18} />
+                    {lang === 'ar' ? 'عربي' : lang.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+
+            {userProfile && (
+              <div className="mt-8 p-6 bg-bento-primary rounded-[32px] text-white flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] font-bold text-white/50 uppercase tracking-[0.2em] mb-1">Your Rewards</p>
+                  <p className="text-xl font-black">{userProfile.points} Points</p>
+                </div>
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                  <Award size={24} className="text-bento-accent" />
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
-      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 no-scrollbar relative`}>
-        {/* Context-aware floating icons for the main area */}
-        <div className="absolute -top-4 -right-4 text-amber-500/10 rotate-12 pointer-events-none hidden lg:block">
-          <Coffee size={120} strokeWidth={0.5} />
-        </div>
-        <div className="absolute -bottom-8 -left-8 text-stone-400/10 -rotate-12 pointer-events-none hidden lg:block">
-          <Utensils size={100} strokeWidth={0.5} />
-        </div>
-        <div className="absolute top-1/2 -right-8 text-stone-300/5 rotate-45 pointer-events-none hidden xl:block">
-          <Croissant size={80} strokeWidth={0.5} />
-        </div>
-        
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 no-scrollbar`}>
         <Routes>
           <Route path="/" element={user ? <Home userProfile={userProfile} /> : <Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
@@ -367,7 +339,6 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           </Link>
         </footer>
       )}
-      </div>
     </div>
   );
 }

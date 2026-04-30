@@ -57,10 +57,11 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
     setLoading(true);
     try {
       const pointsEarned = totalItems;
-      const isGuest = auth.currentUser?.isAnonymous;
+      const isGuest = auth.currentUser.isAnonymous;
 
       const orderData = {
-        userId: auth.currentUser?.uid,
+        userId: auth.currentUser.uid,
+        customerName: auth.currentUser.displayName || (isGuest ? 'Guest' : 'Customer'),
         items: items,
         total: total,
         status: 'pending' as OrderStatus,
@@ -72,7 +73,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       await addDoc(collection(db, 'orders'), orderData);
       
       // Update User Profile with new point system
-      if (!isGuest && auth.currentUser) {
+      if (!isGuest) {
         const userRef = doc(db, 'users', auth.currentUser.uid);
         
         // Prepare updates for each item loyalty
@@ -99,6 +100,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       } else {
         toast.success('Order placed successfully!');
       }
+      
       navigate('/orders');
     } catch (error) {
       console.error(error);
@@ -128,7 +130,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   if (items.length === 0) {
     return (
       <div className="text-center py-20 flex flex-col items-center">
-        <div className="bg-bento-card-bg p-8 rounded-full mb-6 border border-stone-100 dark:border-white/5">
+        <div className="bg-white p-8 rounded-full mb-6">
           <Trash2 size={48} className="text-gray-300" />
         </div>
         <h2 className="text-2xl font-bold text-brown-950 mb-2">{t('empty_cart')}</h2>
@@ -188,7 +190,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
           ))}
         </div>
         
-        <div className="p-8 bg-stone-50 dark:bg-stone-900 border-t border-stone-100 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="p-8 bg-stone-50 border-t border-stone-100 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('total_paid')}</p>
             <p className="text-4xl font-bold text-bento-primary">{total} DH</p>
@@ -219,7 +221,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder={t('search_placeholder')}
-            className="flex-1 bg-bento-card-bg border border-bento-card-border rounded-2xl py-4 px-6 shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300 dark:placeholder:text-stone-600"
+            className="flex-1 bg-white border border-bento-card-border rounded-2xl py-4 px-6 shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300"
           />
           <button
             onClick={getLocation}

@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatc
 import { db, auth } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Utensils, Croissant, Cake, Pizza, Cookie } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -292,8 +292,8 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-8 relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 relative">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/')}

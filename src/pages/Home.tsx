@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { Product, Category, UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRef } from 'react';
-import { Plus, Search, Star, MapPin, Coffee, ChevronLeft, ChevronRight, Utensils, Croissant, Cake, Pizza, Cookie, GlassWater } from 'lucide-react';
+import { Plus, Search, Star, MapPin, Coffee, ChevronLeft, ChevronRight, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useNavigate } from 'react-router-dom';
@@ -145,12 +145,12 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   if (loading) return <div className="text-center py-20 italic text-stone-400">...</div>;
 
   return (
-    <div className="space-y-12 relative px-2 sm:px-6 max-w-7xl mx-auto">
+    <div className="space-y-10">
       {/* Admin Setup Warning */}
       {isEmpty && isAdmin && (
         <div className="card !bg-amber-100 !border-amber-200 !p-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4 text-amber-900">
-            <div className="p-3 bg-bento-card-bg rounded-2xl shadow-sm italic font-black text-xl">!</div>
+            <div className="p-3 bg-white rounded-2xl shadow-sm italic font-black text-xl">!</div>
             <div>
               <p className="font-bold">{t('setup_required')}</p>
               <p className="text-xs opacity-70">The database is currently empty. Initialize the official Cappuccino7 menu.</p>
@@ -165,60 +165,58 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         </div>
       )}
       {/* Hero Section */}
-      <header className="space-y-8 flex flex-col items-start pt-10">
+      <header className="space-y-6">
         <div className="flex flex-col gap-2">
-          <h1 className="text-6xl sm:text-9xl font-serif font-black italic text-bento-primary dark:text-bento-accent tracking-tighter uppercase leading-[0.8]">{t('app_name')}</h1>
-          <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-stone-900 w-fit px-3 py-1.5 rounded-full text-[10px] font-black ring-1 ring-stone-200 dark:ring-white/5 uppercase tracking-widest mt-6">
+          <h1 className="text-6xl font-bold italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</h1>
+          <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-stone-900 w-fit px-3 py-1 rounded-full text-xs font-bold ring-1 ring-stone-200 dark:ring-white/5">
             <span className="text-bento-accent">★ 4.8</span>
-            <span className="opacity-60 text-[9px] font-bold">(2,777 reviews)</span>
+            <span>(2,777 reviews)</span>
           </div>
         </div>
         
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <p className="text-stone-500 uppercase tracking-[0.2em] text-[10px] font-black flex items-center gap-2">
-              <MapPin size={14} className="text-bento-accent" />
-              Salé • Palace Taha • Av. Moulay Rachid
-            </p>
-            <p className="text-stone-400 text-xs italic">Known for friendly staff & artisan breakfast</p>
-          </div>
+        <div className="space-y-1">
+          <p className="text-stone-500 uppercase tracking-[0.2em] text-[10px] font-bold pl-1 flex items-center gap-2">
+            <MapPin size={12} className="text-bento-accent" />
+            Salé • Palace Taha • Av. Moulay Rachid
+          </p>
+          <p className="text-stone-400 text-xs italic pl-1">Known for friendly staff & artisan breakfast</p>
+        </div>
 
-          <div className="flex flex-col gap-4 max-w-[300px] w-full">
-            <button 
-              onClick={() => {
-                const el = document.getElementById('menu-grid');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="w-full bg-[#D4A373] text-white px-8 py-5 rounded-3xl font-black shadow-xl shadow-amber-900/20 flex items-center justify-between gap-3 hover:bg-amber-600 transition-all active:scale-[0.98] text-xs uppercase tracking-[0.2em]"
-            >
-              QUICK ORDER <Plus size={20} strokeWidth={4} />
-            </button>
-            <button 
-              onClick={() => {
-                const el = document.getElementById('menu-grid');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="w-full bg-[#1A120B] border-2 border-[#2D241E] text-[#D4A373] px-8 py-5 rounded-3xl font-black shadow-lg flex items-center justify-between gap-3 hover:bg-black transition-all active:scale-[0.98] text-xs uppercase tracking-[0.2em]"
-            >
-              VIEW MENU <Coffee size={20} strokeWidth={4} />
-            </button>
-          </div>
+        <div className="flex flex-wrap gap-3 pt-2">
+          <button 
+            onClick={() => {
+              const el = document.getElementById('menu-grid');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="bg-bento-primary text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-bento-primary/20 flex items-center gap-2 hover:bg-bento-ink transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
+          >
+            {t('quick_order')} <Plus size={18} />
+          </button>
+          <button 
+            onClick={() => {
+              const el = document.getElementById('menu-grid');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="bg-bento-card-bg border-2 border-stone-100 dark:border-white/5 text-bento-primary px-8 py-4 rounded-xl font-bold shadow-sm flex items-center gap-2 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
+          >
+            {t('view_menu')} <Coffee size={18} className="text-bento-accent" />
+          </button>
         </div>
       </header>
 
       {/* Trust Elements - Bento Style */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card !p-4 bg-bento-card-bg/60 border-dashed">
-          <p className="text-[9px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-2 italic">"Verified Local Favorite"</p>
-          <p className="text-xs sm:text-sm font-bold text-bento-primary leading-tight">"Great experience, friendly staff and relaxing atmosphere."</p>
+        <div className="card !p-5 bg-bento-card-bg border-dashed">
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Verified Local Favorite"</p>
+          <p className="text-sm font-bold text-bento-primary leading-tight">"Great experience, friendly staff and relaxing atmosphere."</p>
         </div>
-        <div className="card !p-4 bg-bento-card-bg/60 border-dashed">
-          <p className="text-[9px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-2 italic">"Best Breakfast in Salé"</p>
-          <p className="text-xs sm:text-sm font-bold text-bento-primary leading-tight">"The breakfast sets are high quality and coffee is perfect every time."</p>
+        <div className="card !p-5 bg-bento-card-bg border-dashed">
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Best Breakfast in Salé"</p>
+          <p className="text-sm font-bold text-bento-primary leading-tight">"The breakfast sets are high quality and coffee is perfect every time."</p>
         </div>
-        <div className="card !p-4 bg-bento-card-bg/60 border-dashed">
-          <p className="text-[9px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-2 italic">"Community Hub"</p>
-          <p className="text-xs sm:text-sm font-bold text-bento-primary leading-tight">"Clean, modern and perfect for watching games with friends."</p>
+        <div className="card !p-5 bg-bento-card-bg border-dashed">
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Community Hub"</p>
+          <p className="text-sm font-bold text-bento-primary leading-tight">"Clean, modern and perfect for watching games with friends."</p>
         </div>
       </div>
 
@@ -230,7 +228,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           placeholder="Explore our menu..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className={`w-full bg-bento-card-bg/60 backdrop-blur-lg border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300 dark:placeholder:text-stone-600`}
+          className={`w-full bg-bento-card-bg border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300 dark:placeholder:text-stone-600`}
         />
       </div>
 
@@ -251,10 +249,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         >
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-4 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+            className={`category-btn whitespace-nowrap ${
               selectedCategory === 'all' 
               ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10' 
-              : 'bg-bento-card-bg/60 text-bento-ink'
+              : 'bg-bento-card-bg text-bento-ink'
             }`}
           >
             {t('menu')}
@@ -275,10 +273,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   });
                 }
               }}
-              className={`px-4 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+              className={`category-btn whitespace-nowrap transition-all ${
                 selectedCategory === cat.id 
                 ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10 scale-105' 
-                : 'bg-bento-card-bg/60 text-bento-ink hover:bg-stone-50 dark:hover:bg-stone-900'
+                : 'bg-bento-card-bg text-bento-ink hover:bg-stone-50 dark:hover:bg-stone-900'
               }`}
             >
               {getTranslatedCategory(cat.name)}
@@ -316,76 +314,57 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               className="space-y-6"
             >
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                    {cat.name.toLowerCase().includes('drink') || cat.name.toLowerCase().includes('coffee') ? (
-                      <Coffee size={16} className="text-amber-600" />
-                    ) : cat.name.toLowerCase().includes('dessert') || cat.name.toLowerCase().includes('cake') ? (
-                      <Cake size={16} className="text-amber-600" />
-                    ) : (
-                      <Utensils size={16} className="text-amber-600" />
-                    )}
-                  </div>
-                  <h2 className="text-sm sm:text-xl font-black text-stone-300 dark:text-stone-700 uppercase tracking-[0.4em] whitespace-nowrap pl-1">
-                    {getTranslatedCategory(cat.name)}
-                  </h2>
-                </div>
+                <h2 className="text-xl font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">
+                  {getTranslatedCategory(cat.name)}
+                </h2>
                 <div className="h-px bg-stone-100 dark:bg-white/5 w-full" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12 pb-32">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8 tabular-nums">
                 {searchFiltered.map((product) => (
-                  <div
+                  <motion.div
+                    layout
                     key={product.id}
-                    className="group flex flex-col bg-[#0D0B0A] hover:bg-[#151210] transition-all duration-500 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 max-w-[360px] will-change-transform"
+                    className="card group flex flex-col sm:flex-row !p-0 overflow-hidden hover:border-bento-accent/20 transition-all duration-300"
                   >
-                    <div className="w-full aspect-[4/3] relative overflow-hidden shrink-0">
+                    <div className="sm:w-2/5 aspect-[4/3] sm:aspect-square relative overflow-hidden">
                       <img
                         src={product.image || `https://picsum.photos/seed/${product.id}/400/400`}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         referrerPolicy="no-referrer"
-                        loading="lazy"
                       />
-                      <div className="absolute top-6 right-6">
-                        <div className="bg-[#1A120B]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-black text-white shadow-2xl border border-white/10 uppercase tracking-widest">
+                      <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                        <div className="bg-bento-card-bg/90 backdrop-blur-sm px-2.5 py-1.5 rounded-xl text-[11px] font-black text-bento-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5">
                           {product.price} DH
                         </div>
                       </div>
-                    </div>
-                    <div className="p-6 sm:p-8 flex flex-col items-start gap-5">
-                      <div className="space-y-3">
-                        <div className="space-y-2">
-                          <h3 className="text-2xl sm:text-3xl font-serif font-black text-white leading-[1.1] transition-colors group-hover:text-[#D4A373]">
-                            {t(`products.${product.name}`, product.name)}
-                          </h3>
-                          {userProfile && (
-                            <div className="flex gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                              {[...Array(10)].map((_, i) => (
-                                <div 
-                                  key={i} 
-                                  className={`w-1 h-1 rounded-full ${
-                                    i < (userProfile.itemLoyalty?.[product.id] || 0) 
-                                    ? 'bg-[#D4A373]' 
-                                    : 'bg-white/10'
-                                  }`} 
-                                />
-                              ))}
-                            </div>
-                          )}
+
+                      {/* Loyalty Badge - Small Tab at bottom */}
+                      {userProfile && (userProfile.itemLoyalty?.[product.id] || 0) > 0 && (
+                        <div className="absolute bottom-3 left-3 bg-amber-500 text-white px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 flex items-center gap-1.5 ring-2 ring-white/30 backdrop-blur-sm">
+                          <Award size={10} strokeWidth={3} />
+                          <span>{userProfile.itemLoyalty?.[product.id]} {userProfile.itemLoyalty?.[product.id] === 1 ? 'Point' : 'Points'}</span>
                         </div>
-                        <p className="text-stone-400 text-xs sm:text-sm leading-relaxed line-clamp-3 font-medium opacity-80">
-                          {t(`descriptions.${product.name}`, product.description)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => addToCart(product)}
-                        className="w-full py-4 bg-transparent border border-white/10 text-white rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-[0.4em] hover:bg-white hover:text-black transition-all active:scale-[0.98] mt-2"
-                      >
-                        ADD TO ORDER
-                      </button>
+                      )}
                     </div>
-                  </div>
+                     <div className="flex-1 p-6 flex flex-col justify-between">
+                       <div>
+                         <h3 className="text-xl font-bold mb-1 group-hover:text-bento-accent transition-colors leading-tight">
+                           {t(`products.${product.name}`, product.name)}
+                         </h3>
+                         <p className="text-stone-400 text-xs line-clamp-2 md:line-clamp-3 leading-relaxed mb-4">
+                           {t(`descriptions.${product.name}`, product.description)}
+                         </p>
+                       </div>
+                       <button
+                         onClick={() => addToCart(product)}
+                         className="w-full py-3 bg-bento-card-bg text-bento-primary rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all active:scale-[0.98] border border-stone-100 dark:border-white/5 mt-2"
+                       >
+                         {t('add_to_cart')}
+                       </button>
+                     </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.section>

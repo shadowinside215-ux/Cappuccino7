@@ -5,8 +5,8 @@ export interface UserProfile {
   name: string;
   email: string;
   points: number;
-  coffeeCount: number;
-  itemLoyalty: Record<string, number>;
+  coffeeCount: number; // Keep for legacy or general coffee tracking
+  itemLoyalty: Record<string, number>; // productId -> count mapping
   isAdmin: boolean;
   isAnonymous?: boolean;
   createdAt: string;
@@ -47,7 +47,7 @@ export interface Order {
     lat: number;
     lng: number;
   };
-  pointsEarned?: number;
+  pointsEarned: number;
   createdAt: any; // Firestore Timestamp
 }
 

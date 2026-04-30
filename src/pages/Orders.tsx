@@ -57,7 +57,7 @@ export default function Orders() {
           <h1 className="text-3xl font-black text-stone-900 uppercase italic tracking-tight">Order History</h1>
           <p className="text-stone-500 font-medium max-w-sm">
             You're currently browsing as a guest. <br />
-            Sign in to keep track of your previous orders!
+            Sign in to keep track of your previous orders and loyalty points!
           </p>
         </div>
         <button 
@@ -98,8 +98,8 @@ export default function Orders() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 gap-4 mb-8">
-                <div className="bg-[#FDFBF9] dark:bg-stone-900/50 p-5 rounded-2xl border border-stone-100 dark:border-white/5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                <div className="bg-[#FDFBF9] p-5 rounded-2xl border border-stone-100">
                   <div className="flex items-center gap-3 mb-4">
                     <Truck size={18} className="text-bento-accent" />
                     <p className="text-xs font-bold uppercase tracking-widest text-stone-500">{t('delivery_point')}</p>
@@ -107,6 +107,13 @@ export default function Orders() {
                   <p className="text-sm font-medium text-bento-ink leading-relaxed line-clamp-2">
                     {order.address}
                   </p>
+                </div>
+                <div className="bg-stone-50 p-5 rounded-2xl border border-stone-100 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 text-green-600 font-bold">
+                    <Award size={18} />
+                    <span>+{order.pointsEarned} Points</span>
+                  </div>
+                  <p className="text-[10px] text-stone-400 uppercase font-bold tracking-widest mt-1">{t('loyalty_perk')}</p>
                 </div>
               </div>
 
