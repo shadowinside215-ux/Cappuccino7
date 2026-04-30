@@ -111,6 +111,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isMenuOpen]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-bento-bg relative overflow-hidden">
@@ -245,11 +253,12 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="fixed inset-0 z-[70] bg-bento-bg flex flex-col p-8 lg:hidden overflow-y-auto pt-24 relative overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-white dark:bg-black overflow-y-auto no-scrollbar"
           >
+            <div className="min-h-screen flex flex-col p-8 pt-24 relative overflow-hidden">
             {/* Menu Decorative Background */}
             <div className="absolute top-40 -left-10 text-stone-100 dark:text-white/5 -z-10 rotate-12 opacity-50">
               <Coffee size={200} strokeWidth={0.5} />
@@ -338,9 +347,10 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 </div>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
       <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 no-scrollbar relative`}>

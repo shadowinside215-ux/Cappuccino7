@@ -182,13 +182,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           <p className="text-stone-400 text-xs italic pl-1">Known for friendly staff & artisan breakfast</p>
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2 max-w-full">
           <button 
             onClick={() => {
               const el = document.getElementById('menu-grid');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="bg-bento-primary text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-bento-primary/20 flex items-center gap-2 hover:bg-bento-ink transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
+            className="w-full sm:w-auto bg-bento-primary text-white px-6 sm:px-8 py-4 rounded-xl font-bold shadow-lg shadow-bento-primary/20 flex items-center justify-center gap-2 hover:bg-bento-ink transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
           >
             {t('quick_order')} <Plus size={18} />
           </button>
@@ -197,7 +197,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               const el = document.getElementById('menu-grid');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="bg-bento-card-bg border-2 border-stone-100 dark:border-white/5 text-bento-primary px-8 py-4 rounded-xl font-bold shadow-sm flex items-center gap-2 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
+            className="w-full sm:w-auto bg-bento-card-bg border-2 border-stone-100 dark:border-white/5 text-bento-primary px-6 sm:px-8 py-4 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
           >
             {t('view_menu')} <Coffee size={18} className="text-bento-accent" />
           </button>
@@ -336,45 +336,43 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   <motion.div
                     layout
                     key={product.id}
-                    className="card group flex flex-col sm:flex-row !p-0 overflow-hidden hover:border-bento-accent/20 transition-all duration-300"
+                    className="card group flex flex-col !p-0 overflow-hidden hover:border-bento-accent/20 transition-all duration-300"
                   >
-                    <div className="sm:w-2/5 aspect-[4/3] sm:aspect-square relative overflow-hidden">
+                    <div className="w-full aspect-video sm:aspect-square relative overflow-hidden shrink-0">
                       <img
                         src={product.image || `https://picsum.photos/seed/${product.id}/400/400`}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                        <div className="bg-bento-card-bg/90 backdrop-blur-sm px-2.5 py-1.5 rounded-xl text-[11px] font-black text-bento-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5">
+                      <div className="absolute top-2 right-2 flex flex-col gap-2">
+                        <div className="bg-white/95 dark:bg-black/90 px-3 py-1.5 rounded-xl text-[12px] font-black text-bento-primary shadow-sm border border-black/5 dark:border-white/5">
                           {product.price} DH
                         </div>
                       </div>
-
-                      {/* Loyalty Badge - Small Tab at bottom */}
                       {userProfile && (userProfile.itemLoyalty?.[product.id] || 0) > 0 && (
-                        <div className="absolute bottom-3 left-3 bg-amber-500 text-white px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 flex items-center gap-1.5 ring-2 ring-white/30 backdrop-blur-sm">
+                        <div className="absolute bottom-2 left-2 bg-amber-500 text-white px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1.5">
                           <Award size={10} strokeWidth={3} />
-                          <span>{userProfile.itemLoyalty?.[product.id]} {userProfile.itemLoyalty?.[product.id] === 1 ? 'Point' : 'Points'}</span>
+                          <span>{userProfile.itemLoyalty?.[product.id]} pts</span>
                         </div>
                       )}
                     </div>
-                     <div className="flex-1 p-6 flex flex-col justify-between">
-                       <div>
-                         <h3 className="text-xl font-bold mb-1 group-hover:text-bento-accent transition-colors leading-tight">
-                           {t(`products.${product.name}`, product.name)}
-                         </h3>
-                         <p className="text-stone-400 text-xs line-clamp-2 md:line-clamp-3 leading-relaxed mb-4">
-                           {t(`descriptions.${product.name}`, product.description)}
-                         </p>
-                       </div>
-                       <button
-                         onClick={() => addToCart(product)}
-                         className="w-full py-3 bg-bento-card-bg text-bento-primary rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all active:scale-[0.98] border border-stone-100 dark:border-white/5 mt-2"
-                       >
-                         {t('add_to_cart')}
-                       </button>
-                     </div>
+                    <div className="flex-1 p-4 sm:p-6 flex flex-col justify-between">
+                      <div className="min-w-0">
+                        <h3 className="text-lg sm:text-xl font-bold group-hover:text-bento-accent transition-colors leading-tight mb-1">
+                          {t(`products.${product.name}`, product.name)}
+                        </h3>
+                        <p className="text-stone-400 text-[10px] sm:text-xs line-clamp-2 md:line-clamp-3 leading-relaxed mb-4">
+                          {t(`descriptions.${product.name}`, product.description)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="w-full py-2.5 sm:py-3 bg-bento-card-bg/80 dark:bg-stone-800/50 text-bento-primary rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-widest hover:bg-bento-primary hover:text-white transition-all active:scale-[0.98] border border-stone-100 dark:border-white/5 mt-1"
+                      >
+                        {t('add_to_cart')}
+                      </button>
+                    </div>
                   </motion.div>
                 ))}
               </div>
