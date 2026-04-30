@@ -8,8 +8,11 @@ import toast from 'react-hot-toast';
 
 import { useTranslation } from 'react-i18next';
 
+import { useBrandSettings } from '../lib/brand';
+
 export default function Profile({ userProfile }: { userProfile: UserProfile | null }) {
   const { t } = useTranslation();
+  const { settings: brand } = useBrandSettings();
   const navigate = useNavigate();
   const [loyaltyProducts, setLoyaltyProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,29 +48,37 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
 
   if (isGuest) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-8 px-6 text-center">
-        <div className="p-8 bg-amber-50 rounded-[40px] text-amber-600 shadow-xl shadow-amber-900/5">
-          <Award size={64} strokeWidth={2.5} />
+      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={brand.profileBgUrl || 'https://images.unsplash.com/photo-1544333346-6466f28ecb0c?q=80&w=1600'} 
+            className="w-full h-full object-cover" 
+            alt=""
+          />
+          <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
         </div>
-        <div className="space-y-3">
-          <h1 className="text-3xl font-black text-stone-900 uppercase italic tracking-tight">Join the Club!</h1>
-          <p className="text-stone-500 font-medium max-w-sm">
-            Log in to start earning rewards ☕ <br />
-            Every coffee counts towards a free one!
+
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="p-8 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-6 ring-1 ring-white/20">
+            <Award size={64} strokeWidth={2.5} className="text-amber-400" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">Join the Club!</h2>
+          <p className="text-white/60 mb-8 font-medium max-w-sm">
+            Sign in to start earning exclusive ☕ rewards! Every coffee counts towards your next free one.
           </p>
+          <button 
+            onClick={() => navigate('/login')}
+            className="bg-white text-bento-primary px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all"
+          >
+            Sign In or Create Account
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="mt-6 text-white/40 font-bold uppercase text-[10px] tracking-widest hover:text-white transition-colors"
+          >
+            End Guest Session
+          </button>
         </div>
-        <button 
-          onClick={() => navigate('/login')}
-          className="w-full max-w-xs bg-bento-primary text-white py-5 px-8 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl shadow-bento-primary/20 active:scale-95 transition-all"
-        >
-          Sign In or Create Account
-        </button>
-        <button 
-          onClick={handleLogout}
-          className="text-stone-400 font-bold uppercase text-[10px] tracking-widest hover:text-red-500 transition-colors"
-        >
-          End Guest Session
-        </button>
       </div>
     );
   }
@@ -81,138 +92,157 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   }
 
   return (
-    <div className="space-y-8 pb-32">
-      <div className="flex justify-between items-start">
-        <h1 className="text-4xl font-bold text-bento-primary">{t('my_account')}</h1>
-        <button 
-          onClick={handleLogout}
-          className="p-2 text-stone-300 hover:text-red-500 transition-colors"
-        >
-          <LogOut size={24} />
-        </button>
+    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative overflow-hidden flex flex-col gap-10">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img 
+          src={brand.profileBgUrl || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1600'} 
+          className="w-full h-full object-cover fixed top-0 left-0" 
+          alt=""
+        />
+        <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Info Card */}
-        <div className="card md:col-span-1 flex flex-col items-center justify-center py-10 !bg-white">
-          <div className="w-20 h-20 bg-bento-primary rounded-[2rem] flex items-center justify-center text-white text-2xl font-black mb-6 shadow-xl shadow-bento-primary/10">
-            {userProfile.name.charAt(0).toUpperCase()}
-          </div>
-          <h2 className="text-2xl font-black text-bento-ink mb-1">{userProfile.name}</h2>
-          <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mb-8">{t('premium_customer')}</p>
-          
-          <div className="w-full pt-8 border-t border-stone-50 flex justify-around">
-            <div className="text-center">
-              <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1">{t('total_points')}</p>
-              <p className="text-xl font-black text-bento-primary">{userProfile.points}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1">{t('status')}</p>
-              <p className="text-xl font-black text-bento-accent">Gold</p>
-            </div>
-          </div>
+      <div className="relative z-10 space-y-10">
+        <div className="flex justify-between items-start">
+          <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl">{t('my_account')}</h1>
+          <button 
+            onClick={handleLogout}
+            className="p-4 bg-white/10 backdrop-blur-xl rounded-2xl text-white hover:bg-red-500 transition-colors border border-white/10 shadow-xl"
+          >
+            <LogOut size={24} />
+          </button>
         </div>
 
-        {/* Global Coffee Loyalty (legacy or main highlight) */}
-        <div className="card md:col-span-2 accent-card !bg-amber-900 overflow-hidden relative">
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-white/10 rounded-2xl">
-                <Coffee size={24} className="text-amber-200" />
-              </div>
-              <h3 className="text-xl font-bold">Cappuccino7 Coffee Club</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Profile Info Card */}
+          <div className="bg-white/10 backdrop-blur-[40px] rounded-[3rem] flex flex-col items-center justify-center py-12 border border-white/10 shadow-2xl text-white">
+            <div className="w-32 h-32 bg-white text-stone-900 rounded-[2.5rem] flex items-center justify-center text-5xl font-black mb-8 shadow-2xl overflow-hidden p-1 border-4 border-white/10">
+              {userProfile.name.charAt(0).toUpperCase()}
             </div>
-            <div className="flex items-end gap-6">
-              <p className="text-6xl font-black">{userProfile.coffeeCount || 0}</p>
-              <div className="mb-2">
-                <p className="text-xs opacity-70 font-medium">{t('total_artisan')}</p>
-                <div className="flex gap-1 mt-2">
-                   {[...Array(5)].map((_, i) => (
-                     <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400' : 'bg-white/20'}`} />
-                   ))}
+            <h2 className="text-3xl font-black uppercase tracking-tight italic mb-1">{userProfile.name}</h2>
+            <p className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-10">{t('premium_customer')}</p>
+            
+            <div className="w-full pt-10 border-t border-white/5 flex justify-around">
+              <div className="text-center">
+                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">{t('total_points')}</p>
+                <p className="text-4xl font-black text-white tracking-tighter">{userProfile.points}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">{t('status')}</p>
+                <p className="text-4xl font-black text-amber-400 tracking-tighter">GOLD</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Global Coffee Loyalty */}
+          <div className="lg:col-span-2 bg-amber-900/60 backdrop-blur-3xl rounded-[3rem] p-10 border border-white/10 shadow-2xl overflow-hidden relative flex flex-col justify-between text-white group">
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="p-4 bg-white/10 rounded-2xl ring-1 ring-white/10">
+                  <Coffee size={28} className="text-amber-200" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black uppercase tracking-tight italic">Coffee Club</h3>
+                  <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Exclusive Membership Rewards</p>
+                </div>
+              </div>
+              <div className="flex items-end gap-8">
+                <p className="text-[10rem] font-black leading-none tracking-tighter tabular-nums drop-shadow-2xl">{userProfile.coffeeCount || 0}</p>
+                <div className="mb-6 space-y-4">
+                  <p className="text-sm font-bold opacity-60 leading-tight max-w-[120px]">{t('total_artisan')}</p>
+                  <div className="flex gap-2">
+                     {[...Array(5)].map((_, i) => (
+                       <div key={i} className={`w-3 h-3 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400' : 'bg-white/10 ring-1 ring-white/10'}`} />
+                     ))}
+                  </div>
                 </div>
               </div>
             </div>
+            <Coffee size={240} className="absolute -right-20 -bottom-20 opacity-5 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
           </div>
-          <Coffee size={120} className="absolute -right-8 -bottom-8 opacity-5 -rotate-12" />
-        </div>
-      </div>
-
-      {/* Item-Specific Loyalty Rewards */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xs font-black text-stone-300 uppercase tracking-[0.4em] pl-1">{t('specific_rewards')}</h2>
-          <div className="h-px bg-stone-100 flex-1" />
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20 text-stone-400 gap-2">
-            <Loader2 className="animate-spin" size={20} />
-            <span className="text-sm font-medium">{t('auth_loyalty')}</span>
+        {/* Item-Specific Loyalty Rewards */}
+        <div className="space-y-8">
+          <div className="flex items-center gap-6">
+            <h2 className="text-xs font-black text-white/40 uppercase tracking-[0.5em] pl-2">{t('specific_rewards')}</h2>
+            <div className="h-px bg-white/5 flex-1" />
           </div>
-        ) : loyaltyProducts.length === 0 ? (
-          <div className="card !py-16 text-center border-dashed">
-            <p className="text-stone-400 font-bold italic mb-2 text-sm">{t('loyalty_info')}</p>
-            <p className="text-[10px] text-stone-300 uppercase tracking-widest">{t('loyalty_start')}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {loyaltyProducts.map(product => {
-              const count = userProfile.itemLoyalty?.[product.id] || 0;
-              const progress = count % 11;
-              const rewardReady = count >= 11;
 
-              return (
-                <div key={product.id} className="card !p-6 flex items-center gap-6 group hover:border-bento-primary/10 transition-all">
-                  <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden flex-shrink-0 ring-4 ring-stone-50">
-                    <img src={product.image} alt="" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-bento-ink truncate">
-                      {t(`products.${product.name}`, product.name)}
-                    </h4>
-                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-1">
-                      {rewardReady ? `🎁 ${t('reward_earned')}` : `Level ${count} • Next goal at 11`}
-                    </p>
+          {loading ? (
+            <div className="flex items-center justify-center py-20 text-white/40 gap-3">
+              <Loader2 className="animate-spin" size={24} />
+              <span className="text-sm font-black uppercase tracking-widest">{t('auth_loyalty')}</span>
+            </div>
+          ) : loyaltyProducts.length === 0 ? (
+            <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-16 text-center border border-white/10">
+              <p className="text-white/40 font-black uppercase tracking-[0.2em] italic mb-2 text-xs">{t('loyalty_info')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loyaltyProducts.map(product => {
+                const count = userProfile.itemLoyalty?.[product.id] || 0;
+                const progress = count % 11;
+                const rewardReady = count >= 11;
+
+                return (
+                  <div key={product.id} className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-8 flex flex-col gap-6 group hover:bg-white/10 transition-all border border-white/5 relative overflow-hidden">
+                    <div className="flex items-center gap-6">
+                      <div className="w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 ring-4 ring-white/10 shadow-2xl">
+                        <img src={product.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-black text-xl text-white truncate uppercase tracking-tight">
+                          {t(`products.${product.name}`, product.name)}
+                        </h4>
+                        <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${rewardReady ? 'text-amber-400' : 'text-white/40'}`}>
+                          {rewardReady ? `🎁 Ready to Redeem` : `LVL ${count} • Goal 11`}
+                        </p>
+                      </div>
+                    </div>
                     
-                    <div className="mt-3 flex gap-1 h-1.5">
-                      {[...Array(11)].map((_, i) => (
-                        <div 
-                          key={i} 
-                          className={`flex-1 rounded-full transition-all ${
-                            i < (rewardReady ? 11 : count % 11) 
-                            ? 'bg-bento-primary' 
-                            : 'bg-stone-100'
-                          }`} 
-                        />
-                      ))}
+                    <div className="space-y-3">
+                      <div className="flex gap-1.5 h-2">
+                        {[...Array(11)].map((_, i) => (
+                          <div 
+                            key={i} 
+                            className={`flex-1 rounded-full transition-all duration-500 ${
+                              i < (rewardReady ? 11 : count % 11) 
+                              ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]' 
+                              : 'bg-white/5'
+                            }`} 
+                          />
+                        ))}
+                      </div>
+                      <p className="text-right text-[9px] font-black text-white/20 uppercase tracking-widest">Digital Stamp Card</p>
                     </div>
+
+                    {rewardReady && (
+                      <div className="absolute top-4 right-4 bg-amber-400 text-stone-900 p-3 rounded-2xl shadow-2xl animate-bounce">
+                        <Gift size={20} />
+                      </div>
+                    )}
                   </div>
-                  {rewardReady && (
-                    <div className="p-3 bg-bento-accent rounded-2xl text-bento-primary animate-pulse">
-                      <Gift size={20} />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {userProfile.isAdmin && (
+          <div className="pt-12">
+            <button 
+              onClick={() => navigate('/admin')}
+              className="w-full bg-white/5 backdrop-blur-xl p-10 rounded-[3rem] flex items-center justify-center gap-4 group hover:bg-white text-white hover:text-stone-900 transition-all border border-white/10 shadow-2xl"
+            >
+              <LogOut className="rotate-180" size={32} />
+              <h4 className="font-black uppercase tracking-[0.2em] text-lg italic">Admin Dashboard Console</h4>
+            </button>
           </div>
         )}
       </div>
-
-      {userProfile.isAdmin && (
-        <div className="pt-8">
-          <button 
-            onClick={() => navigate('/admin')}
-            className="w-full card border-2 border-bento-primary bg-stone-50 items-center justify-center !py-6 group hover:bg-bento-primary transition-all duration-300"
-          >
-            <div className="flex items-center gap-3 group-hover:text-white transition-colors">
-              <LogOut className="rotate-180" size={24} />
-              <h4 className="font-bold uppercase tracking-widest text-sm">Dashboard Console</h4>
-            </div>
-          </button>
-        </div>
-      )}
     </div>
   );
 }

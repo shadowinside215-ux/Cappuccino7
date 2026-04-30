@@ -148,167 +148,180 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col items-center justify-center px-6 max-w-md mx-auto">
-      <AnimatePresence mode="wait">
-        {mode === 'initial' ? (
-          <motion.div 
-            key="initial"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="w-full space-y-8 flex flex-col items-center"
-          >
-            <div className="w-28 h-28 bg-white rounded-full overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 border-2 border-stone-50">
-              <img 
-                src={brand.logoUrl} 
-                alt="Cappuccino7 Logo" 
-                className="w-full h-full object-contain rounded-full"
-                onError={(e) => {
-                  // Fallback if the URL fails
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80";
-                }}
-              />
-            </div>
-            
-            <div className="text-center space-y-3">
-              <h1 className="text-4xl font-black text-stone-900 tracking-tight italic uppercase">Cappuccino7</h1>
-              <p className="text-stone-500 font-medium leading-relaxed">
-                Premium coffee, shared moments. <br />
-                Login to earn ☕ rewards.
-              </p>
-            </div>
+    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 group/login relative overflow-hidden flex items-center justify-center p-6">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={brand.loginBgUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600'} 
+          className="w-full h-full object-cover fixed top-0 left-0" 
+          alt=""
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent" />
+      </div>
 
-            <div className="w-full space-y-3">
-              <button
-                disabled={loading}
-                onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center gap-4 bg-white border border-stone-100 py-4 px-6 rounded-[24px] shadow-sm hover:shadow-md active:scale-95 transition-all font-black uppercase text-xs tracking-widest text-stone-700"
-              >
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                Continue with Google
-              </button>
-
-              <button
-                disabled={loading}
-                onClick={() => setMode('email-login')}
-                className="w-full flex items-center justify-center gap-4 bg-stone-900 text-white py-4 px-6 rounded-[24px] shadow-xl shadow-stone-200 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
-              >
-                <Mail size={18} />
-                Login with Email
-              </button>
-
-              <div className="relative py-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-stone-100"></div>
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
-                  <span className="bg-bento-bg px-4 text-stone-400 font-black">Or</span>
-                </div>
+      <div className="relative z-10 w-full max-w-md">
+        <AnimatePresence mode="wait">
+          {mode === 'initial' ? (
+            <motion.div 
+              key="initial"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="w-full space-y-10 flex flex-col items-center"
+            >
+              <div className="w-32 h-32 bg-white rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-white/10 group-hover/login:scale-110 transition-transform duration-700">
+                <img 
+                  src={brand.logoUrl} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain rounded-full"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80";
+                  }}
+                />
+              </div>
+              
+              <div className="text-center space-y-4">
+                <h1 className="text-6xl font-black text-white tracking-tighter italic uppercase drop-shadow-2xl">Cappuccino7</h1>
+                <p className="text-white/60 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
+                  Premium coffee, shared moments. <br />
+                  Login to earn exclusive rewards.
+                </p>
               </div>
 
-              <button
-                disabled={loading}
-                onClick={handleGuestAccess}
-                className="w-full flex items-center justify-center gap-4 bg-stone-100 text-stone-600 py-4 px-6 rounded-[24px] hover:bg-stone-200 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
-              >
-                Continue as Guest
-              </button>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div 
-            key="email"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="w-full space-y-6"
-          >
-            <button 
-              onClick={() => setMode('initial')}
-              className="flex items-center gap-2 text-stone-400 hover:text-bento-primary transition-colors font-black uppercase text-[10px] tracking-widest"
+              <div className="w-full space-y-4">
+                <button
+                  disabled={loading}
+                  onClick={handleGoogleLogin}
+                  className="w-full flex items-center justify-center gap-4 bg-white text-stone-900 py-5 px-6 rounded-[2rem] shadow-2xl hover:bg-stone-50 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
+                >
+                  <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                  Continue with Google
+                </button>
+
+                <button
+                  disabled={loading}
+                  onClick={() => setMode('email-login')}
+                  className="w-full flex items-center justify-center gap-4 bg-white/10 backdrop-blur-xl border border-white/10 text-white py-5 px-6 rounded-[2rem] shadow-xl active:scale-95 transition-all font-black uppercase text-xs tracking-widest hover:bg-white/20"
+                >
+                  <Mail size={18} />
+                  Login with Email
+                </button>
+
+                <div className="relative py-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10"></div>
+                  </div>
+                  <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
+                    <span className="bg-transparent px-4 text-white/40 font-black">Or</span>
+                  </div>
+                </div>
+
+                <button
+                  disabled={loading}
+                  onClick={handleGuestAccess}
+                  className="w-full flex items-center justify-center gap-4 bg-transparent text-white/60 border border-white/5 py-5 px-6 rounded-[2rem] hover:bg-white/5 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
+                >
+                  Continue as Guest
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="email"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="w-full space-y-8 bg-white/10 backdrop-blur-2xl p-8 rounded-[3rem] border border-white/10 shadow-2xl"
             >
-              <ChevronLeft size={16} /> Back
-            </button>
+              <button 
+                onClick={() => setMode('initial')}
+                className="flex items-center gap-2 text-white/40 hover:text-white transition-colors font-black uppercase text-[10px] tracking-widest"
+              >
+                <ChevronLeft size={16} /> Back
+              </button>
 
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-stone-900 uppercase italic">
-                {mode === 'email-login' ? 'Login' : 'Create Account'}
-              </h2>
-              <p className="text-stone-400 text-sm font-medium">
-                {mode === 'email-login' ? 'Enter your credentials to continue.' : 'Join the club and start earning points.'}
-              </p>
-            </div>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
+                  {mode === 'email-login' ? 'Login' : 'Join Us'}
+                </h2>
+                <p className="text-white/40 text-xs font-bold uppercase tracking-widest">
+                  {mode === 'email-login' ? 'Enter credentials' : 'Create your account'}
+                </p>
+              </div>
 
-            <form onSubmit={handleEmailAuth} className="space-y-4">
-              {mode === 'email-signup' && (
+              <form onSubmit={handleEmailAuth} className="space-y-6">
+                {mode === 'email-signup' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Full Name</label>
+                    <div className="relative">
+                      <User className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-black tracking-widest text-stone-400 ml-2">Name</label>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Email</label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={18} />
+                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
                     <input
-                      type="text"
+                      type="email"
                       required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your Full Name"
-                      className="w-full pl-12 pr-4 py-4 bg-white border border-stone-100 rounded-2xl focus:ring-2 focus:ring-bento-primary/20 outline-none transition-all"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="hello@example.com"
+                      className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
                     />
                   </div>
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase font-black tracking-widest text-stone-400 ml-2">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={18} />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="hello@example.com"
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-stone-100 rounded-2xl focus:ring-2 focus:ring-bento-primary/20 outline-none transition-all"
-                  />
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
+                    />
+                  </div>
                 </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-white text-stone-900 py-6 px-6 rounded-[2.5rem] shadow-2xl active:scale-95 transition-all font-black uppercase text-sm tracking-widest disabled:opacity-50 flex items-center justify-center gap-3"
+                >
+                  {loading ? 'Processing...' : mode === 'email-login' ? 'Sign In' : 'Register'}
+                  <ArrowRight size={20} />
+                </button>
+              </form>
+
+              <div className="text-center">
+                <button
+                  onClick={() => setMode(mode === 'email-login' ? 'email-signup' : 'email-login')}
+                  className="text-white/40 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                >
+                  {mode === 'email-login' ? "New Here? Create Account" : "Already an owner? Sign In"}
+                </button>
               </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase font-black tracking-widest text-stone-400 ml-2">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={18} />
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-stone-100 rounded-2xl focus:ring-2 focus:ring-bento-primary/20 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-4 flex items-center justify-center gap-3 bg-bento-primary text-white py-5 px-6 rounded-3xl shadow-xl shadow-bento-primary/20 active:scale-95 transition-all font-black uppercase text-xs tracking-widest disabled:opacity-50"
-              >
-                {loading ? 'Processing...' : mode === 'email-login' ? 'Sign In' : 'Sign Up'}
-                <ArrowRight size={18} />
-              </button>
-            </form>
-
-            <div className="text-center pt-4">
-              <button
-                onClick={() => setMode(mode === 'email-login' ? 'email-signup' : 'email-login')}
-                className="text-stone-400 hover:text-bento-primary text-xs font-black uppercase tracking-widest"
-              >
-                {mode === 'email-login' ? "Don't have an account? Sign Up" : "Already have an account? Login"}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

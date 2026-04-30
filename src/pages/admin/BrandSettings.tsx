@@ -7,10 +7,20 @@ import toast from 'react-hot-toast';
 
 export default function BrandSettings() {
   const [logoUrl, setLogoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/cappuccino7-app.appspot.com/o/assets%2Flogo_cappuccino.jpg?alt=media');
-  const [isUploading, setIsUploading] = useState(false);
+  const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [cartBgUrl, setCartBgUrl] = useState('');
+  const [ordersBgUrl, setOrdersBgUrl] = useState('');
+  const [profileBgUrl, setProfileBgUrl] = useState('');
+  const [loginBgUrl, setLoginBgUrl] = useState('');
+  const [activeUpload, setActiveUpload] = useState<'logo' | 'hero' | 'cart' | 'orders' | 'profile' | 'login' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const heroFileInputRef = useRef<HTMLInputElement>(null);
+  const cartFileInputRef = useRef<HTMLInputElement>(null);
+  const ordersFileInputRef = useRef<HTMLInputElement>(null);
+  const profileFileInputRef = useRef<HTMLInputElement>(null);
+  const loginFileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,7 +28,13 @@ export default function BrandSettings() {
       try {
         const settingsDoc = await getDoc(doc(db, 'settings', 'brand'));
         if (settingsDoc.exists()) {
-          setLogoUrl(settingsDoc.data().logoUrl);
+          const data = settingsDoc.data();
+          setLogoUrl(data.logoUrl || logoUrl);
+          setHeroImageUrl(data.heroImageUrl || '');
+          setCartBgUrl(data.cartBgUrl || '');
+          setOrdersBgUrl(data.ordersBgUrl || '');
+          setProfileBgUrl(data.profileBgUrl || '');
+          setLoginBgUrl(data.loginBgUrl || '');
         }
       } catch (err) {
         console.error('Error fetching brand settings:', err);
@@ -29,7 +45,7 @@ export default function BrandSettings() {
     fetchSettings();
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'hero' | 'cart' | 'orders' | 'profile' | 'login') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -53,7 +69,7 @@ export default function BrandSettings() {
       return;
     }
 
-    setIsUploading(true);
+    setActiveUpload(type);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', uploadPreset);
@@ -71,7 +87,12 @@ export default function BrandSettings() {
 
       const data = await response.json();
       if (data.secure_url) {
-        setLogoUrl(data.secure_url);
+        if (type === 'logo') setLogoUrl(data.secure_url);
+        else if (type === 'hero') setHeroImageUrl(data.secure_url);
+        else if (type === 'cart') setCartBgUrl(data.secure_url);
+        else if (type === 'orders') setOrdersBgUrl(data.secure_url);
+        else if (type === 'profile') setProfileBgUrl(data.secure_url);
+        else if (type === 'login') setLoginBgUrl(data.secure_url);
         toast.success('Image uploaded successfully');
       } else {
         throw new Error('No secure URL returned');
@@ -80,7 +101,7 @@ export default function BrandSettings() {
       console.error("Cloudinary upload error:", err);
       toast.error(`Image upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
-      setIsUploading(false);
+      setActiveUpload(null);
     }
   };
 
@@ -89,6 +110,11 @@ export default function BrandSettings() {
     try {
       await setDoc(doc(db, 'settings', 'brand'), {
         logoUrl,
+        heroImageUrl,
+        cartBgUrl,
+        ordersBgUrl,
+        profileBgUrl,
+        loginBgUrl,
         updatedAt: new Date().toISOString()
       });
       toast.success('Brand settings saved!');
@@ -137,7 +163,7 @@ export default function BrandSettings() {
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full aspect-video bg-white border-2 border-dashed border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-bento-primary hover:bg-stone-50 transition-all group overflow-hidden relative"
               >
-                {isUploading ? (
+                {activeUpload === 'logo' ? (
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="text-bento-primary animate-spin" size={32} />
                     <p className="text-[10px] font-bold text-stone-400 uppercase">Uploading via Cloudinary...</p>
@@ -168,29 +194,147 @@ export default function BrandSettings() {
               <input 
                 type="file" 
                 ref={fileInputRef}
-                onChange={handleFileUpload}
+                onChange={(e) => handleFileUpload(e, 'logo')}
                 accept="image/*"
                 className="hidden"
               />
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-stone-100" />
-                <span className="text-[8px] font-black text-stone-300 uppercase tracking-widest">Or URL</span>
-                <div className="flex-1 h-px bg-stone-100" />
+            </div>
+          </div>
+
+          <div className="card space-y-6">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <ImageIcon size={20} className="text-bento-primary" />
+              Hero Background
+            </h2>
+            
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Hero Section Photo</label>
+              <div 
+                onClick={() => heroFileInputRef.current?.click()}
+                className="w-full aspect-video bg-white border-2 border-dashed border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-bento-primary hover:bg-stone-50 transition-all group overflow-hidden relative"
+              >
+                {activeUpload === 'hero' ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="text-bento-primary animate-spin" size={32} />
+                    <p className="text-[10px] font-bold text-stone-400 uppercase">Uploading via Cloudinary...</p>
+                  </div>
+                ) : heroImageUrl ? (
+                  <>
+                    <img src={heroImageUrl} className="w-full h-full object-cover" alt="Hero preview" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="text-white" size={32} />
+                        <p className="text-white text-[10px] font-black uppercase tracking-widest">Change Photo</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-4 bg-white rounded-full shadow-sm text-stone-300 group-hover:text-bento-primary transition-colors">
+                      <Upload size={32} />
+                    </div>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest text-center px-4">
+                      Tap to upload hero background
+                    </p>
+                  </>
+                )}
               </div>
               <input 
+                type="file" 
+                ref={heroFileInputRef}
+                onChange={(e) => handleFileUpload(e, 'hero')}
+                accept="image/*"
+                className="hidden"
+              />
+              <input 
                 type="text" 
-                placeholder="Paste direct Image URL here"
-                value={logoUrl} 
-                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="Or paste direct Image URL here"
+                value={heroImageUrl} 
+                onChange={(e) => setHeroImageUrl(e.target.value)}
                 className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-[10px] focus:ring-2 focus:ring-bento-primary transition-all outline-none font-mono"
               />
+            </div>
+          </div>
+
+          {/* Page Backgrounds */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
+            {/* Cart Bg */}
+            <div className="card space-y-4">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <ImageIcon size={16} className="text-stone-400" />
+                Cart Page Background
+              </h3>
+              <div 
+                onClick={() => cartFileInputRef.current?.click()}
+                className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex items-center justify-center cursor-pointer hover:border-bento-primary overflow-hidden relative group"
+              >
+                {activeUpload === 'cart' ? <Loader2 className="animate-spin text-bento-primary" /> : cartBgUrl ? (
+                  <img src={cartBgUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                ) : <Upload className="text-stone-300" />}
+                <input type="file" ref={cartFileInputRef} className="hidden" onChange={e => handleFileUpload(e, 'cart')} accept="image/*" />
+              </div>
+              <input type="text" value={cartBgUrl} onChange={e => setCartBgUrl(e.target.value)} placeholder="Cart Image URL" className="w-full bg-stone-50 border border-stone-100 rounded-xl p-2 text-[10px] outline-none" />
+            </div>
+
+            {/* Orders Bg */}
+            <div className="card space-y-4">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <ImageIcon size={16} className="text-stone-400" />
+                Orders Page Background
+              </h3>
+              <div 
+                onClick={() => ordersFileInputRef.current?.click()}
+                className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex items-center justify-center cursor-pointer hover:border-bento-primary overflow-hidden relative group"
+              >
+                {activeUpload === 'orders' ? <Loader2 className="animate-spin text-bento-primary" /> : ordersBgUrl ? (
+                  <img src={ordersBgUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                ) : <Upload className="text-stone-300" />}
+                <input type="file" ref={ordersFileInputRef} className="hidden" onChange={e => handleFileUpload(e, 'orders')} accept="image/*" />
+              </div>
+              <input type="text" value={ordersBgUrl} onChange={e => setOrdersBgUrl(e.target.value)} placeholder="Orders Image URL" className="w-full bg-stone-50 border border-stone-100 rounded-xl p-2 text-[10px] outline-none" />
+            </div>
+
+            {/* Profile Bg */}
+            <div className="card space-y-4">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <ImageIcon size={16} className="text-stone-400" />
+                Profile Page Background
+              </h3>
+              <div 
+                onClick={() => profileFileInputRef.current?.click()}
+                className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex items-center justify-center cursor-pointer hover:border-bento-primary overflow-hidden relative group"
+              >
+                {activeUpload === 'profile' ? <Loader2 className="animate-spin text-bento-primary" /> : profileBgUrl ? (
+                  <img src={profileBgUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                ) : <Upload className="text-stone-300" />}
+                <input type="file" ref={profileFileInputRef} className="hidden" onChange={e => handleFileUpload(e, 'profile')} accept="image/*" />
+              </div>
+              <input type="text" value={profileBgUrl} onChange={e => setProfileBgUrl(e.target.value)} placeholder="Profile Image URL" className="w-full bg-stone-50 border border-stone-100 rounded-xl p-2 text-[10px] outline-none" />
+            </div>
+
+            {/* Login Bg */}
+            <div className="card space-y-4">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <ImageIcon size={16} className="text-stone-400" />
+                Login Page Background
+              </h3>
+              <div 
+                onClick={() => loginFileInputRef.current?.click()}
+                className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex items-center justify-center cursor-pointer hover:border-bento-primary overflow-hidden relative group"
+              >
+                {activeUpload === 'login' ? <Loader2 className="animate-spin text-bento-primary" /> : loginBgUrl ? (
+                  <img src={loginBgUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                ) : <Upload className="text-stone-300" />}
+                <input type="file" ref={loginFileInputRef} className="hidden" onChange={e => handleFileUpload(e, 'login')} accept="image/*" />
+              </div>
+              <input type="text" value={loginBgUrl} onChange={e => setLoginBgUrl(e.target.value)} placeholder="Login Image URL" className="w-full bg-stone-50 border border-stone-100 rounded-xl p-2 text-[10px] outline-none" />
             </div>
           </div>
 
           <div className="flex justify-end gap-4">
             <button 
               onClick={handleSave}
-              disabled={isSaving || isUploading}
+              disabled={isSaving || !!activeUpload}
               className="bg-bento-primary text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:opacity-90 transition-all shadow-xl active:scale-[0.98] disabled:opacity-50"
             >
               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}

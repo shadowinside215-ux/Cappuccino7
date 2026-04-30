@@ -4,14 +4,21 @@ import { db } from './firebase';
 
 export interface BrandSettings {
   logoUrl: string;
+  heroImageUrl?: string;
+  cartBgUrl?: string;
+  ordersBgUrl?: string;
+  profileBgUrl?: string;
+  loginBgUrl?: string;
   updatedAt?: string;
 }
 
 const DEFAULT_LOGO = 'https://firebasestorage.googleapis.com/v0/b/cappuccino7-app.appspot.com/o/assets%2Flogo_cappuccino.jpg?alt=media';
+const DEFAULT_HERO = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600';
 
 export function useBrandSettings() {
   const [settings, setSettings] = useState<BrandSettings>({
-    logoUrl: DEFAULT_LOGO
+    logoUrl: DEFAULT_LOGO,
+    heroImageUrl: DEFAULT_HERO
   });
   const [loading, setLoading] = useState(true);
 

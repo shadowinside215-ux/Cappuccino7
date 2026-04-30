@@ -23,7 +23,8 @@
       "type": "object",
       "properties": {
         "name": { "type": "string" },
-        "order": { "type": "number" }
+        "order": { "type": "number" },
+        "image": { "type": "string" }
       },
       "required": ["name", "order"]
     },
@@ -96,6 +97,11 @@
         "type": "object",
         "properties": {
           "logoUrl": { "type": "string" },
+          "heroImageUrl": { "type": "string" },
+          "cartBgUrl": { "type": "string" },
+          "ordersBgUrl": { "type": "string" },
+          "profileBgUrl": { "type": "string" },
+          "loginBgUrl": { "type": "string" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["logoUrl"]

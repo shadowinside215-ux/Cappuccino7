@@ -11,11 +11,14 @@ import { useNavigate } from 'react-router-dom';
 
 import { useTranslation } from 'react-i18next';
 
+import { useBrandSettings } from '../lib/brand';
+
 export default function Home({ userProfile }: { userProfile: UserProfile | null }) {
   const { t, i18n } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const { settings: brandSettings } = useBrandSettings();
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -165,42 +168,57 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         </div>
       )}
       {/* Hero Section */}
-      <header className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-6xl font-bold italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</h1>
-          <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-stone-900 w-fit px-3 py-1 rounded-full text-xs font-bold ring-1 ring-stone-200 dark:ring-white/5">
-            <span className="text-bento-accent">★ 4.8</span>
-            <span>(2,777 reviews)</span>
-          </div>
-        </div>
-        
-        <div className="space-y-1">
-          <p className="text-stone-500 uppercase tracking-[0.2em] text-[10px] font-bold pl-1 flex items-center gap-2">
-            <MapPin size={12} className="text-bento-accent" />
-            Salé • Palace Taha • Av. Moulay Rachid
-          </p>
-          <p className="text-stone-400 text-xs italic pl-1">Known for friendly staff & artisan breakfast</p>
+      <header className="relative overflow-hidden rounded-[3rem] min-h-[400px] flex flex-col justify-end p-8 md:p-12 mb-12 group/hero">
+        {/* Background Image/Overlay */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={brandSettings.heroImageUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600'} 
+            className="w-full h-full object-cover transition-transform duration-1000 group-hover/hero:scale-105"
+            alt=""
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-2">
-          <button 
-            onClick={() => {
-              const el = document.getElementById('menu-grid');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="bg-bento-primary text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-bento-primary/20 flex items-center gap-2 hover:bg-bento-ink transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
-          >
-            {t('quick_order')} <Plus size={18} />
-          </button>
-          <button 
-            onClick={() => {
-              const el = document.getElementById('menu-grid');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="bg-bento-card-bg border-2 border-stone-100 dark:border-white/5 text-bento-primary px-8 py-4 rounded-xl font-bold shadow-sm flex items-center gap-2 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
-          >
-            {t('view_menu')} <Coffee size={18} className="text-bento-accent" />
-          </button>
+        <div className="relative z-10 space-y-6">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-6xl md:text-8xl font-black italic text-white tracking-tighter uppercase drop-shadow-2xl">
+              {t('app_name')}
+            </h1>
+            <div className="flex items-center gap-2 text-white/80 bg-white/10 backdrop-blur-md w-fit px-4 py-1.5 rounded-full text-xs font-bold ring-1 ring-white/20">
+              <span className="text-amber-400">★ 4.8</span>
+              <span>(2,777 reviews)</span>
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <p className="text-white/70 uppercase tracking-[0.2em] text-[10px] font-black pl-1 flex items-center gap-2">
+              <MapPin size={12} className="text-amber-400" />
+              Salé • Palace Taha • Av. Moulay Rachid
+            </p>
+            <p className="text-white/50 text-xs italic pl-1">Known for friendly staff & artisan breakfast</p>
+          </div>
+
+          <div className="flex flex-wrap gap-4 pt-4">
+            <button 
+              onClick={() => {
+                const el = document.getElementById('menu-grid');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="bg-white text-bento-primary px-8 py-4 rounded-2xl font-black shadow-2xl flex items-center gap-2 hover:bg-stone-100 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
+            >
+              {t('quick_order')} <Plus size={18} />
+            </button>
+            <button 
+              onClick={() => {
+                const el = document.getElementById('menu-grid');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="bg-black/20 backdrop-blur-md border border-white/20 text-white px-8 py-4 rounded-2xl font-black shadow-sm flex items-center gap-2 hover:bg-white/30 transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
+            >
+              {t('view_menu')} <Coffee size={18} className="text-amber-400" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -273,10 +291,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   });
                 }
               }}
-              className={`category-btn whitespace-nowrap transition-all ${
+              className={`category-btn whitespace-nowrap ${
                 selectedCategory === cat.id 
-                ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10 scale-105' 
-                : 'bg-bento-card-bg text-bento-ink hover:bg-stone-50 dark:hover:bg-stone-900'
+                ? 'bg-bento-primary text-white shadow-lg shadow-bento-primary/10' 
+                : 'bg-bento-card-bg text-bento-ink'
               }`}
             >
               {getTranslatedCategory(cat.name)}

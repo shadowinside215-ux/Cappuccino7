@@ -5,6 +5,8 @@ import { Order } from '../types';
 import { Clock, CheckCircle2, ChevronRight, Package, Truck, Coffee, Award } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { useBrandSettings } from '../lib/brand';
+
 const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
     case 'pending': return <Clock className="text-amber-500" size={24} />;
@@ -18,6 +20,7 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 export default function Orders() {
   const { t } = useTranslation();
+  const { settings: brand } = useBrandSettings();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const isGuest = auth.currentUser?.isAnonymous;
@@ -44,93 +47,114 @@ export default function Orders() {
 
   if (loading) return <div className="text-center py-20 flex items-center justify-center gap-2">
     <div className="w-5 h-5 border-2 border-bento-primary border-t-transparent rounded-full animate-spin" />
-    <span>Loading your orders...</span>
+    <span>Loading...</span>
   </div>;
 
   if (isGuest) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-8 px-6 text-center">
-        <div className="p-8 bg-stone-50 rounded-[40px] text-stone-300 shadow-xl shadow-stone-900/5">
-          <Truck size={64} strokeWidth={2.5} />
+      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={brand.ordersBgUrl || 'https://images.unsplash.com/photo-1544333346-6466f28ecb0c?q=80&w=1600'} 
+            className="w-full h-full object-cover" 
+            alt=""
+          />
+          <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
         </div>
-        <div className="space-y-3">
-          <h1 className="text-3xl font-black text-stone-900 uppercase italic tracking-tight">Order History</h1>
-          <p className="text-stone-500 font-medium max-w-sm">
-            You're currently browsing as a guest. <br />
-            Sign in to keep track of your previous orders and loyalty points!
+        
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="p-8 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-6 ring-1 ring-white/20">
+            <Truck size={48} className="text-white/40" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">Order History</h2>
+          <p className="text-white/60 mb-8 font-medium max-w-xs">
+            Sign in to track your artisan selections and loyalty points.
           </p>
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="bg-white text-bento-primary px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all"
+          >
+            Access History
+          </button>
         </div>
-        <button 
-          onClick={() => window.location.href = '/login'}
-          className="w-full max-w-xs bg-bento-primary text-white py-5 px-8 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl shadow-bento-primary/20 active:scale-95 transition-all"
-        >
-          Sign In to Access History
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10 pb-12">
-      <h1 className="text-4xl font-bold text-bento-primary italic tracking-tight">Cappuccino7 Orders</h1>
+    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative overflow-hidden flex flex-col gap-10">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img 
+          src={brand.ordersBgUrl || 'https://images.unsplash.com/photo-1544333346-6466f28ecb0c?q=80&w=1600'} 
+          className="w-full h-full object-cover fixed top-0 left-0" 
+          alt=""
+        />
+        <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent" />
+      </div>
 
-      {orders.length === 0 ? (
-        <div className="card !py-20 text-center border-dashed">
-          <p className="text-stone-400 font-medium italic">You haven't explored our menu yet.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {orders.map((order) => (
-            <div key={order.id} className="card group hover:scale-[1.01]">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-xl font-bold text-bento-ink">Order #{order.id.slice(-6).toUpperCase()}</h3>
-                    <span className="status-pill">{order.status}</span>
-                  </div>
-                  <p className="text-xs text-stone-400 font-bold uppercase tracking-widest">
-                    {order.createdAt?.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-                <div className="bg-stone-50 px-5 py-3 rounded-2xl border border-stone-100 min-w-[120px] text-center">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1 leading-none">{t('total_paid')}</p>
-                  <p className="text-2xl font-black text-bento-primary leading-none">{order.total} DH</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                <div className="bg-[#FDFBF9] p-5 rounded-2xl border border-stone-100">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Truck size={18} className="text-bento-accent" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-stone-500">{t('delivery_point')}</p>
-                  </div>
-                  <p className="text-sm font-medium text-bento-ink leading-relaxed line-clamp-2">
-                    {order.address}
-                  </p>
-                </div>
-                <div className="bg-stone-50 p-5 rounded-2xl border border-stone-100 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 text-green-600 font-bold">
-                    <Award size={18} />
-                    <span>+{order.pointsEarned} Points</span>
-                  </div>
-                  <p className="text-[10px] text-stone-400 uppercase font-bold tracking-widest mt-1">{t('loyalty_perk')}</p>
-                </div>
-              </div>
+      <div className="relative z-10 space-y-10">
+        <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl">History</h1>
 
-              <div className="flex items-center gap-4 pt-6 border-t border-stone-100 overflow-x-auto no-scrollbar py-2">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="flex-shrink-0 flex items-center gap-2 bg-stone-50 ring-1 ring-stone-100 px-3 py-1.5 rounded-full">
-                    <div className="w-6 h-6 rounded-full bg-bento-primary text-white text-[10px] flex items-center justify-center font-bold">
-                      {item.quantity}
+        {orders.length === 0 ? (
+          <div className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] p-12 text-center border border-white/10">
+            <p className="text-white/40 font-black uppercase tracking-widest italic">You haven't explored our menu yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-8 max-w-4xl">
+            {orders.map((order) => (
+              <div key={order.id} className="bg-white/10 backdrop-blur-2xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl group hover:bg-white/15 transition-all">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8">
+                  <div>
+                    <div className="flex items-center gap-4 mb-2">
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">#{order.id.slice(-6).toUpperCase()}</h3>
+                      <span className="bg-white/10 px-3 py-1 rounded-lg text-[10px] font-black text-white uppercase tracking-widest ring-1 ring-white/10">{order.status}</span>
                     </div>
-                    <span className="text-xs font-bold text-bento-primary">{t(`products.${item.name}`, item.name)}</span>
+                    <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">
+                      {order.createdAt?.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   </div>
-                ))}
+                  <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 text-center min-w-[140px]">
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 leading-none">{t('total_paid')}</p>
+                    <p className="text-3xl font-black text-white leading-none tabular-nums mt-1">{order.total} DH</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 text-white">
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Truck size={18} className="text-amber-400" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('delivery_point')}</p>
+                    </div>
+                    <p className="text-xs font-bold leading-relaxed line-clamp-2 opacity-80 italic">
+                      {order.address}
+                    </p>
+                  </div>
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 flex flex-col justify-center">
+                    <div className="flex items-center gap-3 text-amber-400 font-black text-xl mb-1">
+                      <Award size={20} />
+                      <span>+{order.pointsEarned} PTS</span>
+                    </div>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">{t('loyalty_perk')}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 pt-8 border-t border-white/10 overflow-x-auto no-scrollbar py-2">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="flex-shrink-0 flex items-center gap-3 bg-white/5 ring-1 ring-white/10 px-4 py-2 rounded-full backdrop-blur-md">
+                      <div className="w-7 h-7 rounded-full bg-white text-stone-900 text-[11px] flex items-center justify-center font-black">
+                        {item.quantity}
+                      </div>
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{t(`products.${item.name}`, item.name)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

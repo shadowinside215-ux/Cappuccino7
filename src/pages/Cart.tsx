@@ -8,8 +8,11 @@ import toast from 'react-hot-toast';
 
 import { useTranslation } from 'react-i18next';
 
+import { useBrandSettings } from '../lib/brand';
+
 export default function Cart({ userProfile }: { userProfile: UserProfile | null }) {
   const { t } = useTranslation();
+  const { settings: brand } = useBrandSettings();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -129,116 +132,151 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-20 flex flex-col items-center">
-        <div className="bg-white p-8 rounded-full mb-6">
-          <Trash2 size={48} className="text-gray-300" />
+      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={brand.cartBgUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600'} 
+            className="w-full h-full object-cover" 
+            alt=""
+          />
+          <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
         </div>
-        <h2 className="text-2xl font-bold text-brown-950 mb-2">{t('empty_cart')}</h2>
-        <p className="text-gray-500 mb-8">{t('empty_cart_msg')}</p>
-        <button 
-          onClick={() => navigate('/')}
-          className="bg-bento-primary text-white px-8 py-3 rounded-2xl font-medium shadow-md shadow-bento-primary/20"
-        >
-          {t('browse_menu')}
-        </button>
+        
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="p-8 bg-white/10 backdrop-blur-xl rounded-full mb-6 ring-1 ring-white/20">
+            <Trash2 size={48} className="text-white/40" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">{t('empty_cart')}</h2>
+          <p className="text-white/60 mb-8 font-medium">{t('empty_cart_msg')}</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="bg-white text-bento-primary px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all"
+          >
+            {t('browse_menu')}
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10">
-      <h1 className="text-4xl font-bold text-bento-primary">{t('cart')}</h1>
+    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative overflow-hidden flex flex-col gap-10">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img 
+          src={brand.cartBgUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600'} 
+          className="w-full h-full object-cover fixed top-0 left-0" 
+          alt=""
+        />
+        <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent" />
+      </div>
 
-      <div className="card !p-0 overflow-hidden">
-        <div className="p-6 space-y-6">
-          {items.map((item) => (
-            <div key={item.productId} className="flex items-center gap-5 group">
-              <div className="w-14 h-14 bg-stone-100 rounded-2xl flex-shrink-0 flex items-center justify-center text-bento-primary font-bold group-hover:bg-bento-accent/10 transition-colors">
-                {item.quantity}x
+      <div className="relative z-10 space-y-10">
+        <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl">{t('cart')}</h1>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+              <div className="p-8 space-y-8">
+                {items.map((item) => (
+                  <div key={item.productId} className="flex items-center gap-6 group">
+                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-black text-xl border border-white/10">
+                      {item.quantity}x
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-black text-xl text-white leading-tight uppercase tracking-tight">
+                        {t(`products.${item.name}`, item.name)}
+                      </h3>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">Premium Selection</span>
+                        {userProfile && !userProfile.isAnonymous && (
+                          <span className="text-[10px] font-black bg-white/10 text-amber-400 px-2 py-0.5 rounded-lg uppercase tracking-tighter ring-1 ring-white/10">
+                            Lvl {userProfile.itemLoyalty?.[item.productId] || 0}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-3">
+                      <p className="font-black text-2xl text-white">{(item.price * item.quantity)} DH</p>
+                      <div className="flex items-center gap-4 bg-white/5 rounded-full px-4 py-2 ring-1 ring-white/10 backdrop-blur-md">
+                        <button 
+                          onClick={() => updateQuantity(item.productId, -1)}
+                          className="text-white/40 hover:text-white transition-colors"
+                        >
+                          <Minus size={16} />
+                        </button>
+                        <button 
+                          onClick={() => updateQuantity(item.productId, 1)}
+                          className="text-white/40 hover:text-white transition-colors"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-lg text-bento-ink leading-tight">
-                  {t(`products.${item.name}`, item.name)}
-                </h3>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <p className="text-stone-400 text-xs font-medium tracking-wide">Premium Selection</p>
-                  {userProfile && !userProfile.isAnonymous && (
-                    <span className="text-[10px] font-black bg-bento-accent/10 text-bento-primary px-2 py-0.5 rounded-lg uppercase tracking-tighter ring-1 ring-bento-accent/20">
-                      Level {userProfile.itemLoyalty?.[item.productId] || 0}
-                    </span>
+              
+              <div className="p-8 bg-black/20 backdrop-blur-2xl border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-6">
+                <div>
+                  <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">{t('total_paid')}</p>
+                  <p className="text-5xl font-black text-white tracking-tighter tabular-nums">{total} DH</p>
+                </div>
+                <div className="text-center sm:text-right bg-white/5 px-6 py-3 rounded-2xl ring-1 ring-white/10">
+                  {auth.currentUser?.isAnonymous ? (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">{t('loyalty_perk')}</p>
+                      <p className="text-[10px] font-bold text-white/60">Sign in to save points!</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">{t('loyalty_perk')}</p>
+                      <p className="text-xl font-black text-amber-400">+{totalItems} {t('reward_points')}</p>
+                    </>
                   )}
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <p className="font-bold text-bento-primary">{(item.price * item.quantity)} DH</p>
-                <div className="flex items-center gap-3 bg-stone-50 rounded-full px-3 py-1 ring-1 ring-stone-100">
-                  <button 
-                    onClick={() => updateQuantity(item.productId, -1)}
-                    className="text-stone-300 hover:text-bento-primary transition-colors"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <button 
-                    onClick={() => updateQuantity(item.productId, 1)}
-                    className="text-stone-300 hover:text-bento-primary transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
+                {t('delivery_point')}
+              </label>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder={t('search_placeholder')}
+                  className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-[2rem] py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold"
+                />
+                <button
+                  onClick={getLocation}
+                  className="bg-white text-bento-primary p-5 rounded-[2rem] shadow-2xl hover:bg-stone-100 transition-all active:scale-95"
+                >
+                  <MapPin size={24} />
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-        
-        <div className="p-8 bg-stone-50 border-t border-stone-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('total_paid')}</p>
-            <p className="text-4xl font-bold text-bento-primary">{total} DH</p>
           </div>
-          <div className="text-center sm:text-right">
-            {auth.currentUser?.isAnonymous ? (
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-[0.2em]">{t('loyalty_perk')}</p>
-                <p className="text-xs font-medium text-stone-400 max-w-[200px]">Sign in to save these {totalItems} points!</p>
-              </div>
-            ) : (
-              <>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">{t('loyalty_perk')}</p>
-                <p className="text-lg font-bold text-bento-accent">+{totalItems} {t('reward_points')}</p>
-              </>
-            )}
+
+          <div className="lg:col-span-1">
+            <div className="sticky top-8 space-y-6">
+              <button
+                onClick={handleCheckout}
+                disabled={loading}
+                className="w-full bg-white text-bento-primary py-8 rounded-[3rem] font-black text-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 uppercase tracking-tight"
+              >
+                {loading ? '...' : t('confirm_order')}
+              </button>
+              <p className="text-center text-white/30 text-[10px] font-black uppercase tracking-widest px-8">
+                Secure checkout encrypted and verified by Cappuccino7
+              </p>
+            </div>
           </div>
         </div>
       </div>
-
-      <div className="space-y-4">
-        <label className="block text-xs font-bold text-stone-400 uppercase tracking-[0.2em] ml-1">
-          {t('delivery_point')}
-        </label>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder={t('search_placeholder')}
-            className="flex-1 bg-white border border-bento-card-border rounded-2xl py-4 px-6 shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300"
-          />
-          <button
-            onClick={getLocation}
-            className="card !p-4 border-2 border-transparent bg-bento-primary text-white hover:bg-bento-ink shadow-lg shadow-bento-primary/10"
-          >
-            <MapPin size={24} />
-          </button>
-        </div>
-      </div>
-
-      <button
-        onClick={handleCheckout}
-        disabled={loading}
-        className="w-full bg-bento-primary text-white py-6 rounded-[2rem] font-bold text-xl shadow-2xl shadow-bento-primary/20 hover:bg-bento-ink transition-all disabled:opacity-50 active:scale-[0.98]"
-      >
-        {loading ? '...' : `${t('confirm_order')} • ${total} DH`}
-      </button>
     </div>
   );
 }

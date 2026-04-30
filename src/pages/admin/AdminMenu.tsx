@@ -58,6 +58,7 @@ export default function AdminMenu() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<string | null>(null); // null, 'new', or productId
@@ -72,6 +73,7 @@ export default function AdminMenu() {
     isAvailable: true
   });
   const [editItem, setEditItem] = useState<Partial<Product>>({});
+  const [editCategory, setEditCategory] = useState<Partial<Category>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -122,7 +124,11 @@ export default function AdminMenu() {
       return;
     }
 
-    setIsUploading(type === 'new' ? 'new' : editingId || 'edit');
+    let uploadId: string | null = null;
+    if (type === 'new') uploadId = 'new';
+    else if (type === 'edit') uploadId = editingId;
+
+    setIsUploading(uploadId);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', uploadPreset);
@@ -142,7 +148,7 @@ export default function AdminMenu() {
       if (data.secure_url) {
         if (type === 'new') {
           setNewItem(prev => ({ ...prev, image: data.secure_url }));
-        } else {
+        } else if (type === 'edit') {
           setEditItem(prev => ({ ...prev, image: data.secure_url }));
         }
         toast.success('Image uploaded successfully');
@@ -191,6 +197,31 @@ export default function AdminMenu() {
       toast.success('Product updated successfully!');
     } catch (err) { 
       handleFirestoreError(err, OperationType.UPDATE, `products/${editingId}`);
+    }
+  };
+
+  const handleUpdateCategory = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingCategoryId || !editCategory.name) {
+      toast.error('Category name is required');
+      return;
+    }
+
+    try {
+      const { id, ...updateData } = editCategory as any;
+      const cleanData = Object.keys(updateData).reduce((acc: any, key) => {
+        if (updateData[key] !== undefined) {
+          acc[key] = updateData[key];
+        }
+        return acc;
+      }, {});
+
+      await updateDoc(doc(db, 'categories', editingCategoryId), cleanData);
+      setEditingCategoryId(null);
+      setEditCategory({});
+      toast.success('Category updated successfully!');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `categories/${editingCategoryId}`);
     }
   };
 
@@ -397,9 +428,19 @@ export default function AdminMenu() {
           return (
             <section key={cat.id} className="space-y-6">
               <div className="flex items-center gap-4 group/cat">
-                <h2 className="text-sm font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap">{cat.name}</h2>
+                <h2 className="text-sm font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">{cat.name}</h2>
                 <div className="h-px bg-stone-100 w-full" />
                 <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setEditingCategoryId(cat.id);
+                      setEditCategory(cat);
+                    }}
+                    className="p-2 text-stone-300 hover:text-bento-primary transition-all"
+                    title="Edit category"
+                  >
+                    <Edit2 size={16} />
+                  </button>
                   {confirmDeleteCatId === cat.id ? (
                     <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2">
                       <button 
@@ -426,6 +467,32 @@ export default function AdminMenu() {
                   )}
                 </div>
               </div>
+
+              {editingCategoryId === cat.id && (
+                <form onSubmit={handleUpdateCategory} className="card !p-6 border-bento-accent/30 animate-in zoom-in-95 duration-200">
+                  <div className="flex justify-between items-center mb-6">
+                    <p className="text-[10px] font-black text-bento-accent uppercase tracking-widest">Editing Category: {cat.name}</p>
+                    <button type="button" onClick={() => setEditingCategoryId(null)} className="text-stone-300 hover:text-stone-500 transition-colors"><X size={18} /></button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-stone-300 uppercase tracking-widest ml-1">Category Properties</label>
+                        <input 
+                          type="text" placeholder="Category Name" required 
+                          value={editCategory.name} onChange={e => setEditCategory({...editCategory, name: e.target.value})}
+                          className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-bento-accent outline-none font-bold"
+                        />
+                      </div>
+                      <button type="submit" className="w-full bg-bento-primary text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-bento-primary/10 hover:bg-stone-900 transition-all">
+                        Update Category
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {catProducts.map(product => (
                   <div key={product.id} className="flex flex-col gap-4">
