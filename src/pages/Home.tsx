@@ -145,7 +145,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   if (loading) return <div className="text-center py-20 italic text-stone-400">...</div>;
 
   return (
-    <div className="space-y-12 relative px-6 max-w-7xl mx-auto">
+    <div className="space-y-12 relative px-2 sm:px-6 max-w-7xl mx-auto">
       {/* Admin Setup Warning */}
       {isEmpty && isAdmin && (
         <div className="card !bg-amber-100 !border-amber-200 !p-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -167,10 +167,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       {/* Hero Section */}
       <header className="space-y-8 flex flex-col items-start pt-10">
         <div className="flex flex-col gap-2">
-          <h1 className="text-7xl sm:text-9xl font-serif font-black italic text-bento-primary dark:text-bento-accent tracking-tighter uppercase leading-[0.8]">{t('app_name')}</h1>
-          <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-stone-900 w-fit px-3 py-1 rounded-full text-[10px] font-black ring-1 ring-stone-200 dark:ring-white/5 uppercase tracking-widest mt-4">
+          <h1 className="text-6xl sm:text-9xl font-serif font-black italic text-bento-primary dark:text-bento-accent tracking-tighter uppercase leading-[0.8]">{t('app_name')}</h1>
+          <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-stone-900 w-fit px-3 py-1.5 rounded-full text-[10px] font-black ring-1 ring-stone-200 dark:ring-white/5 uppercase tracking-widest mt-6">
             <span className="text-bento-accent">★ 4.8</span>
-            <span>(2,777 reviews)</span>
+            <span className="opacity-60 text-[9px] font-bold">(2,777 reviews)</span>
           </div>
         </div>
         
@@ -333,12 +333,12 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 <div className="h-px bg-stone-100 dark:bg-white/5 w-full" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 pb-32">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12 pb-32">
                 {searchFiltered.map((product) => (
                   <motion.div
                     layout
                     key={product.id}
-                    className="group flex flex-col bg-[#0D0B0A] hover:bg-[#151210] transition-all duration-500 rounded-[3rem] overflow-hidden shadow-2xl border border-white/5 max-w-[420px]"
+                    className="group flex flex-col bg-[#0D0B0A] hover:bg-[#151210] transition-all duration-500 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 max-w-[360px]"
                   >
                     <div className="w-full aspect-[4/3] relative overflow-hidden shrink-0">
                       <img
@@ -348,23 +348,23 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-6 right-6">
-                        <div className="bg-[#1A120B]/90 backdrop-blur-md px-4 py-2 rounded-2xl text-sm font-black text-white shadow-2xl border border-white/10 uppercase tracking-widest">
+                        <div className="bg-[#1A120B]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-black text-white shadow-2xl border border-white/10 uppercase tracking-widest">
                           {product.price} DH
                         </div>
                       </div>
                     </div>
-                    <div className="p-8 sm:p-10 flex flex-col items-start gap-6">
-                      <div className="space-y-4">
+                    <div className="p-6 sm:p-8 flex flex-col items-start gap-5">
+                      <div className="space-y-3">
                         <div className="space-y-2">
-                          <h3 className="text-3xl sm:text-4xl font-serif font-black text-white leading-[1.1] transition-colors group-hover:text-[#D4A373]">
+                          <h3 className="text-2xl sm:text-3xl font-serif font-black text-white leading-[1.1] transition-colors group-hover:text-[#D4A373]">
                             {t(`products.${product.name}`, product.name)}
                           </h3>
                           {userProfile && (
-                            <div className="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                               {[...Array(10)].map((_, i) => (
                                 <div 
                                   key={i} 
-                                  className={`w-1.5 h-1.5 rounded-full ${
+                                  className={`w-1 h-1 rounded-full ${
                                     i < (userProfile.itemLoyalty?.[product.id] || 0) 
                                     ? 'bg-[#D4A373]' 
                                     : 'bg-white/10'
@@ -374,13 +374,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                             </div>
                           )}
                         </div>
-                        <p className="text-stone-400 text-sm sm:text-base leading-relaxed line-clamp-3 font-medium opacity-80">
+                        <p className="text-stone-400 text-xs sm:text-sm leading-relaxed line-clamp-3 font-medium opacity-80">
                           {t(`descriptions.${product.name}`, product.description)}
                         </p>
                       </div>
                       <button
                         onClick={() => addToCart(product)}
-                        className="w-full py-5 bg-transparent border border-white/10 text-white rounded-3xl font-black text-xs uppercase tracking-[0.4em] hover:bg-white hover:text-black transition-all active:scale-[0.98] mt-2"
+                        className="w-full py-4 bg-transparent border border-white/10 text-white rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-[0.4em] hover:bg-white hover:text-black transition-all active:scale-[0.98] mt-2"
                       >
                         ADD TO ORDER
                       </button>
