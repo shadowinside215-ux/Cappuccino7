@@ -3,8 +3,9 @@ import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Product } from '../types';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2 } from 'lucide-react';
+import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'motion/react';
 
 import { useTranslation } from 'react-i18next';
 
@@ -92,7 +93,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   }
 
   return (
-    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative overflow-hidden flex flex-col gap-10">
+    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative flex flex-col gap-10">
       {/* Immersive Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
@@ -104,44 +105,75 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent" />
       </div>
 
-      <div className="relative z-10 space-y-10">
+      <div className="relative z-10 space-y-12 max-w-5xl mx-auto">
         <div className="flex justify-between items-start">
-          <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl">{t('my_account')}</h1>
-          <button 
+          <motion.h1 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", damping: 20, stiffness: 100 }}
+            className="text-6xl md:text-8xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl"
+          >
+            {t('my_account')}
+          </motion.h1>
+          <motion.button 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
             onClick={handleLogout}
-            className="p-4 bg-white/10 backdrop-blur-xl rounded-2xl text-white hover:bg-red-500 transition-colors border border-white/10 shadow-xl"
+            className="p-4 bg-white/10 backdrop-blur-xl rounded-2xl text-white hover:bg-red-500/80 transition-all border border-white/10 shadow-xl active:scale-90"
           >
             <LogOut size={24} />
-          </button>
+          </motion.button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Info Card */}
-          <div className="bg-white/10 backdrop-blur-[40px] rounded-[3rem] flex flex-col items-center justify-center py-12 border border-white/10 shadow-2xl text-white">
-            <div className="w-32 h-32 bg-white text-stone-900 rounded-[2.5rem] flex items-center justify-center text-5xl font-black mb-8 shadow-2xl overflow-hidden p-1 border-4 border-white/10">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white/10 backdrop-blur-[40px] rounded-[3rem] flex flex-col items-center justify-center py-12 border border-white/10 shadow-2xl text-white relative overflow-hidden"
+          >
+            <motion.div 
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: "spring" }}
+              className="w-32 h-32 bg-white text-stone-900 rounded-[2.5rem] flex items-center justify-center text-5xl font-black mb-8 shadow-2xl overflow-hidden p-1 border-4 border-white/10"
+            >
               {userProfile.name.charAt(0).toUpperCase()}
-            </div>
+            </motion.div>
             <h2 className="text-3xl font-black uppercase tracking-tight italic mb-1">{userProfile.name}</h2>
             <p className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-10">{t('premium_customer')}</p>
             
             <div className="w-full pt-10 border-t border-white/5 flex justify-around">
               <div className="text-center">
                 <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">{t('total_points')}</p>
-                <p className="text-4xl font-black text-white tracking-tighter">{userProfile.points}</p>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-4xl font-black text-white tracking-tighter"
+                >
+                  {userProfile.points}
+                </motion.p>
               </div>
               <div className="text-center">
                 <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">{t('status')}</p>
                 <p className="text-4xl font-black text-amber-400 tracking-tighter">GOLD</p>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Global Coffee Loyalty */}
-          <div className="lg:col-span-2 bg-amber-900/60 backdrop-blur-3xl rounded-[3rem] p-10 border border-white/10 shadow-2xl overflow-hidden relative flex flex-col justify-between text-white group">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-2 bg-stone-900/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-white/10 shadow-2xl overflow-hidden relative flex flex-col justify-between text-white group"
+          >
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-8">
-                <div className="p-4 bg-white/10 rounded-2xl ring-1 ring-white/10">
-                  <Coffee size={28} className="text-amber-200" />
+                <div className="p-4 bg-white/5 rounded-2xl ring-1 ring-white/10">
+                  <Coffee size={28} className="text-amber-400" />
                 </div>
                 <div>
                   <h3 className="text-2xl font-black uppercase tracking-tight italic">Coffee Club</h3>
@@ -149,19 +181,32 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                 </div>
               </div>
               <div className="flex items-end gap-8">
-                <p className="text-[10rem] font-black leading-none tracking-tighter tabular-nums drop-shadow-2xl">{userProfile.coffeeCount || 0}</p>
+                <motion.p 
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.4, type: "spring", bounce: 0.5 }}
+                  className="text-[10rem] font-black leading-none tracking-tighter tabular-nums drop-shadow-2xl"
+                >
+                  {userProfile.coffeeCount || 0}
+                </motion.p>
                 <div className="mb-6 space-y-4">
-                  <p className="text-sm font-bold opacity-60 leading-tight max-w-[120px]">{t('total_artisan')}</p>
+                  <p className="text-sm font-bold opacity-60 leading-tight max-w-[120px] italic">{t('total_artisan')}</p>
                   <div className="flex gap-2">
                      {[...Array(5)].map((_, i) => (
-                       <div key={i} className={`w-3 h-3 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400' : 'bg-white/10 ring-1 ring-white/10'}`} />
+                       <motion.div 
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.6 + (i * 0.1) }}
+                        key={i} 
+                        className={`w-3 h-3 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)]' : 'bg-white/10 ring-1 ring-white/10'}`} 
+                       />
                      ))}
                   </div>
                 </div>
               </div>
             </div>
             <Coffee size={240} className="absolute -right-20 -bottom-20 opacity-5 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
-          </div>
+          </motion.div>
         </div>
 
         {/* Item-Specific Loyalty Rewards */}
@@ -177,56 +222,80 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
               <span className="text-sm font-black uppercase tracking-widest">{t('auth_loyalty')}</span>
             </div>
           ) : loyaltyProducts.length === 0 ? (
-            <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-16 text-center border border-white/10">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-16 text-center border border-white/10"
+            >
               <p className="text-white/40 font-black uppercase tracking-[0.2em] italic mb-2 text-xs">{t('loyalty_info')}</p>
-            </div>
+            </motion.div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loyaltyProducts.map(product => {
-                const count = userProfile.itemLoyalty?.[product.id] || 0;
-                const progress = count % 11;
-                const rewardReady = count >= 11;
+              <AnimatePresence>
+                {loyaltyProducts.map((product, idx) => {
+                  const count = userProfile.itemLoyalty?.[product.id] || 0;
+                  const rewardReady = count >= 11;
 
-                return (
-                  <div key={product.id} className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-8 flex flex-col gap-6 group hover:bg-white/10 transition-all border border-white/5 relative overflow-hidden">
-                    <div className="flex items-center gap-6">
-                      <div className="w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 ring-4 ring-white/10 shadow-2xl">
-                        <img src={product.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-black text-xl text-white truncate uppercase tracking-tight">
-                          {t(`products.${product.name}`, product.name)}
-                        </h4>
-                        <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${rewardReady ? 'text-amber-400' : 'text-white/40'}`}>
-                          {rewardReady ? `🎁 Ready to Redeem` : `LVL ${count} • Goal 11`}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex gap-1.5 h-2">
-                        {[...Array(11)].map((_, i) => (
-                          <div 
-                            key={i} 
-                            className={`flex-1 rounded-full transition-all duration-500 ${
-                              i < (rewardReady ? 11 : count % 11) 
-                              ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]' 
-                              : 'bg-white/5'
-                            }`} 
+                  return (
+                    <motion.div 
+                      key={product.id} 
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-8 flex flex-col gap-6 group hover:bg-white/10 transition-all border border-white/5 relative overflow-hidden shadow-xl"
+                    >
+                      <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 ring-4 ring-white/10 shadow-2xl">
+                          <motion.img 
+                            whileHover={{ scale: 1.1 }}
+                            src={product.image} 
+                            alt="" 
+                            className="w-full h-full object-cover transition-transform duration-500" 
                           />
-                        ))}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-black text-xl text-white truncate uppercase tracking-tight italic">
+                            {t(`products.${product.name}`, product.name)}
+                          </h4>
+                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${rewardReady ? 'text-amber-400' : 'text-white/40'}`}>
+                            {rewardReady ? `🎁 Ready to Redeem` : `LVL ${count} • Goal 11`}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-right text-[9px] font-black text-white/20 uppercase tracking-widest">Digital Stamp Card</p>
-                    </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex gap-1.5 h-2">
+                          {[...Array(11)].map((_, i) => (
+                            <motion.div 
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.1 + (i * 0.03) }}
+                              key={i} 
+                              className={`flex-1 rounded-full transition-all duration-500 ${
+                                i < (rewardReady ? 11 : count % 11) 
+                                ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]' 
+                                : 'bg-white/5'
+                              }`} 
+                            />
+                          ))}
+                        </div>
+                        <p className="text-right text-[9px] font-black text-white/20 uppercase tracking-widest italic font-mono">Artisan Stamp Card</p>
+                      </div>
 
-                    {rewardReady && (
-                      <div className="absolute top-4 right-4 bg-amber-400 text-stone-900 p-3 rounded-2xl shadow-2xl animate-bounce">
-                        <Gift size={20} />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      {rewardReady && (
+                        <motion.div 
+                          animate={{ y: [0, -10, 0] }}
+                          transition={{ repeat: Infinity, duration: 2 }}
+                          className="absolute top-4 right-4 bg-amber-400 text-stone-900 p-3 rounded-2xl shadow-2xl"
+                        >
+                          <Gift size={20} />
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           )}
         </div>

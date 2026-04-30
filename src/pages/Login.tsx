@@ -148,7 +148,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 group/login relative overflow-hidden flex items-center justify-center p-6">
+    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 group/login relative flex items-center justify-center p-6">
       {/* Immersive Background */}
       <div className="absolute inset-0 z-0">
         <img 

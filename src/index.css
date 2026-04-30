@@ -40,12 +40,17 @@
     --bento-card-border: rgba(212, 163, 115, 0.15);
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+  
   html, body {
-    @apply overflow-x-hidden w-full transition-colors duration-300;
+    @apply overflow-x-hidden w-full transition-colors duration-500;
+    -webkit-tap-highlight-color: transparent;
   }
   
   body {
-    @apply font-sans bg-bento-bg text-bento-ink selection:bg-bento-accent/30;
+    @apply font-sans bg-bento-bg text-bento-ink selection:bg-bento-accent/30 antialiased;
   }
   
   h1, h2, h3, h4, .font-serif {
@@ -54,7 +59,11 @@
 }
 
 .card {
-  @apply bg-bento-card-bg border border-bento-card-border rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-6 flex flex-col transition-all duration-300;
+  @apply bg-stone-900/5 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-8 flex flex-col transition-all duration-500;
+}
+
+.dark .card {
+  @apply bg-white/5 border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)];
 }
 
 .accent-card {

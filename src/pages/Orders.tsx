@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { Order } from '../types';
-import { Clock, CheckCircle2, ChevronRight, Package, Truck, Coffee, Award } from 'lucide-react';
+import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 
 import { useBrandSettings } from '../lib/brand';
 
@@ -23,6 +25,7 @@ export default function Orders() {
   const { settings: brand } = useBrandSettings();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const isGuest = auth.currentUser?.isAnonymous;
 
   useEffect(() => {
@@ -71,7 +74,7 @@ export default function Orders() {
             Sign in to track your artisan selections and loyalty points.
           </p>
           <button 
-            onClick={() => window.location.href = '/login'}
+            onClick={() => navigate('/login')}
             className="bg-white text-bento-primary px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all"
           >
             Access History
@@ -82,7 +85,7 @@ export default function Orders() {
   }
 
   return (
-    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative overflow-hidden flex flex-col gap-10">
+    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative flex flex-col gap-10">
       {/* Immersive Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
@@ -95,62 +98,94 @@ export default function Orders() {
       </div>
 
       <div className="relative z-10 space-y-10">
-        <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl">History</h1>
+        <motion.h1 
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", damping: 20, stiffness: 100 }}
+          className="text-6xl md:text-8xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl"
+        >
+          {t('order_history')}
+        </motion.h1>
 
         {orders.length === 0 ? (
-          <div className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] p-12 text-center border border-white/10">
-            <p className="text-white/40 font-black uppercase tracking-widest italic">You haven't explored our menu yet.</p>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] p-12 text-center border border-white/10"
+          >
+            <p className="text-white/40 font-black uppercase tracking-widest italic">{t('no_orders')}</p>
+          </motion.div>
         ) : (
           <div className="space-y-8 max-w-4xl">
-            {orders.map((order) => (
-              <div key={order.id} className="bg-white/10 backdrop-blur-2xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl group hover:bg-white/15 transition-all">
+            {orders.map((order, idx) => (
+              <motion.div 
+                key={order.id} 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ delay: idx * 0.1, type: "spring", bounce: 0.2 }}
+                className="bg-white/10 backdrop-blur-2xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl group hover:bg-white/15 transition-all relative overflow-hidden"
+              >
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8">
                   <div>
                     <div className="flex items-center gap-4 mb-2">
                       <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">#{order.id.slice(-6).toUpperCase()}</h3>
-                      <span className="bg-white/10 px-3 py-1 rounded-lg text-[10px] font-black text-white uppercase tracking-widest ring-1 ring-white/10">{order.status}</span>
+                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ring-1 ${
+                        order.status === 'ready' || order.status === 'delivered' || order.status === 'completed' 
+                        ? 'bg-green-500/20 text-green-400 ring-green-500/20' 
+                        : 'bg-amber-500/20 text-amber-400 ring-amber-500/20 animate-pulse'
+                      }`}>
+                        {order.status}
+                      </span>
                     </div>
-                    <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">
-                      {order.createdAt?.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    <p className="text-[10px] text-white/40 font-black uppercase tracking-widest font-mono">
+                      {order.createdAt?.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} at {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                  <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 text-center min-w-[140px]">
+                  <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 text-center min-w-[140px] group-hover:bg-white/10 transition-all">
                     <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 leading-none">{t('total_paid')}</p>
                     <p className="text-3xl font-black text-white leading-none tabular-nums mt-1">{order.total} DH</p>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 text-white">
-                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 hover:bg-white/10 transition-all">
                     <div className="flex items-center gap-3 mb-3">
-                      <Truck size={18} className="text-amber-400" />
+                      <MapPin size={18} className="text-amber-400" />
                       <p className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('delivery_point')}</p>
                     </div>
                     <p className="text-xs font-bold leading-relaxed line-clamp-2 opacity-80 italic">
-                      {order.address}
+                      {order.address || 'Premium Lounge Pickup'}
                     </p>
                   </div>
-                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 flex flex-col justify-center">
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 flex flex-col justify-center hover:bg-white/10 transition-all">
                     <div className="flex items-center gap-3 text-amber-400 font-black text-xl mb-1">
                       <Award size={20} />
-                      <span>+{order.pointsEarned} PTS</span>
+                      <span>+{order.pointsEarned || Math.floor(order.total / 10)} PTS</span>
                     </div>
                     <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">{t('loyalty_perk')}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 pt-8 border-t border-white/10 overflow-x-auto no-scrollbar py-2">
-                  {order.items.map((item, idx) => (
-                    <div key={idx} className="flex-shrink-0 flex items-center gap-3 bg-white/5 ring-1 ring-white/10 px-4 py-2 rounded-full backdrop-blur-md">
-                      <div className="w-7 h-7 rounded-full bg-white text-stone-900 text-[11px] flex items-center justify-center font-black">
-                        {item.quantity}
-                      </div>
-                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{t(`products.${item.name}`, item.name)}</span>
-                    </div>
-                  ))}
+                  <AnimatePresence>
+                    {order.items.map((item, i) => (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.05 }}
+                        key={i} 
+                        className="flex-shrink-0 flex items-center gap-3 bg-white/5 ring-1 ring-white/10 px-4 py-2 rounded-full backdrop-blur-md hover:bg-white/10 cursor-default"
+                      >
+                        <div className="w-7 h-7 rounded-full bg-white text-stone-900 text-[11px] flex items-center justify-center font-black">
+                          {item.quantity}
+                        </div>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{t(`products.${item.name}`, item.name)}</span>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}

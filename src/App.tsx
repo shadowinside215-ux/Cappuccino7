@@ -63,25 +63,37 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   if (location.pathname === '/login') return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-bento-card-bg border-t border-stone-100 dark:border-white/5 px-4 py-3 z-[50] lg:hidden">
-      <div className="max-w-4xl mx-auto flex justify-around items-center">
-        <Link to="/" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/' ? 'text-bento-primary' : 'text-stone-400'}`}>
-          <Coffee size={24} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
-          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('menu')}</span>
+    <nav className="fixed bottom-6 left-6 right-6 z-[60] lg:hidden">
+      <div className="max-w-md mx-auto bg-stone-950/80 backdrop-blur-3xl border border-white/10 px-4 py-3 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] flex justify-around items-center relative">
+        <Link to="/" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/' ? 'text-white scale-110' : 'text-white/40'}`}>
+          <Coffee size={22} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
+          <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('menu')}</span>
+          {location.pathname === '/' && (
+            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+          )}
         </Link>
-        <Link to="/cart" className={`flex flex-col items-center p-2 transition-colors relative ${location.pathname === '/cart' ? 'text-bento-primary' : 'text-stone-400'}`}>
-          <ShoppingCart size={24} strokeWidth={location.pathname === '/cart' ? 2.5 : 2} />
-          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('cart')}</span>
+        <Link to="/cart" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/cart' ? 'text-white scale-110' : 'text-white/40'}`}>
+          <ShoppingCart size={22} strokeWidth={location.pathname === '/cart' ? 2.5 : 2} />
+          <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('cart')}</span>
+          {location.pathname === '/cart' && (
+            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+          )}
         </Link>
         {auth.currentUser && !auth.currentUser.isAnonymous && (
-          <Link to="/orders" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/orders' ? 'text-bento-primary' : 'text-stone-400'}`}>
-            <ListOrdered size={24} strokeWidth={location.pathname === '/orders' ? 2.5 : 2} />
-            <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('orders')}</span>
+          <Link to="/orders" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/orders' ? 'text-white scale-110' : 'text-white/40'}`}>
+            <ListOrdered size={22} strokeWidth={location.pathname === '/orders' ? 2.5 : 2} />
+            <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('orders')}</span>
+            {location.pathname === '/orders' && (
+              <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+            )}
           </Link>
         )}
-        <Link to="/profile" className={`flex flex-col items-center p-2 transition-colors ${location.pathname === '/profile' ? 'text-bento-primary' : 'text-stone-400'}`}>
-          <UserIcon size={24} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} />
-          <span className="text-[9px] mt-1 font-black uppercase tracking-widest">{t('profile')}</span>
+        <Link to="/profile" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/profile' ? 'text-white scale-110' : 'text-white/40'}`}>
+          <UserIcon size={22} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} />
+          <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('profile')}</span>
+          {location.pathname === '/profile' && (
+            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+          )}
         </Link>
       </div>
     </nav>
@@ -128,44 +140,52 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       <Toaster position="top-center" />
       
       {/* Universal Header - Responsive */}
-      <header className="fixed top-0 left-0 right-0 bg-bento-card-bg/90 backdrop-blur-xl border-b border-stone-100 dark:border-white/5 z-[60] py-4 px-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
+        <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-950/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
           <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-100 dark:border-white/5 shadow-sm bg-white">
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 shadow-lg bg-white p-0.5">
               <img 
                 src={brand.logoUrl} 
                 alt="Logo" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <span className="text-lg sm:text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
+            <span className="text-xl font-black italic text-white tracking-tighter uppercase">{t('app_name')}</span>
           </Link>
 
           <div className="flex items-center gap-6">
             {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center gap-4 border-r border-stone-100 pr-6 mr-2">
-              <Link to="/" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+            <div className="hidden lg:flex items-center gap-2 pr-6">
+              <Link to="/" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
                 <Coffee size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('menu')}</span>
+                {location.pathname === '/' && (
+                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                )}
               </Link>
-              <Link to="/cart" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/cart' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+              <Link to="/cart" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/cart' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
                 <ShoppingCart size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('cart')}</span>
+                {location.pathname === '/cart' && (
+                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                )}
               </Link>
-              <Link to="/orders" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/orders' ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+              <Link to="/orders" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/orders' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
                 <ListOrdered size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('orders')}</span>
+                {location.pathname === '/orders' && (
+                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                )}
               </Link>
-              <Link to="/profile" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/profile' ? 'bg-stone-50 dark:bg-stone-900 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+              <Link to="/profile" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/profile' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
                 <UserIcon size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('profile')}</span>
-              </Link>
-              <Link to="/settings" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname === '/settings' ? 'bg-stone-50 dark:bg-stone-900 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
-                <SettingsIcon size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{t('settings', { defaultValue: 'Settings' })}</span>
+                {location.pathname === '/profile' && (
+                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                )}
               </Link>
               {isAdmin && (
-                <Link to="/admin" className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${location.pathname.startsWith('/admin') ? 'bg-stone-50 text-bento-primary font-bold' : 'text-stone-400 hover:text-bento-primary'}`}>
+                <Link to="/admin" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${location.pathname.startsWith('/admin') ? 'bg-amber-400 text-stone-900 font-bold' : 'text-white/40 hover:text-white'}`}>
                   <LayoutDashboard size={18} />
                   <span className="text-[10px] font-black uppercase tracking-widest">{t('admin')}</span>
                 </Link>
@@ -310,22 +330,37 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
-      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 no-scrollbar`}>
-        <Routes>
-          <Route path="/" element={user ? <Home userProfile={userProfile} /> : <Navigate to="/login" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/cart" element={<Cart userProfile={userProfile} />} />
-          <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
-          <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
-          <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
-          <Route path="/admin/menu" element={<AdminGuard userProfile={userProfile}><AdminMenu /></AdminGuard>} />
-          <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
-          <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />
-        </Routes>
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10`}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 15, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -15, scale: 0.98 }}
+            transition={{ 
+              type: "spring",
+              stiffness: 260,
+              damping: 30,
+              opacity: { duration: 0.2 }
+            }}
+          >
+            <Routes location={location}>
+              <Route path="/" element={user ? <Home userProfile={userProfile} /> : <Navigate to="/login" />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/cart" element={<Cart userProfile={userProfile} />} />
+              <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
+              <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
+              <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} />} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
+              <Route path="/admin/menu" element={<AdminGuard userProfile={userProfile}><AdminMenu /></AdminGuard>} />
+              <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
+              <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Persistent Admin Footer Access */}
