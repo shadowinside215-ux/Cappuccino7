@@ -275,7 +275,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 100 }}
-          className="text-6xl md:text-8xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl"
+          className="text-5xl md:text-7xl font-black text-bento-primary italic tracking-tighter uppercase drop-shadow-lg"
         >
           {t('cart')}
         </motion.h1>
@@ -528,7 +528,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-shimmer" />
               </button>
               <p className="text-center text-white/30 text-[10px] font-black uppercase tracking-widest px-8 leading-relaxed">
-                Premium artisan selection <br /> verified by Cappuccino7
+                Premium artisan selection <br /> verified by <span className="text-bento-primary font-bold">Cappuccino7</span>
               </p>
             </motion.div>
           </div>

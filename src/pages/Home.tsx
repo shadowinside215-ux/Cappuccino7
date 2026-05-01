@@ -324,7 +324,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
             className="flex flex-col gap-6"
           >
-            <h1 className="text-7xl md:text-[12rem] font-black italic text-white tracking-[12px] md:tracking-[-0.05em] uppercase leading-[0.8] drop-shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
+            <h1 className="text-5xl md:text-8xl font-black italic text-bento-primary tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
               {t('app_name')}
             </h1>
             <div className="flex flex-wrap items-center gap-2 md:gap-3">

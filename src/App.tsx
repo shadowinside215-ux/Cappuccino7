@@ -165,7 +165,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 className="w-full h-full object-contain"
               />
             </div>
-            <span className="text-xl font-black italic text-white tracking-tighter uppercase">{t('app_name')}</span>
+            <span className="text-lg font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -277,7 +277,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                     className="w-full h-full object-contain rounded-full"
                   />
                 </div>
-                <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
+                <span className="text-lg font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
               </Link>
               <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-stone-50 rounded-2xl">
                 <X size={24} />

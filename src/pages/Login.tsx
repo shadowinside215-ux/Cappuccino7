@@ -186,7 +186,7 @@ export default function Login() {
               </div>
               
               <div className="text-center space-y-4">
-                <h1 className="text-6xl font-black text-white tracking-tighter italic uppercase drop-shadow-2xl">Cappuccino7</h1>
+                <h1 className="text-3xl sm:text-4xl font-black text-bento-primary tracking-tighter italic drop-shadow-sm">Cappuccino7</h1>
                 <p className="text-white/60 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
                   Premium coffee, shared moments. <br />
                   Login to earn exclusive rewards.

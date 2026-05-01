@@ -353,7 +353,7 @@ export default function BrandSettings() {
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-white p-0.5">
                   <img src={logoUrl} alt="Preview" className="w-full h-full object-contain" />
                 </div>
-                <span className="font-black italic uppercase tracking-tighter text-sm">Cappuccino7</span>
+                <span className="font-black italic uppercase tracking-tighter text-sm text-bento-primary">Cappuccino7</span>
               </div>
 
               <div className="p-8 bg-white rounded-3xl shadow-lg flex flex-col items-center gap-4">

@@ -71,7 +71,7 @@ export default function AdminLogin() {
              />
           </div>
           <div>
-            <h1 className="text-4xl font-black italic text-bento-primary tracking-tighter">Cappuccino7</h1>
+            <h1 className="text-3xl font-black italic text-bento-primary tracking-tighter">Cappuccino7</h1>
             <p className="text-stone-400 font-bold uppercase tracking-widest text-[10px] mt-2">Management Console</p>
           </div>
         </div>
