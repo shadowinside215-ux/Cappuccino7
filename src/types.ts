@@ -42,7 +42,9 @@ export interface Order {
   items: OrderItem[];
   total: number;
   status: OrderStatus;
+  deliveryType: 'delivery' | 'pickup';
   address: string;
+  deliveryNotes?: string;
   location?: {
     lat: number;
     lng: number;

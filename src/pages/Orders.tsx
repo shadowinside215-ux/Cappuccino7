@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { Order } from '../types';
-import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus } from 'lucide-react';
+import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus, ExternalLink, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
@@ -151,12 +151,41 @@ export default function Orders() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 text-white">
                   <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 hover:bg-white/10 transition-all">
                     <div className="flex items-center gap-3 mb-3">
-                      <MapPin size={18} className="text-amber-400" />
-                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('delivery_point')}</p>
+                      {order.deliveryType === 'delivery' ? <Truck size={18} className="text-amber-400" /> : <Package size={18} className="text-amber-400" />}
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                        {order.deliveryType === 'delivery' ? t('delivery') : t('pickup')}
+                      </p>
                     </div>
-                    <p className="text-xs font-bold leading-relaxed line-clamp-2 opacity-80 italic">
-                      {order.address || 'Premium Lounge Pickup'}
-                    </p>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-xs font-bold leading-relaxed line-clamp-2 opacity-80 italic">
+                          {order.address || 'Premium Lounge Pickup'}
+                        </p>
+                        {order.deliveryType === 'delivery' && order.location && (
+                          <a 
+                            href={`https://www.google.com/maps?q=${order.location.lat},${order.location.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-flex items-center gap-2 bg-white text-stone-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
+                          >
+                            <ExternalLink size={12} />
+                            {t('open_maps')}
+                          </a>
+                        )}
+                      </div>
+
+                      {order.deliveryNotes && (
+                        <div className="pt-4 border-t border-white/5">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <MessageCircle size={12} className="text-white/40" />
+                            <p className="text-[9px] font-black uppercase tracking-widest text-white/40">{t('delivery_notes')}</p>
+                          </div>
+                          <p className="text-[10px] text-white/60 font-medium leading-relaxed italic">
+                            "{order.deliveryNotes}"
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 flex flex-col justify-center hover:bg-white/10 transition-all">
                     <div className="flex items-center gap-3 text-amber-400 font-black text-xl mb-1">

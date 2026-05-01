@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { OrderItem, OrderStatus, UserProfile } from '../types';
-import { Minus, Plus, Trash2, MapPin } from 'lucide-react';
+import { Minus, Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -16,6 +16,11 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const { settings: brand } = useBrandSettings();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [address, setAddress] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
+  const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locatingError, setLocatingError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -41,6 +46,58 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  const captureGPS = (retryOnTimeout = true): Promise<{ lat: number, lng: number }> => {
+    return new Promise((resolve, reject) => {
+      if (!("geolocation" in navigator)) {
+        reject(new Error("Geolocation not supported"));
+        return;
+      }
+
+      setIsLocating(true);
+      setLocatingError(null);
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setLocation(coords);
+          setIsLocating(false);
+          resolve(coords);
+        },
+        async (error) => {
+          if (error.code === error.TIMEOUT && retryOnTimeout) {
+            console.log("GPS Timeout, retrying once...");
+            try {
+              const result = await captureGPS(false);
+              resolve(result);
+            } catch (err) {
+              setIsLocating(false);
+              setLocatingError("timeout");
+              reject(err);
+            }
+          } else {
+            setIsLocating(false);
+            if (error.code === error.PERMISSION_DENIED) {
+              setLocatingError("denied");
+            } else {
+              setLocatingError("failed");
+            }
+            reject(error);
+          }
+        },
+        options
+      );
+    });
+  };
+
   const handleCheckout = async () => {
     if (!auth.currentUser) {
       toast.error('Please login or continue as guest to place an order');
@@ -53,9 +110,28 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       return;
     }
 
-    if (!address) {
-      toast.error('Please enter a delivery address');
-      return;
+    // Logic for delivery requirements
+    let finalLocation = location;
+    if (deliveryType === 'delivery') {
+      if (!address.trim()) {
+        toast.error(t('location_required'));
+        return;
+      }
+
+      if (!finalLocation) {
+        setLoading(true);
+        toast.loading("Capturing high-accuracy GPS...", { id: 'geo' });
+        try {
+          finalLocation = await captureGPS();
+          toast.success(t('location_captured'), { id: 'geo' });
+        } catch (err) {
+          toast.dismiss('geo');
+          // We allow fallback if address is provided, but we warned them
+          console.warn("GPS capture failed, continuing with manual address if present", err);
+        } finally {
+          setLoading(false);
+        }
+      }
     }
 
     setLoading(true);
@@ -69,7 +145,13 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         items: items,
         total: total,
         status: 'pending' as OrderStatus,
-        address: address,
+        deliveryType,
+        address: address || (deliveryType === 'pickup' ? 'Store Pickup' : ''),
+        deliveryNotes,
+        location: finalLocation ? {
+          lat: finalLocation.lat,
+          lng: finalLocation.lng
+        } : undefined,
         pointsEarned: pointsEarned,
         createdAt: serverTimestamp()
       };
@@ -278,26 +360,125 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="space-y-4"
+              className="space-y-6"
             >
-              <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
-                {t('delivery_point')}
-              </label>
-              <div className="flex gap-4">
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder={t('search_placeholder')}
-                  className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-[2rem] py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none"
-                />
-                <button
-                  onClick={getLocation}
-                  className="bg-white text-stone-900 p-5 rounded-[2rem] shadow-2xl hover:scale-105 active:scale-95 transition-all"
-                >
-                  <MapPin size={24} />
-                </button>
+              <div>
+                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4 mb-4">
+                  {t('delivery_options')}
+                </label>
+                <div className="flex gap-4 p-2 bg-white/5 rounded-[2.5rem] ring-1 ring-white/10">
+                  <button
+                    onClick={() => setDeliveryType('delivery')}
+                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[2rem] font-black uppercase text-xs tracking-widest transition-all ${
+                      deliveryType === 'delivery' 
+                        ? 'bg-white text-stone-900 shadow-xl' 
+                        : 'text-white/40 hover:text-white'
+                    }`}
+                  >
+                    <Truck size={18} />
+                    {t('delivery')}
+                  </button>
+                  <button
+                    onClick={() => setDeliveryType('pickup')}
+                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[2rem] font-black uppercase text-xs tracking-widest transition-all ${
+                      deliveryType === 'pickup' 
+                        ? 'bg-white text-stone-900 shadow-xl' 
+                        : 'text-white/40 hover:text-white'
+                    }`}
+                  >
+                    <ShoppingBag size={18} />
+                    {t('pickup')}
+                  </button>
+                </div>
               </div>
+
+              {deliveryType === 'delivery' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="space-y-6 overflow-hidden"
+                >
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
+                      {t('delivery_point')}
+                    </label>
+                    <div className="flex gap-4">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder={t('search_placeholder')}
+                          className="w-full bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none"
+                        />
+                        {location && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-green-500/20 text-green-400 px-3 py-1.5 rounded-xl border border-green-500/30">
+                            <Navigation2 size={12} className="fill-green-400" />
+                            <span className="text-[10px] font-black uppercase tracking-tighter">GPS Live</span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => captureGPS()}
+                        disabled={isLocating}
+                        className={`p-5 rounded-3xl shadow-2xl transition-all active:scale-95 ${
+                          isLocating ? 'bg-amber-400 animate-pulse' : 'bg-white'
+                        } text-stone-900 group relative`}
+                      >
+                        <MapPin size={24} className={isLocating ? 'animate-bounce' : ''} />
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {locatingError === 'denied' && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mx-4"
+                        >
+                          <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
+                          <p className="text-[10px] font-bold text-red-100/80 leading-relaxed uppercase tracking-wide">
+                            {t('location_required')}
+                          </p>
+                        </motion.div>
+                      )}
+                      {locatingError === 'failed' && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl mx-4"
+                        >
+                          <div className="flex items-center gap-3">
+                            <AlertCircle size={16} className="text-amber-400 flex-shrink-0" />
+                            <p className="text-[10px] font-bold text-amber-100/80 uppercase tracking-wide">
+                              {t('gps_error')}
+                            </p>
+                          </div>
+                          <button 
+                            onClick={() => captureGPS()}
+                            className="text-[10px] font-black text-amber-400 underline uppercase tracking-widest"
+                          >
+                            {t('retry_location')}
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
+                      {t('delivery_notes')}
+                    </label>
+                    <textarea
+                      value={deliveryNotes}
+                      onChange={(e) => setDeliveryNotes(e.target.value)}
+                      placeholder={t('delivery_notes_placeholder')}
+                      rows={3}
+                      className="w-full bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none resize-none"
+                    />
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           </div>
 

@@ -4,7 +4,20 @@ import { db } from '../lib/firebase';
 import { Product, Category, UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRef } from 'react';
-import { Plus, Search, Star, MapPin, Coffee, ChevronLeft, ChevronRight, Award, X } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  Star, 
+  MapPin, 
+  Coffee, 
+  ChevronLeft, 
+  ChevronRight, 
+  Award, 
+  X,
+  Pizza,
+  Zap,
+  Ticket
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useNavigate } from 'react-router-dom';
@@ -327,29 +340,90 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       {/* Trust Elements - Bento Style */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card !p-5 bg-bento-card-bg border-dashed">
-          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Verified Local Favorite"</p>
-          <p className="text-sm font-bold text-bento-primary leading-tight">"Great experience, friendly staff and relaxing atmosphere."</p>
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"{t('trust_badge_1')}"</p>
+          <p className="text-sm font-bold text-bento-primary leading-tight">"{t('trust_text_1')}"</p>
         </div>
         <div className="card !p-5 bg-bento-card-bg border-dashed">
-          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Best Breakfast in Salé"</p>
-          <p className="text-sm font-bold text-bento-primary leading-tight">"The breakfast sets are high quality and coffee is perfect every time."</p>
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"{t('trust_badge_2')}"</p>
+          <p className="text-sm font-bold text-bento-primary leading-tight">"{t('trust_text_2')}"</p>
         </div>
         <div className="card !p-5 bg-bento-card-bg border-dashed">
-          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"Community Hub"</p>
-          <p className="text-sm font-bold text-bento-primary leading-tight">"Clean, modern and perfect for watching games with friends."</p>
+          <p className="text-[10px] font-black text-stone-300 dark:text-stone-600 uppercase tracking-widest mb-3 italic">"{t('trust_badge_3')}"</p>
+          <p className="text-sm font-bold text-bento-primary leading-tight">"{t('trust_text_3')}"</p>
         </div>
       </div>
 
       {/* Search */}
-      <div className="relative pt-4" id="menu-grid">
-        <Search className={`absolute ${i18n.language === 'ar' ? 'right-5' : 'left-5'} top-1/2 -translate-y-1/2 text-stone-400`} size={18} />
-        <input
-          type="text"
-          placeholder="Explore our menu..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={`w-full bg-bento-card-bg border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300 dark:placeholder:text-stone-600`}
-        />
+      <div className="relative pt-4 space-y-8" id="menu-grid">
+        <div className="relative">
+          <Search className={`absolute ${i18n.language === 'ar' ? 'right-5' : 'left-5'} top-1/2 -translate-y-1/2 text-stone-400`} size={18} />
+          <input
+            type="text"
+            placeholder={t('menu_search_placeholder')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`w-full bg-bento-card-bg border border-bento-card-border rounded-2xl py-4 ${i18n.language === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6'} shadow-sm focus:ring-2 focus:ring-bento-accent transition-all placeholder:text-stone-300 dark:placeholder:text-stone-600`}
+          />
+        </div>
+
+        {/* Loyalty Points Explanation Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative bg-[#3d2b1f] rounded-[2.5rem] p-8 overflow-hidden border border-white/5 shadow-2xl group cursor-default"
+        >
+          {/* Icons Context */}
+          <div className="absolute top-6 left-6 p-3 bg-white/10 rounded-2xl backdrop-blur-xl border border-white/10">
+            <Coffee className="text-amber-400" size={24} />
+          </div>
+          
+          <div className="absolute -bottom-6 -right-6 text-amber-500/10 rotate-12 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-0">
+             <Pizza size={160} />
+          </div>
+
+          <div className="relative z-10 pt-12 md:pt-14">
+            <div className="flex items-center gap-2 mb-4">
+              <Zap size={14} className="text-amber-400 fill-amber-400" />
+              <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.4em] mb-0.5">{t('loyalty_badge')}</p>
+            </div>
+            
+            <h2 
+              className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-[0.8] mb-6"
+              dangerouslySetInnerHTML={{ __html: t('loyalty_headline') }}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+              <div className="space-y-4">
+                <p className="text-white/60 text-sm leading-relaxed max-w-sm font-medium">
+                  {t('loyalty_description_part1')}
+                  <span className="text-white font-bold italic underline decoration-amber-400 decoration-2 underline-offset-4">{t('loyalty_description_highlight')}</span>
+                  {t('loyalty_description_part2')}
+                </p>
+                
+                <div className="flex flex-wrap gap-2">
+                   <div className="px-3 py-1.5 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2">
+                      <Ticket size={12} className="text-amber-400" />
+                      <span className="text-[9px] font-bold text-white uppercase tracking-widest">{t('automatic_rewards')}</span>
+                   </div>
+                   <div className="px-3 py-1.5 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2">
+                      <Star size={12} className="text-amber-400" />
+                      <span className="text-[9px] font-bold text-white uppercase tracking-widest">{t('vip_tiers')}</span>
+                   </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pr-4">
+                <div className="w-16 h-16 bg-amber-400 rounded-full flex items-center justify-center -rotate-12 shadow-[0_0_40px_rgba(251,191,36,0.3)] border-4 border-[#3d2b1f]">
+                  <span className="text-stone-900 font-black text-xl italic uppercase">{t('gift_tag')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Background effects */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-400/5 blur-[80px] -z-10" />
+        </motion.div>
       </div>
 
       {/* Categories */}
@@ -371,7 +445,8 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             show: {
               opacity: 1,
               transition: {
-                staggerChildren: 0.1
+                staggerChildren: 0.05,
+                delayChildren: 0.2
               }
             }
           }}
@@ -380,8 +455,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         >
           <motion.button
             variants={{
-              hidden: { opacity: 0, scale: 0.8 },
-              show: { opacity: 1, scale: 1 }
+              hidden: { opacity: 0, scale: 0.5, y: 20 },
+              show: { 
+                opacity: 1, 
+                scale: 1, 
+                y: 0,
+                transition: { type: "spring", stiffness: 300, damping: 20 }
+              }
             }}
             onClick={() => setSelectedCategory('all')}
             className={`relative px-8 py-3.5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all duration-500 z-10 whitespace-nowrap snap-center ${
@@ -402,8 +482,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           {displayCategories.map(cat => (
             <motion.button
               variants={{
-                hidden: { opacity: 0, scale: 0.8 },
-                show: { opacity: 1, scale: 1 }
+                hidden: { opacity: 0, scale: 0.5, y: 20 },
+                show: { 
+                  opacity: 1, 
+                  scale: 1, 
+                  y: 0,
+                  transition: { type: "spring", stiffness: 300, damping: 20 }
+                }
               }}
               key={cat.id}
               onClick={() => {

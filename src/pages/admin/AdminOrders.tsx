@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
-import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivered'];
@@ -100,9 +100,37 @@ export default function AdminOrders() {
                     <h3 className="text-2xl font-bold text-brown-950">{order.customerName}</h3>
                     <span className="text-xs text-gray-400 font-mono">#{order.id.slice(-6).toUpperCase()}</span>
                   </div>
-                  <p className="text-gray-500 text-sm flex items-center gap-1 mb-4">
-                    <Truck size={14} /> {order.address}
-                  </p>
+                  <div className="flex flex-wrap gap-4 mb-4">
+                    <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
+                      {order.deliveryType === 'delivery' ? <Truck size={14} className="text-amber-600" /> : <ShoppingBag size={14} className="text-brown-600" />}
+                      <span className="font-bold uppercase text-[10px] tracking-wider">{order.deliveryType || 'Standard'}</span>
+                    </p>
+                    <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
+                      <MapPin size={14} className="text-gray-400" /> {order.address}
+                    </p>
+                    {order.location && (
+                      <a 
+                        href={`https://www.google.com/maps?q=${order.location.lat},${order.location.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors"
+                      >
+                        <ExternalLink size={12} />
+                        Maps
+                      </a>
+                    )}
+                  </div>
+
+                  {order.deliveryNotes && (
+                    <div className="mb-4 bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <MessageCircle size={14} className="text-amber-600" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Special Instructions</span>
+                      </div>
+                      <p className="text-sm font-medium text-amber-900 italic">"{order.deliveryNotes}"</p>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-2">
                     {order.items.map((item, idx) => (
                       <div key={idx} className="bg-gray-50 px-4 py-2 rounded-xl flex items-center gap-2">
