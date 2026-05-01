@@ -23,6 +23,9 @@ import Login from './pages/Login';
 import AdminLogin from './pages/admin/AdminLogin';
 import BrandSettings from './pages/admin/BrandSettings';
 import Settings from './pages/Settings';
+import DriverLogin from './pages/driver/DriverLogin';
+import DriverDashboard from './pages/driver/DriverDashboard';
+import Onboarding from './components/Onboarding';
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
   const [isAdminDocument, setIsAdminDocument] = useState<boolean | null>(null);
@@ -133,13 +136,25 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   }
   
   const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
-  const isAdmin = userProfile?.isAdmin || isCreator;
-
-  return (
-    <div className="min-h-screen bg-bento-bg pb-24 sm:pb-0 sm:pt-20">
-      <Toaster position="top-center" />
-      
-      {/* Universal Header - Responsive */}
+   const isAdmin = userProfile?.isAdmin || isCreator;
+ 
+   const isIncompleteProfile = userProfile && 
+     !userProfile.isAnonymous && 
+     (!userProfile.name || userProfile.name === 'Guest User' || userProfile.name === '');
+ 
+   return (
+     <div className="min-h-screen bg-bento-bg pb-24 sm:pb-0 sm:pt-20">
+       <Toaster position="top-center" />
+       
+       {userProfile && (
+         <Onboarding 
+           userProfile={userProfile} 
+           isOpen={!!isIncompleteProfile} 
+           onComplete={() => {}} // Profile will update via onSnapshot in App.tsx
+         />
+       )}
+       
+       {/* Universal Header - Responsive */}
       <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-950/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
           <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
@@ -358,20 +373,32 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               <Route path="/admin/menu" element={<AdminGuard userProfile={userProfile}><AdminMenu /></AdminGuard>} />
               <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
               <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />
+
+              {/* Driver Routes */}
+              <Route path="/driver/login" element={<DriverLogin />} />
+              <Route path="/driver/dashboard" element={<DriverDashboard />} />
             </Routes>
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {/* Persistent Admin Footer Access */}
-      {!location.pathname.startsWith('/admin') && (
-        <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-12 text-center opacity-30 hover:opacity-100 transition-opacity">
-          <Link 
-            to="/admin/login" 
-            className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-bento-primary"
-          >
-            {t('admin_access')}
-          </Link>
+      {/* Persistent Access Footers */}
+      {!location.pathname.startsWith('/admin') && !location.pathname.startsWith('/driver') && (
+        <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-12 text-center opacity-30 hover:opacity-100 transition-opacity space-y-4">
+          <div className="flex justify-center gap-8">
+            <Link 
+              to="/admin/login" 
+              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-bento-primary"
+            >
+              {t('admin_access')}
+            </Link>
+            <Link 
+              to="/driver/login" 
+              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-amber-500"
+            >
+              {t('driver_login')}
+            </Link>
+          </div>
         </footer>
       )}
     </div>

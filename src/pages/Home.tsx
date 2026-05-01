@@ -16,7 +16,9 @@ import {
   X,
   Pizza,
   Zap,
-  Ticket
+  Ticket,
+  Navigation,
+  LocateFixed
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -35,7 +37,51 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showGeoPrompt, setShowGeoPrompt] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if we should show GPS prompt
+    const hasPrompted = localStorage.getItem('geo_prompted');
+    if (!hasPrompted) {
+      const timer = setTimeout(() => setShowGeoPrompt(true), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleAutoLocate = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Geolocation not supported");
+      setShowGeoPrompt(false);
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        sessionStorage.setItem('current_location', JSON.stringify(coords));
+        localStorage.setItem('geo_prompted', 'true');
+        setIsLocating(false);
+        setShowGeoPrompt(false);
+        toast.success(t('location_captured'));
+      },
+      (error) => {
+        console.error("GPS Error:", error);
+        localStorage.setItem('geo_prompted', 'true');
+        setIsLocating(false);
+        setShowGeoPrompt(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Location permission denied");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   const isEmpty = !loading && categories.length === 0;
 
@@ -626,6 +672,62 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           );
         })}
       </div>
+
+      {/* GPS Onboarding Modal */}
+      <AnimatePresence>
+        {showGeoPrompt && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-4 bg-stone-900/60 backdrop-blur-xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] relative overflow-hidden text-center"
+            >
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-amber-400" />
+              
+              <div className="w-24 h-24 bg-amber-400/10 rounded-[2rem] mx-auto mb-8 flex items-center justify-center text-amber-500 relative">
+                <LocateFixed size={48} className={isLocating ? 'animate-spin' : ''} />
+                <div className="absolute inset-0 bg-amber-400/5 rounded-[2rem] animate-ping" />
+              </div>
+
+              <h3 className="text-2xl font-black text-stone-900 uppercase italic tracking-tighter mb-4 leading-none">
+                {t('welcome_locate_title')}
+              </h3>
+              <p className="text-stone-500 text-sm font-medium leading-relaxed mb-10">
+                {t('welcome_locate_desc')}
+              </p>
+
+              <div className="space-y-4">
+                <button
+                  onClick={handleAutoLocate}
+                  disabled={isLocating}
+                  className="w-full bg-stone-900 text-white py-5 rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {isLocating ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Navigation size={18} className="rotate-45" />
+                  )}
+                  {t('allow_gps')}
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem('geo_prompted', 'true');
+                    setShowGeoPrompt(false);
+                  }}
+                  className="w-full text-stone-400 hover:text-stone-900 py-3 font-black text-[9px] uppercase tracking-[0.2em] transition-colors"
+                >
+                  {t('skip_gps')}
+                </button>
+              </div>
+              
+              <div className="mt-8 pt-8 border-t border-stone-50">
+                 <p className="text-[8px] font-bold text-stone-300 uppercase tracking-widest">Secure • One-time • Precision</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

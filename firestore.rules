@@ -1,10 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -14,15 +10,16 @@ service cloud.firestore {
     }
 
     function isSpecificAdminEmail() {
-      return isSignedIn() && (
-        request.auth.token.email.matches('(?i)dragonballsam86@gmail.com') ||
-        request.auth.token.email.matches('(?i)client@example.com')
-      );
+      return isSignedIn() && 
+             "email" in request.auth.token && (
+               request.auth.token.email.matches('(?i)dragonballsam86@gmail.com') ||
+               request.auth.token.email.matches('(?i)client@example.com')
+             );
     }
 
     function isAdmin() {
       return isSignedIn() && (
-        isSpecificAdminEmail() ||
+        isSpecificAdminEmail() || 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -40,13 +37,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow read, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId && 
-                    incoming().points == 0 && 
-                    (incoming().isAdmin == false || isSpecificAdminEmail());
-      allow update: if (isAdmin() || (isSignedIn() && request.auth.uid == userId)) &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'points', 'itemLoyalty', 'coffeeCount', 'isAdmin']);
     }
 
     match /admins/{adminId} {
@@ -80,11 +73,24 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    function isDriver() {
+      return isSignedIn() && (
+        isSpecificAdminEmail() ||
+        isAdmin() ||
+        exists(/databases/$(database)/documents/drivers/$(request.auth.uid))
+      );
+    }
+
     match /orders/{orderId} {
-      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow get: if isSignedIn() && (isDriver() || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && (isDriver() || (resource.data.userId == request.auth.uid));
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'pending';
-      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid && resource.data.status == 'pending' && request.resource.data.status == 'cancelled' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow update: if isDriver() || (isSignedIn() && resource.data.userId == request.auth.uid && resource.data.status == 'pending' && request.resource.data.status == 'cancelled' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+    }
+
+    match /drivers/{driverId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /settings/global {

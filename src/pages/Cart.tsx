@@ -16,6 +16,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const { settings: brand } = useBrandSettings();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState(userProfile?.phone || '');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
@@ -42,6 +43,19 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
     localStorage.setItem('cart', JSON.stringify(newItems));
     window.dispatchEvent(new Event('cartUpdated'));
   };
+
+  useEffect(() => {
+    // Try to recover location from session if pre-authorized
+    const savedLoc = sessionStorage.getItem('current_location');
+    if (savedLoc) {
+      try {
+        setLocation(JSON.parse(savedLoc));
+        console.log("Recovered location from session prompt");
+      } catch (e) {
+        console.error("Failed to parse session location", e);
+      }
+    }
+  }, []);
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -141,7 +155,8 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
 
       const orderData = {
         userId: auth.currentUser.uid,
-        customerName: auth.currentUser.displayName || (isGuest ? 'Guest' : 'Customer'),
+        customerName: userProfile?.name || auth.currentUser.displayName || (isGuest ? 'Guest' : 'Customer'),
+        customerPhone: phone || userProfile?.phone || '',
         items: items,
         total: total,
         status: 'pending' as OrderStatus,
@@ -398,6 +413,19 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                   animate={{ opacity: 1, height: 'auto' }}
                   className="space-y-6 overflow-hidden"
                 >
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
+                      {t('phone_number')} ({t('optional')})
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+212 6xx xxxx"
+                      className="w-full bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none"
+                    />
+                  </div>
+
                   <div className="space-y-3">
                     <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
                       {t('delivery_point')}

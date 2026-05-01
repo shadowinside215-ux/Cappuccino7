@@ -10,7 +10,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { useBrandSettings } from '../lib/brand';
 import { useNavigate } from 'react-router-dom';
-import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
 
@@ -25,7 +25,9 @@ export default function Login() {
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -121,6 +123,7 @@ export default function Login() {
           uid: user.uid,
           name: name,
           email: user.email,
+          phone: phone,
           points: 0,
           coffeeCount: 0,
           itemLoyalty: {},
@@ -269,6 +272,22 @@ export default function Login() {
                   </div>
                 )}
 
+                {mode === 'email-signup' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Phone Number (Optional)</label>
+                    <div className="relative">
+                      <div className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40 font-black text-xs">📞</div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+212 6xx xxxx"
+                        className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Email</label>
                   <div className="relative">
@@ -289,14 +308,21 @@ export default function Login() {
                   <div className="relative">
                     <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       required
                       minLength={6}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
+                      className="w-full pl-16 pr-14 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-6 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
 

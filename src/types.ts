@@ -1,9 +1,10 @@
-export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
 
 export interface UserProfile {
   uid: string;
   name: string;
   email: string;
+  phone?: string; // Optional phone
   points: number;
   coffeeCount: number; // Keep for legacy or general coffee tracking
   itemLoyalty: Record<string, number>; // productId -> count mapping
@@ -39,6 +40,7 @@ export interface Order {
   id: string;
   userId: string;
   customerName: string;
+  customerPhone?: string; // Add optional phone for deliveries
   items: OrderItem[];
   total: number;
   status: OrderStatus;

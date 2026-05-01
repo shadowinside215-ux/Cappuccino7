@@ -5,7 +5,7 @@ import { Order, OrderStatus, UserProfile } from '../../types';
 import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivered'];
+const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivering', 'delivered'];
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);

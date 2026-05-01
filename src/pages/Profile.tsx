@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Product } from '../types';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon } from 'lucide-react';
+import { collection, query, where, getDocs, updateDoc, doc, setDoc } from 'firebase/firestore';
+import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -17,7 +17,38 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   const navigate = useNavigate();
   const [loyaltyProducts, setLoyaltyProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(userProfile?.name || '');
+  const [phone, setPhone] = useState(userProfile?.phone || '');
   const isGuest = auth.currentUser?.isAnonymous;
+
+  useEffect(() => {
+    if (userProfile) {
+      setName(userProfile.name);
+      setPhone(userProfile.phone || '');
+    }
+  }, [userProfile]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userProfile) return;
+    setLoading(true);
+    try {
+      const userRef = doc(db, 'users', userProfile.uid);
+      await updateDoc(userRef, {
+        name: name.trim(),
+        phone: phone.trim()
+      });
+      
+      toast.success('Profile updated');
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error('Update Profile Error:', err);
+      toast.error(`Update failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -141,8 +172,59 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             >
               {userProfile.name.charAt(0).toUpperCase()}
             </motion.div>
-            <h2 className="text-3xl font-black uppercase tracking-tight italic mb-1">{userProfile.name}</h2>
-            <p className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-10">{t('premium_customer')}</p>
+            
+            {isEditing ? (
+              <form onSubmit={handleUpdateProfile} className="w-full px-8 space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black uppercase text-white/40 ml-2">{t('full_name')}</label>
+                  <input 
+                    value={name} 
+                    onChange={e => setName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-bold outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black uppercase text-white/40 ml-2">{t('phone_number')}</label>
+                  <input 
+                    value={phone} 
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder={t('optional')}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-bold outline-none"
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-white text-stone-900 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest"
+                  >
+                    {t('save')}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="flex-1 bg-white/10 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest"
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <h2 className="text-3xl font-black uppercase tracking-tight italic mb-1">{userProfile.name}</h2>
+                <div className="flex items-center gap-2 mb-2">
+                  <Phone size={12} className="text-white/40" />
+                  <p className="text-[10px] text-white/60 font-bold">{userProfile.phone || t('no_phone_added')}</p>
+                </div>
+                <p className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-6">{t('premium_customer')}</p>
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="mb-8 text-[9px] font-black uppercase tracking-widest bg-white/10 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/20 transition-all font-bold"
+                >
+                  {t('edit_profile')}
+                </button>
+              </>
+            )}
             
             <div className="w-full pt-10 border-t border-white/5 flex justify-around">
               <div className="text-center">
