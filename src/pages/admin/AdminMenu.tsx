@@ -69,6 +69,7 @@ export default function AdminMenu() {
     description: '',
     price: 0,
     categoryId: '',
+    subSection: '',
     image: '',
     isAvailable: true
   });
@@ -234,7 +235,7 @@ export default function AdminMenu() {
     try {
       await addDoc(collection(db, 'products'), newItem);
       setIsAdding(false);
-      setNewItem({ name: '', description: '', price: 0, categoryId: '', image: '', isAvailable: true });
+      setNewItem({ name: '', description: '', price: 0, categoryId: '', subSection: '', image: '', isAvailable: true });
       toast.success('Product added successfully!');
     } catch (err) { 
       handleFirestoreError(err, OperationType.CREATE, 'products');
@@ -279,6 +280,16 @@ export default function AdminMenu() {
       setConfirmDeleteCatId(null);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `categories/${categoryId}`);
+    }
+  };
+
+  const getSubSectionLabel = (sub: string) => {
+    switch (sub) {
+      case 'crepes_salees': return '🌯 CRÊPES SALÉES';
+      case 'crepes_sucrees': return '🍫 CRÊPES SUCRÉES';
+      case 'gaufres': return '🧇 GAUFRES';
+      case 'pancakes': return '🥞 PANCAKES';
+      default: return sub.replace('_', ' ').toUpperCase();
     }
   };
 
@@ -359,6 +370,22 @@ export default function AdminMenu() {
                   </select>
                 </div>
               </div>
+
+              {newItem.categoryId === 'crepes-desserts' && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Subsection</label>
+                  <select 
+                    value={newItem.subSection} onChange={e => setNewItem({...newItem, subSection: e.target.value})}
+                    className="w-full bg-stone-50 border border-stone-100 rounded-xl p-4 focus:ring-2 focus:ring-bento-accent transition-all outline-none appearance-none font-medium"
+                  >
+                    <option value="">No Subsection</option>
+                    <option value="crepes_salees">🌯 CRÊPES SALÉES</option>
+                    <option value="crepes_sucrees">🍫 CRÊPES SUCRÉES</option>
+                    <option value="gaufres">🧇 GAUFRES</option>
+                    <option value="pancakes">🥞 PANCAKES</option>
+                  </select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <textarea 
@@ -494,134 +521,178 @@ export default function AdminMenu() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {catProducts.map(product => (
-                  <div key={product.id} className="flex flex-col gap-4">
-                    <div className="card group !p-4 flex items-center gap-5 hover:border-bento-accent/20">
-                      <div className="relative w-20 h-20 flex-shrink-0">
-                        <img 
-                          src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
-                          className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
-                          referrerPolicy="no-referrer"
-                        />
-                        {!product.isAvailable && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="bg-stone-800 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Hidden</div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <h3 className="font-bold text-bento-ink truncate leading-tight">{product.name}</h3>
-                        <p className="text-xs font-black text-bento-accent mt-1">{product.price} DH</p>
-                        <p className="text-[10px] text-stone-400 truncate mt-1">{product.description || 'No description provided'}</p>
-                      </div>
-                        <div className="flex flex-col gap-2 relative">
-                          <button 
-                            onClick={() => {
-                              setEditingId(product.id);
-                              setEditItem(product);
-                            }}
-                            className="p-2 rounded-xl text-stone-400 bg-stone-50 hover:bg-stone-100 transition-colors"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button 
-                            onClick={() => toggleAvailability(product)}
-                            className={`p-2 rounded-xl transition-all ${product.isAvailable ? 'text-green-600 bg-green-50 shadow-sm shadow-green-100' : 'text-stone-300 bg-stone-50'}`}
-                          >
-                            <Check size={18} />
-                          </button>
-                          
-                          {confirmDeleteId === product.id ? (
-                            <div className="absolute right-0 bottom-0 flex flex-col gap-1 z-10">
-                              <button 
-                                onClick={() => deleteProduct(product.id)}
-                                className="p-2 rounded-xl text-white bg-red-600 hover:bg-red-700 shadow-lg animate-in fade-in zoom-in"
-                                title="Confirm Delete"
-                              >
-                                <Trash2 size={18} />
-                                <span className="text-[6px] font-black uppercase tracking-widest block">DEL?</span>
-                              </button>
-                              <button 
-                                onClick={() => setConfirmDeleteId(null)}
-                                className="p-1 rounded-lg text-stone-500 bg-stone-200 hover:bg-stone-300"
-                              >
-                                <X size={12} />
-                              </button>
-                            </div>
-                          ) : (
-                            <button 
-                              onClick={() => setConfirmDeleteId(product.id)}
-                              className="p-2 rounded-xl text-red-400 bg-red-50 hover:bg-red-100 transition-colors"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          )}
+                {Object.entries(
+                  catProducts.reduce((acc: any, p) => {
+                    const sub = p.subSection || 'standard';
+                    if (!acc[sub]) acc[sub] = [];
+                    acc[sub].push(p);
+                    return acc;
+                  }, {})
+                ).map(([sub, subProducts]: [string, any]) => (
+                  <React.Fragment key={sub}>
+                    {sub !== 'standard' && (
+                      <div className="col-span-full pt-4">
+                        <div className="flex items-center gap-3">
+                          <span className="bg-stone-100 dark:bg-stone-800 text-stone-500 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-stone-100 dark:border-white/5">
+                            {getSubSectionLabel(sub)}
+                          </span>
+                          <div className="h-px bg-stone-100 flex-1" />
                         </div>
-                    </div>
-
-                    {editingId === product.id && (
-                      <form onSubmit={handleUpdateItem} className="card !p-6 border-bento-accent/30 animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center mb-6">
-                          <p className="text-[10px] font-black text-bento-accent uppercase tracking-widest">Editing Product</p>
-                          <button type="button" onClick={() => setEditingId(null)} className="text-stone-300 hover:text-stone-500 transition-colors"><X size={18} /></button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <label className="text-[9px] font-black text-stone-300 uppercase tracking-widest ml-1">Properties</label>
-                              <input 
-                                type="text" placeholder="Name" required 
-                                value={editItem.name} onChange={e => setEditItem({...editItem, name: e.target.value})}
-                                className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-bento-accent outline-none font-bold"
-                              />
-                              <input 
-                                type="number" step="0.01" placeholder="Price" required
-                                value={editItem.price || ''} onChange={e => setEditItem({...editItem, price: parseFloat(e.target.value)})}
-                                className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-bento-accent outline-none font-bold"
-                              />
-                            </div>
-                            <textarea 
-                              placeholder="Description"
-                              value={editItem.description} onChange={e => setEditItem({...editItem, description: e.target.value})}
-                              className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 h-20 text-xs focus:ring-2 focus:ring-bento-accent outline-none"
+                      </div>
+                    )}
+                    {subProducts.map((product: Product) => (
+                      <div key={product.id} className="flex flex-col gap-4">
+                        <div className="card group !p-4 flex items-center gap-5 hover:border-bento-accent/20">
+                          <div className="relative w-20 h-20 flex-shrink-0">
+                            <img 
+                              src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
+                              className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
+                              referrerPolicy="no-referrer"
                             />
+                            {!product.isAvailable && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="bg-stone-800 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Hidden</div>
+                              </div>
+                            )}
                           </div>
-                          
-                          <div className="space-y-4">
-                            <label className="text-[9px] font-black text-stone-300 uppercase tracking-widest ml-1">Change Image</label>
-                            <div 
-                              onClick={() => editFileInputRef.current?.click()}
-                              className="w-full aspect-[2/1] bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-bento-accent transition-all relative overflow-hidden"
-                            >
-                              {isUploading === editingId ? (
-                                <Loader2 className="text-bento-accent animate-spin" size={24} />
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="flex items-center gap-2 mb-1">
+                              {product.subSection && (
+                                <span className="text-[8px] font-black text-bento-accent bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                                  {product.subSection.replace('crepes_', '')}
+                                </span>
+                              )}
+                              <h3 className="font-bold text-bento-ink truncate leading-tight">{product.name}</h3>
+                            </div>
+                            <p className="text-xs font-black text-bento-accent mt-1">{product.price} DH</p>
+                            <p className="text-[10px] text-stone-400 truncate mt-1">{product.description || 'No description provided'}</p>
+                          </div>
+                            <div className="flex flex-col gap-2 relative">
+                              <button 
+                                onClick={() => {
+                                  setEditingId(product.id);
+                                  setEditItem(product);
+                                }}
+                                className="p-2 rounded-xl text-stone-400 bg-stone-50 hover:bg-stone-100 transition-colors"
+                              >
+                                <Edit2 size={18} />
+                              </button>
+                              <button 
+                                onClick={() => toggleAvailability(product)}
+                                className={`p-2 rounded-xl transition-all ${product.isAvailable ? 'text-green-600 bg-green-50 shadow-sm shadow-green-100' : 'text-stone-300 bg-stone-50'}`}
+                              >
+                                <Check size={18} />
+                              </button>
+                              
+                              {confirmDeleteId === product.id ? (
+                                <div className="absolute right-0 bottom-0 flex flex-col gap-1 z-10">
+                                  <button 
+                                    onClick={() => deleteProduct(product.id)}
+                                    className="p-2 rounded-xl text-white bg-red-600 hover:bg-red-700 shadow-lg animate-in fade-in zoom-in"
+                                    title="Confirm Delete"
+                                  >
+                                    <Trash2 size={18} />
+                                    <span className="text-[6px] font-black uppercase tracking-widest block">DEL?</span>
+                                  </button>
+                                  <button 
+                                    onClick={() => setConfirmDeleteId(null)}
+                                    className="p-1 rounded-lg text-stone-500 bg-stone-200 hover:bg-stone-300"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </div>
                               ) : (
-                                <>
-                                  <img src={editItem.image} className="w-full h-full object-cover opacity-60" />
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                    <div className="p-3 bg-white rounded-xl shadow-lg ring-1 ring-black/5">
-                                      <Upload className="text-bento-primary" size={20} />
-                                    </div>
-                                  </div>
-                                </>
+                                <button 
+                                  onClick={() => setConfirmDeleteId(product.id)}
+                                  className="p-2 rounded-xl text-red-400 bg-red-50 hover:bg-red-100 transition-colors"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
                               )}
                             </div>
-                            <input 
-                              type="file" 
-                              ref={editFileInputRef}
-                              onChange={(e) => handleFileUpload(e, 'edit')}
-                              accept="image/*"
-                              className="hidden"
-                            />
-                            <button type="submit" className="w-full bg-bento-accent text-bento-primary py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-bento-accent/10 hover:bg-stone-900 hover:text-white transition-all">
-                              Save Changes
-                            </button>
-                          </div>
                         </div>
-                      </form>
-                    )}
-                  </div>
+
+                        {editingId === product.id && (
+                          <form onSubmit={handleUpdateItem} className="card !p-6 border-bento-accent/30 animate-in zoom-in-95 duration-200">
+                            <div className="flex justify-between items-center mb-6">
+                              <p className="text-[10px] font-black text-bento-accent uppercase tracking-widest">Editing Product</p>
+                              <button type="button" onClick={() => setEditingId(null)} className="text-stone-300 hover:text-stone-500 transition-colors"><X size={18} /></button>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <label className="text-[9px] font-black text-stone-300 uppercase tracking-widest ml-1">Properties</label>
+                                  <input 
+                                    type="text" placeholder="Name" required 
+                                    value={editItem.name} onChange={e => setEditItem({...editItem, name: e.target.value})}
+                                    className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-bento-accent outline-none font-bold"
+                                  />
+                                  <input 
+                                    type="number" step="0.01" placeholder="Price" required
+                                    value={editItem.price || ''} onChange={e => setEditItem({...editItem, price: parseFloat(e.target.value)})}
+                                    className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-bento-accent outline-none font-bold"
+                                  />
+                                  {product.categoryId === 'crepes-desserts' && (
+                                    <div className="pt-2">
+                                      <label className="text-[8px] font-black text-stone-400 uppercase tracking-[0.2em] ml-1">Subsection</label>
+                                      <select 
+                                        value={editItem.subSection} 
+                                        onChange={e => setEditItem({...editItem, subSection: e.target.value})}
+                                        className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 text-xs focus:ring-1 focus:ring-bento-accent outline-none font-bold appearance-none"
+                                      >
+                                        <option value="">None</option>
+                                        <option value="crepes_salees">🌯 CRÊPES SALÉES</option>
+                                        <option value="crepes_sucrees">🍫 CRÊPES SUCRÉES</option>
+                                        <option value="gaufres">🧇 GAUFRES</option>
+                                        <option value="pancakes">🥞 PANCAKES</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                                <textarea 
+                                  placeholder="Description"
+                                  value={editItem.description} onChange={e => setEditItem({...editItem, description: e.target.value})}
+                                  className="w-full bg-stone-50 border border-stone-100 rounded-xl p-3 h-20 text-xs focus:ring-2 focus:ring-bento-accent outline-none"
+                                />
+                              </div>
+                              
+                              <div className="space-y-4">
+                                <label className="text-[9px] font-black text-stone-300 uppercase tracking-widest ml-1">Change Image</label>
+                                <div 
+                                  onClick={() => editFileInputRef.current?.click()}
+                                  className="w-full aspect-[2/1] bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-bento-accent transition-all relative overflow-hidden"
+                                >
+                                  {isUploading === editingId ? (
+                                    <Loader2 className="text-bento-accent animate-spin" size={24} />
+                                  ) : (
+                                    <>
+                                      <img src={editItem.image} className="w-full h-full object-cover opacity-60" />
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                        <div className="p-3 bg-white rounded-xl shadow-lg ring-1 ring-black/5">
+                                          <Upload className="text-bento-primary" size={20} />
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                                <input 
+                                  type="file" 
+                                  ref={editFileInputRef}
+                                  onChange={(e) => handleFileUpload(e, 'edit')}
+                                  accept="image/*"
+                                  className="hidden"
+                                />
+                                <button type="submit" className="w-full bg-bento-accent text-bento-primary py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-bento-accent/10 hover:bg-stone-900 hover:text-white transition-all">
+                                  Save Changes
+                                </button>
+                              </div>
+                            </div>
+                          </form>
+                        )}
+                      </div>
+                    ))}
+                  </React.Fragment>
                 ))}
               </div>
             </section>

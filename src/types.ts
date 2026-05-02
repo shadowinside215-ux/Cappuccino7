@@ -27,6 +27,7 @@ export interface Product {
   image: string;
   categoryId: string;
   isAvailable: boolean;
+  subSection?: string;
 }
 
 export interface OrderItem {

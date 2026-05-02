@@ -1,68 +1,27 @@
-# Security Specification - Caffeino
+# Security Specification for Cappuccino7
 
 ## Data Invariants
-- A customer can only read and write their own profile (except for `isAdmin` and `points` which are restricted or server-side).
-- A customer can only read their own orders.
-- Only admins can read/write categories and products.
-- Only admins can read all orders.
-- Customers can only create orders with status 'pending' and their own `userId`.
-- Once an order is 'delivered', it cannot be modified by the customer.
+1. A user can only access their own profile.
+2. Orders belong to a specific user and cannot be modified by other users.
+3. Only admins can modify menu categories, products, and brand settings.
+4. Users gain points based on their orders (enforced by application logic, but rules prevent unauthorized updates).
 
-## The Dirty Dozen Payloads
-
-1. **Identity Spoofing**: Attempt to create a user profile with a different UID.
-   - Target: `users/victim-uid`
-   - Payload: `{ "uid": "victim-uid", "name": "Attacker", "email": "attacker@evil.com", "points": 9999, "isAdmin": true }`
-   - Result: PERMISSION_DENIED
-
-2. **Privilege Escalation**: Attempt to update own profile to set `isAdmin: true`.
-   - Target: `users/my-uid`
-   - Payload: `{ "isAdmin": true }` (via update)
-   - Result: PERMISSION_DENIED
-
-3. **Points Manipulation**: Attempt to update own profile to add points manually.
-   - Target: `users/my-uid`
-   - Payload: `{ "points": 1000000 }` (via update)
-   - Result: PERMISSION_DENIED
-
-4. **Shadow Update (Ghost Field)**: Attempt to inject a field not in the schema.
-   - Target: `products/item-id`
-   - Payload: `{ "name": "Free Coffee", "price": 0, "secretField": "I am a ghost" }`
-   - Result: PERMISSION_DENIED
-
-5. **State Shortcut**: Attempt to create an order with status 'delivered' directly.
-   - Target: `orders/new-order`
-   - Payload: `{ "status": "delivered", "userId": "my-uid", ... }`
-   - Result: PERMISSION_DENIED
-
-6. **Price Tampering**: Attempt to create an order with a total of $0.
-   - Target: `orders/new-order`
-   - Payload: `{ "total": 0, "items": [...], "userId": "my-uid", ... }`
-   - Result: PERMISSION_DENIED (Validation should check values)
-
-7. **Orphaned Write**: Attempt to create an order for a non-existent product.
-   - Result: Handled by app logic, but rules could check existence of items.
-
-8. **Admin Impersonation**: Attempt to delete a product as a non-admin.
-   - Target: `products/id`
-   - Result: PERMISSION_DENIED
-
-9. **Customer Data Leak**: Attempt to list all users as a non-admin.
-   - Target: `users` (collection)
-   - Result: PERMISSION_DENIED
-
-10. **Order Hijacking**: Attempt to update someone else's order.
-    - Target: `orders/someone-elses-order`
-    - Result: PERMISSION_DENIED
-
-11. **Resource Poisoning**: Use a 1MB string for a category name.
-    - Target: `categories/new`
-    - Payload: `{ "name": "A".repeat(1024 * 1024) }`
-    - Result: PERMISSION_DENIED (Size check)
-
-12. **Status Lock Bypass**: Attempt to change an order status from 'delivered' to 'pending'.
-    - Result: PERMISSION_DENIED
+## The Dirty Dozen (Attacker Payloads)
+1. **Identity Theft**: `update /users/otherUser { points: 9999 }` -> Expected: PERMISSION_DENIED
+2. **Shadow Field Injection**: `create /users/myUid { isAdmin: true, points: 1000 }` -> Expected: PERMISSION_DENIED (isValidUser schema check)
+3. **Menu Vandalism**: `update /products/espresso { price: 0.1 }` -> Expected: PERMISSION_DENIED
+4. **Order Interception**: `get /orders/otherUserOrder` -> Expected: PERMISSION_DENIED
+5. **State Shortcut**: `update /orders/myOrder { status: 'delivered' }` -> Expected: PERMISSION_DENIED (User can only cancel or create, not delivered)
+6. **Brand Hijack**: `set /settings/brand { logoUrl: 'http://malicious.com/logo.png' }` -> Expected: PERMISSION_DENIED
+7. **Privilege Escalation**: `set /admins/myUid { uid: 'myUid' }` -> Expected: PERMISSION_DENIED
+8. **Resource Exhaustion**: `create /orders/ { longId: 'A' * 2000 }` -> Expected: PERMISSION_DENIED (ID Poisoning Guard)
+9. **PII Leak**: `list /users` -> Expected: PERMISSION_DENIED (Rules only allow get for owner)
+10. **Query Scrape**: `list /orders` -> Expected: PERMISSION_DENIED (Unless filtered by userId)
+11. **Timestamp Spoofing**: `create /orders/ { createdAt: '2020-01-01' }` -> Expected: PERMISSION_DENIED (Strict request.time check)
+12. **Immutable Field Change**: `update /users/myUid { createdAt: '2020-01-01' }` -> Expected: PERMISSION_DENIED
 
 ## Test Plan
-- Run ESLint for rules.
-- Manually audit update branches for `affectedKeys().hasOnly()`.
+- Verify that standard users can create an order but not update its status to 'delivered'.
+- Verify that users can only see their own orders.
+- Verify that brand settings are publicly readable but only admin writable.
+- Verify that admins (listed in /admins) can modify everything.

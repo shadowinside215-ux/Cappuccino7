@@ -2,12 +2,13 @@
   "entities": {
     "User": {
       "title": "User Profile",
-      "description": "Customer information including loyalty points.",
+      "description": "User account and loyalty data",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string" },
+        "phone": { "type": "string" },
         "points": { "type": "number" },
         "coffeeCount": { "type": "number" },
         "itemLoyalty": { "type": "object" },
@@ -15,102 +16,84 @@
         "isAnonymous": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "points"]
-    },
-    "Category": {
-      "title": "Menu Category",
-      "description": "Categories like Coffee, Drinks, Desserts.",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "order": { "type": "number" },
-        "image": { "type": "string" }
-      },
-      "required": ["name", "order"]
-    },
-    "Product": {
-      "title": "Menu Item",
-      "description": "Individual items in the menu.",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "price": { "type": "number" },
-        "image": { "type": "string" },
-        "categoryId": { "type": "string" },
-        "isAvailable": { "type": "boolean" }
-      },
-      "required": ["name", "price", "categoryId", "isAvailable"]
+      "required": ["uid", "name", "points"]
     },
     "Order": {
-      "title": "Customer Order",
-      "description": "Details of an order placed by a customer.",
+      "title": "Order",
+      "description": "Customer order record",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "customerName": { "type": "string" },
         "items": { "type": "array" },
         "total": { "type": "number" },
-        "status": { "type": "string", "enum": ["pending", "accepted", "preparing", "ready", "delivered"] },
-        "address": { "type": "string" },
-        "location": { "type": "object" },
-        "pointsEarned": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "status": { "type": "string", "enum": ["pending", "preparing", "ready", "delivered", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "items", "total", "status", "createdAt"]
+      "required": ["userId", "items", "total", "status"]
     },
-    "Settings": {
-      "title": "App Settings",
-      "description": "Global configuration like loyalty rules.",
+    "BrandSettings": {
+      "title": "Brand Settings",
+      "description": "Global application branding",
       "type": "object",
       "properties": {
-        "pointsRate": { "type": "number" },
-        "rewardThreshold": { "type": "number" }
-      },
-      "required": ["pointsRate", "rewardThreshold"]
+        "logoUrl": { "type": "string" },
+        "heroImageUrl": { "type": "string" },
+        "cartBgUrl": { "type": "string" },
+        "ordersBgUrl": { "type": "string" },
+        "profileBgUrl": { "type": "string" },
+        "loginBgUrl": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "firestore": {
-    "users/{userId}": {
+    "/users/{userId}": {
       "schema": "User",
-      "description": "User profile documents."
+      "description": "User profile and loyalty points"
     },
-    "categories/{categoryId}": {
-      "schema": "Category",
-      "description": "Menu categories."
-    },
-    "products/{productId}": {
-      "schema": "Product",
-      "description": "Menu items."
-    },
-    "orders/{orderId}": {
+    "/orders/{orderId}": {
       "schema": "Order",
-      "description": "Customer orders."
+      "description": "Customer food and drink orders"
     },
-    "settings/global": {
-      "schema": "Settings",
-      "description": "Global app settings."
+    "/settings/brand": {
+      "schema": "BrandSettings",
+      "description": "Global brand configuration"
     },
-    "settings/brand": {
+    "/admins/{adminId}": {
       "schema": {
-        "title": "Brand Settings",
         "type": "object",
         "properties": {
-          "logoUrl": { "type": "string" },
-          "heroImageUrl": { "type": "string" },
-          "cartBgUrl": { "type": "string" },
-          "ordersBgUrl": { "type": "string" },
-          "profileBgUrl": { "type": "string" },
-          "loginBgUrl": { "type": "string" },
-          "updatedAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["logoUrl"]
+          "uid": { "type": "string" }
+        }
       },
-      "description": "App logo and branding settings."
+      "description": "List of admin UIDs"
     },
-    "admins/{adminId}": {
-      "schema": { "type": "object", "properties": { "email": { "type": "string" } } },
-      "description": "Admin users list."
+    "/categories/{categoryId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "order": { "type": "number" }
+        }
+      },
+      "description": "Menu categories"
+    },
+    "/products/{productId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "price": { "type": "number" },
+          "imageUrl": { "type": "string" },
+          "categoryId": { "type": "string" },
+          "isAvailable": { "type": "boolean" },
+          "isPromoted": { "type": "boolean" },
+          "loyaltyPoints": { "type": "number" }
+        }
+      },
+      "description": "Menu products"
     }
   }
 }

@@ -1,61 +1,65 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    function isEmailVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
-    }
-
-    function isSpecificAdminEmail() {
-      return isSignedIn() && 
-             "email" in request.auth.token && (
-               request.auth.token.email.matches('(?i)dragonballsam86@gmail.com') ||
-               request.auth.token.email.matches('(?i)client@example.com')
-             );
-    }
-
-    function isAdmin() {
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    
+    // Check if the current user is recorded in the 'admins' collection
+    // Or if they are the primary developer email
+    function isAdmin() { 
       return isSignedIn() && (
-        isSpecificAdminEmail() || 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email.lower() == 'dragonballsam86@gmail.com'
       );
     }
+    
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    // --- Connection Test ---
+    match /test/connection {
+      allow read: if true;
     }
 
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
+    // --- Users ---
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.name is string &&
+             data.points is number;
     }
 
     match /users/{userId} {
-      allow read, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow list: if isAdmin();
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin(); 
+      
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isAdmin() || (
+        isOwner(userId) && 
+        isValidUser(incoming()) && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points'])
+      );
     }
 
+    // --- Admin List ---
     match /admins/{adminId} {
       allow read: if isSignedIn();
-      allow write: if isSpecificAdminEmail() || (isAdmin() && adminId == request.auth.uid);
+      allow write: if isAdmin();
     }
 
-    function isValidProduct(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.price is number && data.price >= 0 &&
-             data.categoryId is string &&
-             (data.image == null || (data.image is string && data.image.size() < 1000)) &&
-             (data.description == null || (data.description is string && data.description.size() < 500)) &&
-             (data.isAvailable == null || data.isAvailable is bool);
+    // --- Settings (Brand, Global, etc.) ---
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
+    // --- Menu ---
     match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -63,48 +67,38 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidProduct(incoming());
-      allow update: if isAdmin() && (
-        // Check if the resulting document is valid
-        isValidProduct(request.resource.data) &&
-        // And only allowed fields are being touched
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'price', 'categoryId', 'image', 'isAvailable'])
-      );
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
-    function isDriver() {
-      return isSignedIn() && (
-        isSpecificAdminEmail() ||
-        isAdmin() ||
-        exists(/databases/$(database)/documents/drivers/$(request.auth.uid))
-      );
+    // --- Orders ---
+    function isValidOrder(data) {
+      return data.userId == request.auth.uid &&
+             data.total is number &&
+             data.items is list &&
+             data.status == 'pending';
     }
 
     match /orders/{orderId} {
-      allow get: if isSignedIn() && (isDriver() || resource.data.userId == request.auth.uid);
-      allow list: if isSignedIn() && (isDriver() || (resource.data.userId == request.auth.uid));
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'pending';
-      allow update: if isDriver() || (isSignedIn() && resource.data.userId == request.auth.uid && resource.data.status == 'pending' && request.resource.data.status == 'cancelled' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
-    }
-
-    match /drivers/{driverId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-
-    match /settings/global {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /settings/brand {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /test/{docId} {
-      allow read: if true;
+      // List permission:
+      // 1. Admins see all.
+      // 2. Regular users see their own (requires where('userId', '==', uid) in query).
+      // 3. Drivers see delivery orders (requires where('deliveryType', '==', 'delivery') in query).
+      allow list: if isSignedIn() && (
+        isAdmin() || 
+        (resource.data.userId == request.auth.uid) || 
+        (resource.data.deliveryType == 'delivery')
+      );
+      
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin() || 
+        resource.data.deliveryType == 'delivery'
+      );
+      
+      allow create: if isSignedIn() && (isValidOrder(incoming()) || isAdmin());
+      
+      allow update: if isAdmin() || (isSignedIn() && existing().deliveryType == 'delivery');
+      allow delete: if isAdmin();
     }
   }
 }

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export default function BrandSettings() {
-  const [logoUrl, setLogoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/cappuccino7-app.appspot.com/o/assets%2Flogo_cappuccino.jpg?alt=media');
+  const [logoUrl, setLogoUrl] = useState('https://raw.githubusercontent.com/Lucide-Icons/lucide/main/icons/coffee.svg');
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [cartBgUrl, setCartBgUrl] = useState('');
   const [ordersBgUrl, setOrdersBgUrl] = useState('');

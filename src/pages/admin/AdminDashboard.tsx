@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatch, addDoc } from 'firebase/firestore';
-import { db, auth } from '../../lib/firebase';
+import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatch, addDoc, where } from 'firebase/firestore';
+import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette } from 'lucide-react';
@@ -150,28 +150,130 @@ export default function AdminDashboard() {
 
       setStats(prev => ({ ...prev, activeOrders: activeCount, todayRevenue: todayTotal }));
     }, (error) => {
-      console.error("Admin dashboard orders listener error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'orders');
     });
 
     const fetchStats = async () => {
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const prodsSnap = await getDocs(collection(db, 'products'));
-      const catsSnap = await getDocs(collection(db, 'categories'));
-      
-      const usersData = usersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-      setUsers(usersData);
+      try {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const prodsSnap = await getDocs(collection(db, 'products'));
+        const catsSnap = await getDocs(collection(db, 'categories'));
+        
+        const usersData = usersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+        setUsers(usersData);
 
-      setIsEmpty(catsSnap.empty);
-      setStats(prev => ({ 
-        ...prev, 
-        totalUsers: usersSnap.size,
-        totalItems: prodsSnap.size
-      }));
+        // Robust auto-seed check: Check if category exists AND has items
+        const hasDesserts = catsSnap.docs.some(d => d.id === 'crepes-desserts');
+        const dessProdSnap = await getDocs(query(collection(db, 'products'), where('categoryId', '==', 'crepes-desserts')));
+        const hasDessertsItems = dessProdSnap.size > 0;
+        
+        if ((!hasDesserts || !hasDessertsItems) && !isSettingUp) {
+          console.log("Auto-seeding Desserts menu items...");
+          seedDessertsMenu();
+        }
+
+        // Quick FIX: Unhide any hidden desserts
+        if (hasDessertsItems) {
+          const hiddenDesserts = dessProdSnap.docs.filter(d => !d.data().isAvailable);
+          if (hiddenDesserts.length > 0) {
+            const batch = writeBatch(db);
+            hiddenDesserts.forEach(d => batch.update(d.ref, { isAvailable: true }));
+            await batch.commit();
+            console.log(`Unhid ${hiddenDesserts.length} desserts.`);
+          }
+        }
+
+        setIsEmpty(catsSnap.empty);
+        setStats(prev => ({ 
+          ...prev, 
+          totalUsers: usersSnap.size,
+          totalItems: prodsSnap.size
+        }));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, 'multiple/stats');
+      }
     };
     fetchStats();
 
     return () => unsubOrders();
   }, []);
+
+  const seedDessertsMenu = async () => {
+    if (isSettingUp) return;
+    setIsSettingUp(true);
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Add Category
+      const catId = 'crepes-desserts';
+      const catRef = doc(db, 'categories', catId);
+      batch.set(catRef, {
+        name: 'crepes_desserts',
+        order: 2, // Second category, after Breakfast (1)
+        id: catId
+      });
+
+      // 2. Define Products
+      const productsToAdd = [
+        // CRÊPES SALÉES
+        { name: 'Fromage (Mozzarella et fromage rouge)', price: 42, subSection: 'crepes_salees' },
+        { name: 'Dinde fumée (Sauce blanche, dinde fumée, fromage)', price: 48, subSection: 'crepes_salees' },
+        { name: 'Poulet Champignon (Sauce champignon, poulet, fromage)', price: 54, subSection: 'crepes_salees' },
+        
+        // CRÊPES SUCRÉES
+        { name: 'Nature', price: 20, subSection: 'crepes_sucrees' },
+        { name: 'Confiture', price: 25, subSection: 'crepes_sucrees' },
+        { name: 'Nutella', price: 30, subSection: 'crepes_sucrees' },
+        { name: 'Nutella et Banane', price: 37, subSection: 'crepes_sucrees' },
+        { name: 'Miel & Noix', price: 35, subSection: 'crepes_sucrees' },
+        { name: 'Royal (Caramel & fruits secs & crème chantilly)', price: 40, subSection: 'crepes_sucrees' },
+        { name: 'Exotique', price: 48, subSection: 'crepes_sucrees' },
+        { name: 'Brésilienne', price: 48, subSection: 'crepes_sucrees' },
+        { name: 'Brésilienne Nutella Banane, Boule de glace vanille', price: 48, subSection: 'crepes_sucrees' },
+        { name: 'Cappuccino7 (Nutella, boule de glace au choix, Oréo, Kitkat, noix)', price: 52, subSection: 'crepes_sucrees' },
+        { name: 'Miel et fruit sec', price: 49, subSection: 'crepes_sucrees' },
+
+        // GAUFRES
+        { name: 'Caramel', price: 30, subSection: 'gaufres' },
+        { name: 'Miel & Noix', price: 30, subSection: 'gaufres' },
+        { name: 'Nutella', price: 35, subSection: 'gaufres' },
+        { name: 'Miel aux fruits secs', price: 49, subSection: 'gaufres' },
+
+        // PANCAKES
+        { name: 'Caramel', price: 30, subSection: 'pancakes' },
+        { name: 'Miel & Noix', price: 30, subSection: 'pancakes' },
+        { name: 'Nutella', price: 35, subSection: 'pancakes' },
+        { name: 'Miel aux fruits secs', price: 49, subSection: 'pancakes' },
+      ];
+
+      productsToAdd.forEach((p, idx) => {
+        const pId = `dessert-${idx}`;
+        const pRef = doc(db, 'products', pId);
+        batch.set(pRef, {
+          ...p,
+          categoryId: catId,
+          id: pId,
+          image: p.subSection === 'crepes_salees' 
+            ? 'https://images.unsplash.com/photo-1519676867240-f03562e64548?q=80&w=800'
+            : p.subSection === 'crepes_sucrees'
+            ? 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800'
+            : p.subSection === 'gaufres'
+            ? 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800'
+            : 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800', // pancakes
+          description: '',
+          isAvailable: true
+        });
+      });
+
+      await batch.commit();
+      toast.success('Desserts Menu Seeded Successfully!');
+      setIsSettingUp(false);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to seed menu');
+      setIsSettingUp(false);
+    }
+  };
 
   const initializeDatabase = async () => {
     if (isSettingUp) return;
@@ -181,15 +283,16 @@ export default function AdminDashboard() {
       
       // Default categories with priorities
       const categories = [
-        { name: '🍳 Breakfast', order: 1 },
-        { name: '🥗 Brunch', order: 2 },
-        { name: '🥤 Drinks & Juices', order: 3 },
-        { name: '🍔 Fast Food', order: 4 },
-        { name: '🥒 Healthy Meals', order: 5 },
-        { name: '🍰 Desserts', order: 6 },
-        { name: '🍦 Ice Cream', order: 7 },
-        { name: '⭐ Signature Menu', order: 8 },
-        { name: "✨ THE EXTRA'S", order: 9 }
+        { name: 'breakfast', order: 1 },
+        { name: 'crepes_desserts', order: 2, id: 'crepes-desserts' },
+        { name: 'brunch', order: 3 },
+        { name: 'drinks', order: 4 },
+        { name: 'fast_food', order: 5 },
+        { name: 'healthy', order: 6 },
+        { name: 'desserts', order: 7 },
+        { name: 'ice_cream', order: 8 },
+        { name: 'signature', order: 9 },
+        { name: 'extras', order: 10 }
       ];
 
       // Supplements for add-on
@@ -202,6 +305,38 @@ export default function AdminDashboard() {
         { name: '🧀 Fromage', price: 10 },
         { name: '🧀 Fromage (jaune / cheese slice)', price: 15 },
         { name: '🫒 Huile d’olive', price: 10 }
+      ];
+
+      const dessertsItems = [
+        // CRÊPES SALÉES
+        { name: 'Fromage (Mozzarella et fromage rouge)', price: 42, subSection: 'crepes_salees', image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?q=80&w=800' },
+        { name: 'Dinde fumée (Sauce blanche, dinde fumée, fromage)', price: 48, subSection: 'crepes_salees', image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?q=80&w=800' },
+        { name: 'Poulet Champignon (Sauce champignon, poulet, fromage)', price: 54, subSection: 'crepes_salees', image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?q=80&w=800' },
+        
+        // CRÊPES SUCRÉES
+        { name: 'Nature', price: 20, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Confiture', price: 25, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Nutella', price: 30, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Nutella et Banane', price: 37, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Miel & Noix', price: 35, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Royal (Caramel & fruits secs & crème chantilly)', price: 40, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Exotique', price: 48, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Brésilienne', price: 48, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Brésilienne Nutella Banane, Boule de glace vanille', price: 48, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Cappuccino7 (Nutella, boule de glace au choix, Oréo, Kitkat, noix)', price: 52, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+        { name: 'Miel et fruit sec', price: 49, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
+
+        // GAUFRES
+        { name: 'Caramel', price: 30, subSection: 'gaufres', image: 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800' },
+        { name: 'Miel & Noix', price: 30, subSection: 'gaufres', image: 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800' },
+        { name: 'Nutella', price: 35, subSection: 'gaufres', image: 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800' },
+        { name: 'Miel aux fruits secs', price: 49, subSection: 'gaufres', image: 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800' },
+
+        // PANCAKES
+        { name: 'Caramel', price: 30, subSection: 'pancakes', image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800' },
+        { name: 'Miel & Noix', price: 30, subSection: 'pancakes', image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800' },
+        { name: 'Nutella', price: 35, subSection: 'pancakes', image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800' },
+        { name: 'Miel aux fruits secs', price: 49, subSection: 'pancakes', image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800' },
       ];
 
       // Mapping for specific required data
@@ -250,23 +385,33 @@ export default function AdminDashboard() {
       ];
 
       for (const cat of categories) {
-        const catRef = doc(collection(db, 'categories'));
-        batch.set(catRef, cat);
+        const catRef = doc(db, 'categories', cat.id || `gen-${Math.random()}`);
+        if (cat.id) {
+          batch.set(catRef, { name: cat.name, order: cat.order, id: cat.id });
+        } else {
+          batch.set(catRef, cat);
+        }
         
         let items: any[] = [];
-        if (cat.name.includes('Breakfast')) items = breakfastItems;
-        else if (cat.name.includes('Brunch')) items = brunchItems;
-        else if (cat.name.includes('Drinks')) items = drinkItems;
-        else if (cat.name.includes('Fast Food')) items = fastFoodItems;
-        else if (cat.name.includes('Healthy')) items = healthyItems;
-        else if (cat.name.includes('Desserts')) items = dessertItems;
-        else if (cat.name.includes('Ice Cream')) items = iceCreamItems;
-        else if (cat.name.includes('Signature')) items = [breakfastItems[6]]; // Feature the namesake
-        else if (cat.name.includes("EXTRA'S")) items = supplementItems;
+        if (cat.name === 'breakfast') items = breakfastItems;
+        else if (cat.name === 'crepes_desserts') items = dessertsItems;
+        else if (cat.name === 'brunch') items = brunchItems;
+        else if (cat.name === 'drinks') items = drinkItems;
+        else if (cat.name === 'fast_food') items = fastFoodItems;
+        else if (cat.name === 'healthy') items = healthyItems;
+        else if (cat.name === 'desserts') items = dessertItems;
+        else if (cat.name === 'ice_cream') items = iceCreamItems;
+        else if (cat.name === 'signature') items = [breakfastItems[6]];
+        else if (cat.name === 'extras') items = supplementItems;
 
         items.forEach(item => {
           const prodRef = doc(collection(db, 'products'));
-          batch.set(prodRef, { ...item, categoryId: catRef.id, isAvailable: true });
+          batch.set(prodRef, { 
+            ...item, 
+            categoryId: catRef.id, 
+            isAvailable: true,
+            id: prodRef.id // Ensure ID is consistent
+          });
         });
       }
 

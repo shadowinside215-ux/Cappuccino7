@@ -10,6 +10,7 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   fallbackSrc?: string;
   priority?: boolean;
   referrerPolicy?: React.HTMLAttributeReferrerPolicy;
+  showOverlay?: boolean;
 }
 
 export default function OptimizedImage({ 
@@ -19,6 +20,7 @@ export default function OptimizedImage({
   containerClassName = '', 
   fallbackSrc = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800',
   priority = false,
+  showOverlay = true,
   ...props 
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -91,8 +93,10 @@ export default function OptimizedImage({
         className={`${className} ${isLoaded ? 'visible' : 'invisible md:visible'}`}
       />
 
-      {/* Decorative inner shadow for "sinking in" effect requested by user */}
-      <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/5 bg-gradient-to-tr from-stone-950/10 via-transparent to-white/5" />
+      {/* Decorative inner shadow for "sinking in" effect - only show if requested */}
+      {showOverlay && (
+        <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/5 bg-gradient-to-tr from-stone-950/10 via-transparent to-white/5" />
+      )}
     </div>
   );
 }

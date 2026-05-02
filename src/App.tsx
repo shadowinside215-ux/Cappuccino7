@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
-import { auth, db } from './lib/firebase';
+import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
 import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon } from 'lucide-react';
 import { useBrandSettings } from './lib/brand';
 import { UserProfile } from './types';
@@ -158,17 +158,18 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
        {/* Universal Header - Responsive */}
       <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-950/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
-          <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
-            <div className="w-14 h-14 rounded-full overflow-hidden border border-white/10 shadow-lg bg-white p-0.5">
+          <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
               <OptimizedImage 
                 priority
                 src={brand.logoUrl} 
                 alt="Logo" 
-                containerClassName="w-full h-full"
+                showOverlay={false}
+                containerClassName="w-full h-full flex items-center justify-center"
                 className="w-full h-full object-contain"
               />
             </div>
-            <span className="text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
+            <span className="text-xl sm:text-2xl font-black italic text-white tracking-tighter uppercase drop-shadow-lg">{t('app_name')}</span>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -279,16 +280,17 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             className="fixed inset-0 z-[70] bg-bento-bg flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
           >
             <div className="flex justify-between items-center mb-12">
-              <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
-                <div className="w-16 h-16 rounded-full overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
+              <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
+                <div className="w-20 h-20 rounded-full overflow-hidden shadow-2xl bg-white flex items-center justify-center p-0">
                   <OptimizedImage 
                     src={brand.logoUrl} 
                     alt="Logo" 
-                    containerClassName="w-full h-full"
-                    className="w-full h-full object-contain rounded-full"
+                    showOverlay={false}
+                    containerClassName="w-full h-full flex items-center justify-center"
+                    className="w-full h-full object-contain"
                   />
                 </div>
-                <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
+                <span className="text-2xl font-black italic text-white uppercase tracking-tighter">{t('app_name')}</span>
               </Link>
               <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-stone-50 rounded-2xl">
                 <X size={24} />
@@ -455,8 +457,8 @@ export default function App() {
           }
           setLoading(false);
         }, (error) => {
-          console.error("Profile sync error:", error);
           setLoading(false);
+          handleFirestoreError(error, OperationType.GET, `users/${u.uid}`);
         });
       } else {
         setUserProfile(null);

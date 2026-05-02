@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Product, Category, UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRef } from 'react';
@@ -120,7 +120,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       // If we have categories but the loading state is stuck, clear it
       if (data.length > 0) setLoading(false);
     }, (error) => {
-      console.error("Home categories listener error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'categories');
     });
 
     const qProd = query(collection(db, 'products'));
@@ -129,8 +129,8 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       setProducts(data);
       setLoading(false);
     }, (error) => {
-      console.error("Home products listener error:", error);
       setLoading(false);
+      handleFirestoreError(error, OperationType.LIST, 'products');
     });
 
     // Timeout safety: if stuck loading for more than 4 seconds, show whatever we have
@@ -184,6 +184,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const getTranslatedCategory = (catName: string) => {
     const name = catName.toLowerCase();
     if (name.includes('breakfast')) return t('categories.breakfast');
+    if (name === 'crepes_desserts') return t('categories.crepes_desserts');
     if (name.includes('brunch')) return t('categories.brunch');
     if (name.includes('drinks')) return t('categories.drinks');
     if (name.includes('fast food')) return t('categories.fast_food');
@@ -418,17 +419,17 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           className="relative bg-[#2d1e16] rounded-[3rem] p-10 md:p-14 overflow-hidden border border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] group cursor-default"
         >
           {/* Internal Header Requested by User - Coffee Style */}
-          <div className="absolute top-0 left-0 right-0 bg-[#3d2b1f]/80 backdrop-blur-md px-10 py-5 border-b border-white/5 flex items-center justify-between z-20">
+          <div className="absolute top-0 left-0 right-0 bg-stone-950/40 backdrop-blur-md px-10 py-6 border-b border-white/5 flex items-center justify-between z-20">
             <div className="flex items-center gap-4">
-              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-xs sm:text-sm font-black text-white uppercase tracking-[0.3em] italic drop-shadow-sm">
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.6)]" />
+              <span className="text-xs sm:text-sm font-black text-white uppercase tracking-[0.4em] italic drop-shadow-md">
                 {t('loyalty_system_header')}
               </span>
             </div>
             <div className="flex gap-2">
-              <div className="w-2 h-2 rounded-full bg-white/20" />
-              <div className="w-2 h-2 rounded-full bg-white/10" />
-              <div className="w-2 h-2 rounded-full bg-white/5" />
+              <div className="w-2 h-2 rounded-full bg-amber-400/40" />
+              <div className="w-2 h-2 rounded-full bg-amber-400/20" />
+              <div className="w-2 h-2 rounded-full bg-amber-400/10" />
             </div>
           </div>
 
@@ -443,7 +444,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
           <div className="relative z-10 pt-24 md:pt-28">
             <h2 
-              className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.75] mb-8"
+              className="text-6xl md:text-9xl font-black text-white italic tracking-tighter uppercase leading-[0.8] mb-12 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
               dangerouslySetInnerHTML={{ __html: t('loyalty_headline') }}
             />
 
@@ -602,6 +603,19 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             );
             if (searchFiltered.length === 0) return null;
 
+            // Group by subSection if present
+            const sections: Record<string, typeof searchFiltered> = {};
+            const sectionOrder: string[] = [];
+            
+            searchFiltered.forEach(p => {
+              const sec = (p as any).subSection || '_none';
+              if (!sections[sec]) {
+                sections[sec] = [];
+                sectionOrder.push(sec);
+              }
+              sections[sec].push(p);
+            });
+
             return (
               <motion.section 
                 initial={{ opacity: 0, y: 40 }}
@@ -609,7 +623,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 viewport={{ once: true, margin: "-100px" }}
                 key={cat.id} 
                 id={`cat-${cat.id}`}
-                className="space-y-8"
+                className="space-y-12"
               >
               <div className="flex items-center gap-10">
                 <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter whitespace-nowrap pl-2">
@@ -618,17 +632,26 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 <div className="h-px bg-white/10 w-full" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8 tabular-nums">
-                {searchFiltered.map((product, idx) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.05, duration: 0.5 }}
-                    key={product.id}
-                    onClick={() => setSelectedProduct(product)}
-                    className="group relative bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-hidden hover:bg-white/10 transition-all duration-500 cursor-pointer shadow-2xl"
-                  >
+              {sectionOrder.map(secKey => (
+                <div key={secKey} className="space-y-8">
+                  {secKey !== '_none' && (
+                    <div className="flex items-center gap-4 bg-white/5 w-fit px-6 py-2 rounded-full border border-white/5">
+                      <span className="text-sm font-black text-amber-400 uppercase tracking-[0.2em] italic">
+                        {t(`sections.${secKey}`, secKey)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8 tabular-nums">
+                    {sections[secKey].map((product, idx) => (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: idx * 0.05, duration: 0.5 }}
+                        key={product.id}
+                        onClick={() => setSelectedProduct(product)}
+                        className="group relative bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-hidden hover:bg-white/10 transition-all duration-500 cursor-pointer shadow-2xl"
+                      >
                     <div className="flex flex-col sm:flex-row h-full">
                       <div className="sm:w-2/5 aspect-square relative overflow-hidden">
                         <OptimizedImage
@@ -680,13 +703,15 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            </motion.section>
-          );
-        })}
-      </div>
+            ))}
+          </motion.section>
+        );
+      })}
+    </div>
 
       {/* GPS Onboarding Modal */}
       <AnimatePresence>

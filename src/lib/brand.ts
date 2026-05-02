@@ -12,8 +12,8 @@ export interface BrandSettings {
   updatedAt?: string;
 }
 
-const DEFAULT_LOGO = 'https://firebasestorage.googleapis.com/v0/b/cappuccino7-app.appspot.com/o/assets%2Flogo_cappuccino.jpg?alt=media';
-const DEFAULT_HERO = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600';
+const DEFAULT_LOGO = 'https://raw.githubusercontent.com/Lucide-Icons/lucide/main/icons/coffee.svg';
+const DEFAULT_HERO = 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=80&w=1600';
 
 export function useBrandSettings() {
   const [settings, setSettings] = useState<BrandSettings>({
