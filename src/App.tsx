@@ -159,7 +159,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-950/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
           <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 shadow-lg bg-white p-0.5">
+            <div className="w-14 h-14 rounded-full overflow-hidden border border-white/10 shadow-lg bg-white p-0.5">
               <OptimizedImage 
                 priority
                 src={brand.logoUrl} 
@@ -168,7 +168,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 className="w-full h-full object-contain"
               />
             </div>
-            <span className="text-sm font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
+            <span className="text-xl font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -280,7 +280,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           >
             <div className="flex justify-between items-center mb-12">
               <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
-                <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
+                <div className="w-16 h-16 rounded-full overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
                   <OptimizedImage 
                     src={brand.logoUrl} 
                     alt="Logo" 
@@ -288,7 +288,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                     className="w-full h-full object-contain rounded-full"
                   />
                 </div>
-                <span className="text-sm font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
+                <span className="text-xl font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
               </Link>
               <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-stone-50 rounded-2xl">
                 <X size={24} />

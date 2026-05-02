@@ -177,7 +177,7 @@ export default function Login() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full space-y-10 flex flex-col items-center"
             >
-              <div className="w-32 h-32 bg-white rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-white/10 group-hover/login:scale-110 transition-transform duration-700">
+              <div className="w-40 h-40 bg-white rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-white/10 group-hover/login:scale-110 transition-transform duration-700">
                 <OptimizedImage 
                   src={brand.logoUrl} 
                   alt="Logo" 
@@ -187,7 +187,7 @@ export default function Login() {
               </div>
               
               <div className="text-center space-y-4">
-                <h1 className="text-2xl sm:text-3xl font-black text-bento-primary tracking-tighter italic drop-shadow-sm uppercase">Cappuccino7</h1>
+                <h1 className="text-3xl sm:text-5xl font-black text-bento-primary tracking-tighter italic drop-shadow-sm uppercase">Cappuccino7</h1>
                 <p className="text-white/60 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
                   Premium coffee, shared moments. <br />
                   Login to earn exclusive rewards.

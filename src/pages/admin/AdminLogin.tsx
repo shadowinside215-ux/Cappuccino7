@@ -63,7 +63,7 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center -mt-20">
       <div className="card w-full max-w-md !p-10 space-y-8 bg-white border-2 border-bento-primary/10 shadow-2xl">
         <div className="text-center space-y-4">
-          <div className="w-28 h-28 bg-white rounded-full overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 mx-auto rotate-3 border-2 border-stone-50">
+          <div className="w-36 h-36 bg-white rounded-full overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 mx-auto rotate-3 border-2 border-stone-50">
              <img 
                src={brand.logoUrl} 
                alt="Management Logo" 
@@ -71,7 +71,7 @@ export default function AdminLogin() {
              />
           </div>
           <div>
-            <h1 className="text-3xl font-black italic text-bento-primary tracking-tighter">Cappuccino7</h1>
+            <h1 className="text-4xl font-black italic text-bento-primary tracking-tighter">Cappuccino7</h1>
             <p className="text-stone-400 font-bold uppercase tracking-widest text-[10px] mt-2">Management Console</p>
           </div>
         </div>
