@@ -415,58 +415,72 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative bg-[#3d2b1f] rounded-[2.5rem] p-8 overflow-hidden border border-white/5 shadow-2xl group cursor-default"
+          className="relative bg-[#2d1e16] rounded-[3rem] p-10 md:p-14 overflow-hidden border border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] group cursor-default"
         >
-          {/* Icons Context */}
-          <div className="absolute top-6 left-6 p-3 bg-white/10 rounded-2xl backdrop-blur-xl border border-white/10">
-            <Coffee className="text-amber-400" size={24} />
-          </div>
-          
-          <div className="absolute -bottom-6 -right-6 text-amber-500/10 rotate-12 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-0">
-             <Pizza size={160} />
+          {/* Internal Header Requested by User - Coffee Style */}
+          <div className="absolute top-0 left-0 right-0 bg-[#3d2b1f]/80 backdrop-blur-md px-10 py-5 border-b border-white/5 flex items-center justify-between z-20">
+            <div className="flex items-center gap-4">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-xs sm:text-sm font-black text-white uppercase tracking-[0.3em] italic drop-shadow-sm">
+                {t('loyalty_system_header')}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <div className="w-2 h-2 rounded-full bg-white/20" />
+              <div className="w-2 h-2 rounded-full bg-white/10" />
+              <div className="w-2 h-2 rounded-full bg-white/5" />
+            </div>
           </div>
 
-          <div className="relative z-10 pt-12 md:pt-14">
-            <div className="flex items-center gap-2 mb-4">
-              <Zap size={14} className="text-amber-400 fill-amber-400" />
-              <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.4em] mb-0.5">{t('loyalty_badge')}</p>
-            </div>
-            
+          {/* Icons Context */}
+          <div className="absolute top-24 left-10 p-4 bg-white/10 rounded-[2rem] backdrop-blur-3xl border border-white/10 z-10 shadow-2xl">
+            <Coffee className="text-amber-400" size={32} />
+          </div>
+          
+          <div className="absolute -bottom-20 -right-20 text-stone-950/20 rotate-12 transition-transform duration-[2000ms] group-hover:scale-110 group-hover:-rotate-12">
+             <Coffee size={400} />
+          </div>
+
+          <div className="relative z-10 pt-24 md:pt-28">
             <h2 
-              className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-[0.8] mb-6"
+              className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-[0.75] mb-8"
               dangerouslySetInnerHTML={{ __html: t('loyalty_headline') }}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-              <div className="space-y-4">
-                <p className="text-white/60 text-sm leading-relaxed max-w-sm font-medium">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
+              <div className="space-y-6">
+                <p className="text-white/70 text-lg leading-relaxed max-w-sm font-medium">
                   {t('loyalty_description_part1')}
-                  <span className="text-white font-bold italic underline decoration-amber-400 decoration-2 underline-offset-4">{t('loyalty_description_highlight')}</span>
+                  <span className="text-amber-400 font-black italic underline decoration-amber-400/30 decoration-4 underline-offset-8 mx-1 tracking-tight">{t('loyalty_description_highlight')}</span>
                   {t('loyalty_description_part2')}
                 </p>
                 
-                <div className="flex flex-wrap gap-2">
-                   <div className="px-3 py-1.5 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2">
-                      <Ticket size={12} className="text-amber-400" />
-                      <span className="text-[9px] font-bold text-white uppercase tracking-widest">{t('automatic_rewards')}</span>
+                <div className="flex flex-wrap gap-3 pt-2">
+                   <div className="px-5 py-2.5 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-3 transition-colors hover:bg-white/10">
+                      <Ticket size={16} className="text-amber-400" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{t('automatic_rewards')}</span>
                    </div>
-                   <div className="px-3 py-1.5 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2">
-                      <Star size={12} className="text-amber-400" />
-                      <span className="text-[9px] font-bold text-white uppercase tracking-widest">{t('vip_tiers')}</span>
+                   <div className="px-5 py-2.5 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-3 transition-colors hover:bg-white/10">
+                      <Star size={16} className="text-amber-400" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{t('vip_tiers')}</span>
                    </div>
                 </div>
               </div>
 
-              <div className="flex justify-end pr-4">
-                <div className="w-16 h-16 bg-amber-400 rounded-full flex items-center justify-center -rotate-12 shadow-[0_0_40px_rgba(251,191,36,0.3)] border-4 border-[#3d2b1f]">
-                  <span className="text-stone-900 font-black text-xl italic uppercase">{t('gift_tag')}</span>
-                </div>
+              <div className="flex justify-end lg:pr-10">
+                <motion.div 
+                  whileHover={{ scale: 1.1, rotate: 0 }}
+                  className="w-24 h-24 sm:w-32 sm:h-32 bg-amber-400 rounded-full flex items-center justify-center -rotate-12 shadow-[0_0_60px_rgba(251,191,36,0.4)] border-8 border-[#2d1e16] transition-transform duration-500"
+                >
+                  <span className="text-stone-950 font-black text-2xl sm:text-3xl italic uppercase leading-none">{t('gift_tag')}</span>
+                </motion.div>
               </div>
             </div>
           </div>
           
           {/* Background effects */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-400/5 blur-[80px] -z-10" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-400/5 blur-[120px] -z-10" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-stone-950/40 blur-[100px] -z-10" />
         </motion.div>
       </div>
 
@@ -576,25 +590,27 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
       {/* Product Display - Prioritized Category Sections */}
       <div className="space-y-16 pb-24">
-        {displayCategories.map(cat => {
-          const catProducts = displayProducts.filter(p => p.categoryId === cat.id && p.isAvailable);
-          if (catProducts.length === 0) return null;
+        {displayCategories
+          .filter(cat => selectedCategory === 'all' || cat.id === selectedCategory)
+          .map(cat => {
+            const catProducts = displayProducts.filter(p => p.categoryId === cat.id && p.isAvailable);
+            if (catProducts.length === 0) return null;
 
-          // Filter by search query if present
-          const searchFiltered = catProducts.filter(p => 
-            p.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-          if (searchFiltered.length === 0) return null;
+            // Filter by search query if present
+            const searchFiltered = catProducts.filter(p => 
+              p.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            if (searchFiltered.length === 0) return null;
 
-          return (
-            <motion.section 
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              key={cat.id} 
-              id={`cat-${cat.id}`}
-              className="space-y-8"
-            >
+            return (
+              <motion.section 
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                key={cat.id} 
+                id={`cat-${cat.id}`}
+                className="space-y-8"
+              >
               <div className="flex items-center gap-10">
                 <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter whitespace-nowrap pl-2">
                   {getTranslatedCategory(cat.name)}
