@@ -21,12 +21,10 @@ import {
   LocateFixed
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-
 import { useNavigate } from 'react-router-dom';
-
 import { useTranslation } from 'react-i18next';
-
 import { useBrandSettings } from '../lib/brand';
+import OptimizedImage from '../components/ui/OptimizedImage';
 
 export default function Home({ userProfile }: { userProfile: UserProfile | null }) {
   const { t, i18n } = useTranslation();
@@ -235,8 +233,9 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               </button>
               
               <div className="aspect-[4/3] overflow-hidden">
-                <img 
+                <OptimizedImage 
                   src={selectedProduct.image || `https://picsum.photos/seed/${selectedProduct.id}/600/400`} 
+                  containerClassName="w-full h-full"
                   className="w-full h-full object-cover"
                   alt={selectedProduct.name}
                   referrerPolicy="no-referrer"
@@ -304,11 +303,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       <header className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] min-h-[600px] md:min-h-[850px] flex flex-col justify-end p-8 md:p-20 mb-16 md:mb-24 group/hero shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
         {/* Background Image/Overlay */}
         <div className="absolute inset-0 z-0">
-          <motion.img 
-            initial={{ scale: 1.2, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 2.5, ease: [0.23, 1, 0.32, 1] }}
+          <OptimizedImage 
+            priority
             src={brandSettings.heroImageUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600'} 
+            containerClassName="w-full h-full"
             className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover/hero:scale-105"
             alt=""
             referrerPolicy="no-referrer"
@@ -324,7 +322,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
             className="flex flex-col gap-6"
           >
-            <h1 className="text-5xl md:text-8xl font-black italic text-bento-primary tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
+            <h1 className="text-4xl md:text-6xl font-black italic text-bento-primary tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
               {t('app_name')}
             </h1>
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -617,9 +615,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   >
                     <div className="flex flex-col sm:flex-row h-full">
                       <div className="sm:w-2/5 aspect-square relative overflow-hidden">
-                        <img
+                        <OptimizedImage
                           src={product.image || `https://picsum.photos/seed/${product.id}/400/400`}
                           alt={product.name}
+                          containerClassName="w-full h-full"
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                           referrerPolicy="no-referrer"
                         />

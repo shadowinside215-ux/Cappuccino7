@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
+import OptimizedImage from '../components/ui/OptimizedImage';
 
 type AuthMode = 'initial' | 'email-login' | 'email-signup';
 
@@ -154,8 +155,10 @@ export default function Login() {
     <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 group/login relative flex items-center justify-center p-6">
       {/* Immersive Background */}
       <div className="absolute inset-0 z-0">
-        <img 
+        <OptimizedImage 
+          priority
           src={brand.loginBgUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600'} 
+          containerClassName="w-full h-full"
           className="w-full h-full object-cover fixed top-0 left-0" 
           alt=""
           referrerPolicy="no-referrer"
@@ -175,18 +178,16 @@ export default function Login() {
               className="w-full space-y-10 flex flex-col items-center"
             >
               <div className="w-32 h-32 bg-white rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-white/10 group-hover/login:scale-110 transition-transform duration-700">
-                <img 
+                <OptimizedImage 
                   src={brand.logoUrl} 
                   alt="Logo" 
+                  containerClassName="w-full h-full"
                   className="w-full h-full object-contain rounded-full"
-                  onError={(e) => {
-                    e.currentTarget.src = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80";
-                  }}
                 />
               </div>
               
               <div className="text-center space-y-4">
-                <h1 className="text-3xl sm:text-4xl font-black text-bento-primary tracking-tighter italic drop-shadow-sm">Cappuccino7</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-bento-primary tracking-tighter italic drop-shadow-sm uppercase">Cappuccino7</h1>
                 <p className="text-white/60 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
                   Premium coffee, shared moments. <br />
                   Login to earn exclusive rewards.

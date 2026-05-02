@@ -6,10 +6,9 @@ import { collection, query, where, getDocs, updateDoc, doc, setDoc } from 'fireb
 import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
-
 import { useTranslation } from 'react-i18next';
-
 import { useBrandSettings } from '../lib/brand';
+import OptimizedImage from '../components/ui/OptimizedImage';
 
 export default function Profile({ userProfile }: { userProfile: UserProfile | null }) {
   const { t } = useTranslation();
@@ -82,8 +81,10 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img 
+          <OptimizedImage 
+            priority
             src={brand.profileBgUrl || 'https://images.unsplash.com/photo-1544333346-6466f28ecb0c?q=80&w=1600'} 
+            containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
             alt=""
           />
@@ -127,8 +128,10 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
     <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative flex flex-col gap-10">
       {/* Immersive Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <img 
+        <OptimizedImage 
+          priority
           src={brand.profileBgUrl || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1600'} 
+          containerClassName="w-full h-full"
           className="w-full h-full object-cover fixed top-0 left-0" 
           alt=""
         />
@@ -329,11 +332,11 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                     >
                       <div className="flex items-center gap-6">
                         <div className="w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 ring-4 ring-white/10 shadow-2xl">
-                          <motion.img 
-                            whileHover={{ scale: 1.1 }}
+                          <OptimizedImage 
                             src={product.image} 
                             alt="" 
-                            className="w-full h-full object-cover transition-transform duration-500" 
+                            containerClassName="w-full h-full"
+                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
                           />
                         </div>
                         <div className="flex-1 min-w-0">

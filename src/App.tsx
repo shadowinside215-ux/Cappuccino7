@@ -26,6 +26,7 @@ import Settings from './pages/Settings';
 import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import Onboarding from './components/Onboarding';
+import OptimizedImage from './components/ui/OptimizedImage';
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
   const [isAdminDocument, setIsAdminDocument] = useState<boolean | null>(null);
@@ -159,13 +160,15 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
         <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-950/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
           <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
             <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 shadow-lg bg-white p-0.5">
-              <img 
+              <OptimizedImage 
+                priority
                 src={brand.logoUrl} 
                 alt="Logo" 
+                containerClassName="w-full h-full"
                 className="w-full h-full object-contain"
               />
             </div>
-            <span className="text-lg font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
+            <span className="text-sm font-black italic text-bento-primary tracking-tighter uppercase">{t('app_name')}</span>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -196,6 +199,13 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 <UserIcon size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('profile')}</span>
                 {location.pathname === '/profile' && (
+                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                )}
+              </Link>
+              <Link to="/settings" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/settings' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                <SettingsIcon size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('settings', { defaultValue: 'Settings' })}</span>
+                {location.pathname === '/settings' && (
                   <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
                 )}
               </Link>
@@ -271,13 +281,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             <div className="flex justify-between items-center mb-12">
               <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
                 <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border border-stone-100 p-0.5 bg-white">
-                  <img 
+                  <OptimizedImage 
                     src={brand.logoUrl} 
                     alt="Logo" 
+                    containerClassName="w-full h-full"
                     className="w-full h-full object-contain rounded-full"
                   />
                 </div>
-                <span className="text-lg font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
+                <span className="text-sm font-black italic text-bento-primary uppercase tracking-tighter">{t('app_name')}</span>
               </Link>
               <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-stone-50 rounded-2xl">
                 <X size={24} />
