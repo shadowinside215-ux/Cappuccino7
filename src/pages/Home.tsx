@@ -416,72 +416,87 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative bg-[#2d1e16] rounded-[3rem] p-10 md:p-14 overflow-hidden border border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] group cursor-default"
+          className="relative bg-[#1a120b] rounded-[2.5rem] p-8 md:p-12 overflow-hidden border border-white/5 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.7)] group cursor-default"
         >
           {/* Internal Header Requested by User - Coffee Style */}
-          <div className="absolute top-0 left-0 right-0 bg-stone-950/40 backdrop-blur-md px-10 py-6 border-b border-white/5 flex items-center justify-between z-20">
-            <div className="flex items-center gap-4">
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.6)]" />
-              <span className="text-xs sm:text-sm font-black text-white uppercase tracking-[0.4em] italic drop-shadow-md">
-                {t('loyalty_system_header')}
+          <div className="absolute top-0 left-0 right-0 bg-stone-950/20 backdrop-blur-sm px-8 py-4 border-b border-white/5 flex items-center justify-between z-20">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.8)]" />
+              <span className="text-[9px] font-black text-white/60 uppercase tracking-[0.3em] italic">
+                {t('loyalty_badge')}
               </span>
             </div>
-            <div className="flex gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-400/40" />
-              <div className="w-2 h-2 rounded-full bg-amber-400/20" />
-              <div className="w-2 h-2 rounded-full bg-amber-400/10" />
+            <div className="flex gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-400/30" />
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-400/10" />
             </div>
           </div>
 
-          {/* Icons Context */}
-          <div className="absolute top-24 left-10 p-4 bg-white/10 rounded-[2rem] backdrop-blur-3xl border border-white/10 z-10 shadow-2xl">
-            <Coffee className="text-amber-400" size={32} />
+          {/* Glowing Background Icons */}
+          <div className="absolute top-20 right-10 text-amber-400/5 rotate-12 transition-transform duration-[3000ms] group-hover:scale-125 group-hover:-rotate-6 pointer-events-none">
+             <Coffee size={300} />
           </div>
-          
-          <div className="absolute -bottom-20 -right-20 text-stone-950/20 rotate-12 transition-transform duration-[2000ms] group-hover:scale-110 group-hover:-rotate-12">
-             <Coffee size={400} />
+          <div className="absolute -bottom-10 -left-10 text-amber-400/5 -rotate-12 transition-transform duration-[3000ms] group-hover:scale-110 pointer-events-none">
+             <Award size={200} />
           </div>
 
-          <div className="relative z-10 pt-24 md:pt-28">
+          <div className="relative z-10 pt-12">
             <h2 
-              className="text-6xl md:text-9xl font-black text-white italic tracking-tighter uppercase leading-[0.8] mb-12 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              className="text-3xl md:text-5xl font-black text-amber-400 italic tracking-tighter uppercase leading-tight mb-8 drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]"
               dangerouslySetInnerHTML={{ __html: t('loyalty_headline') }}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
-              <div className="space-y-6">
-                <p className="text-white/70 text-lg leading-relaxed max-w-sm font-medium">
-                  {t('loyalty_description_part1')}
-                  <span className="text-amber-400 font-black italic underline decoration-amber-400/30 decoration-4 underline-offset-8 mx-1 tracking-tight">{t('loyalty_description_highlight')}</span>
-                  {t('loyalty_description_part2')}
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+              <div className="md:col-span-8 space-y-6">
+                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 backdrop-blur-md">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">1</div>
+                      <p className="text-white/80 text-sm leading-relaxed">
+                        Order any drink or dish from our menu.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">2</div>
+                      <p className="text-white/80 text-sm leading-relaxed">
+                        Collect <span className="text-amber-400 font-black italic underline decoration-amber-400/30 decoration-2 underline-offset-4 mx-0.5">11 Stamps</span> on that specific item.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">3</div>
+                      <p className="text-white/80 text-sm leading-relaxed">
+                        The <span className="text-amber-400 font-black">12th one is on us</span>! Automatically unlocked in your account.
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 
-                <div className="flex flex-wrap gap-3 pt-2">
-                   <div className="px-5 py-2.5 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-3 transition-colors hover:bg-white/10">
-                      <Ticket size={16} className="text-amber-400" />
-                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{t('automatic_rewards')}</span>
+                <div className="flex flex-wrap gap-2">
+                   <div className="px-4 py-2 bg-stone-900/50 rounded-xl border border-white/5 flex items-center gap-2.5 transition-colors hover:border-amber-400/30">
+                      <Ticket size={14} className="text-amber-400" />
+                      <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">{t('automatic_rewards')}</span>
                    </div>
-                   <div className="px-5 py-2.5 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-3 transition-colors hover:bg-white/10">
-                      <Star size={16} className="text-amber-400" />
-                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{t('vip_tiers')}</span>
+                   <div className="px-4 py-2 bg-stone-900/50 rounded-xl border border-white/5 flex items-center gap-2.5 transition-colors hover:border-amber-400/30">
+                      <Star size={14} className="text-amber-400" />
+                      <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">{t('vip_tiers')}</span>
                    </div>
                 </div>
               </div>
 
-              <div className="flex justify-end lg:pr-10">
+              <div className="md:col-span-4 flex justify-end">
                 <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 0 }}
-                  className="w-24 h-24 sm:w-32 sm:h-32 bg-amber-400 rounded-full flex items-center justify-center -rotate-12 shadow-[0_0_60px_rgba(251,191,36,0.4)] border-8 border-[#2d1e16] transition-transform duration-500"
+                  whileHover={{ scale: 1.05, rotate: 5 }}
+                  className="w-24 h-24 bg-amber-400 rounded-3xl flex flex-col items-center justify-center p-4 shadow-[0_0_40px_rgba(251,191,36,0.3)] rotate-3 border-4 border-[#1a120b]"
                 >
-                  <span className="text-stone-950 font-black text-2xl sm:text-3xl italic uppercase leading-none">{t('gift_tag')}</span>
+                  <Award size={32} className="text-stone-900 mb-1" />
+                  <span className="text-stone-900 font-black text-xs italic uppercase tracking-tighter">{t('gift_tag')}</span>
                 </motion.div>
               </div>
             </div>
           </div>
           
-          {/* Background effects */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-400/5 blur-[120px] -z-10" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-stone-950/40 blur-[100px] -z-10" />
+          {/* Animated Glow Effects */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-amber-400/[0.03] blur-[100px] pointer-events-none" />
         </motion.div>
       </div>
 
