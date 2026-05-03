@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatch, addDoc, where } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
@@ -7,6 +8,7 @@ import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Packa
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({
     activeOrders: 0,
     totalUsers: 0,
@@ -341,7 +343,7 @@ export default function AdminDashboard() {
 
       // Mapping for specific required data
       const breakfastItems = [
-        { name: 'Occidental', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800' },
+        { name: 'Occidental', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: '' },
         { name: 'Amazigh', price: 48, description: 'Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?q=80&w=800' },
         { name: 'Gourmand', price: 45, description: 'Œufs au plat ou brouillés, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=800' },
         { name: 'Ftour Fassi', price: 48, description: 'Œufs au khlii, Huile d\'olive, olives noires, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?q=80&w=800' },
@@ -448,8 +450,8 @@ export default function AdminDashboard() {
             <LogOut size={24} />
           </button>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 pl-1">Administrative Overview</p>
-            <h1 className="text-4xl font-bold text-bento-primary">Dashboard</h1>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 pl-1">{t('admin_overview')}</p>
+            <h1 className="text-4xl font-bold text-bento-primary">{t('dashboard')}</h1>
           </div>
         </div>
         <div className="flex gap-2">
@@ -458,14 +460,14 @@ export default function AdminDashboard() {
             disabled={isSeeding}
             className="bg-bento-primary text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[10px] font-black uppercase tracking-widest"
           >
-            <Package size={16} /> {isSeeding ? 'Importing...' : 'Import New Menu'}
+            <Package size={16} /> {isSeeding ? t('importing') : t('import_menu')}
           </button>
           <button 
             onClick={registerAdmin}
             disabled={isRegisteringAdmin}
             className="bg-bento-accent text-bento-primary px-4 py-2 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[10px] font-black uppercase tracking-widest"
           >
-            <ShieldCheck size={16} /> {isRegisteringAdmin ? '...' : 'Fix Perms'}
+            <ShieldCheck size={16} /> {isRegisteringAdmin ? '...' : t('fix_perms')}
           </button>
         </div>
       </div>
@@ -478,8 +480,8 @@ export default function AdminDashboard() {
                 <Database className="text-bento-accent" size={32} />
               </div>
               <div>
-                <h4 className="font-bold text-xl">Empty Database Detected</h4>
-                <p className="text-bento-bg/70 text-sm">Initialize with default categories and settings to get started.</p>
+                <h4 className="font-bold text-xl">{t('empty_db_title')}</h4>
+                <p className="text-bento-bg/70 text-sm">{t('empty_db_desc')}</p>
               </div>
             </div>
             <button 
@@ -487,7 +489,7 @@ export default function AdminDashboard() {
               disabled={isSettingUp}
               className={`bg-bento-accent text-bento-primary font-bold py-4 px-8 rounded-2xl transition-all shadow-xl active:scale-[0.98] ${isSettingUp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white'}`}
             >
-              {isSettingUp ? 'Setting up...' : 'Run Setup'}
+              {isSettingUp ? t('setup_required') : t('run_setup')}
             </button>
           </div>
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
@@ -501,7 +503,7 @@ export default function AdminDashboard() {
             <ShoppingBag size={24} />
           </div>
           <p className="text-4xl font-black text-bento-primary mb-1">{stats.activeOrders}</p>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Active Orders</p>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('active_orders_label')}</p>
         </div>
         
         <div className="card lg:col-span-1">
@@ -509,7 +511,7 @@ export default function AdminDashboard() {
             <TrendingUp size={24} />
           </div>
           <p className="text-4xl font-black text-bento-primary mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Today's Revenue</p>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_label')}</p>
         </div>
 
         <div className="card lg:col-span-2 accent-card !bg-bento-accent !text-bento-primary">
@@ -519,11 +521,11 @@ export default function AdminDashboard() {
             </div>
             <div className="text-right">
               <p className="text-4xl font-black">{stats.totalUsers}</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Registered Customers</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{t('registered_users')}</p>
             </div>
           </div>
           <p className="text-sm font-medium opacity-80 mt-auto">
-            Growing your community one cup at a time.
+            {t('community_growth_msg')}
           </p>
         </div>
       </div>
@@ -535,8 +537,8 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <div className="text-left">
-              <h3 className="text-2xl font-bold mb-1">Live Orders</h3>
-              <p className="text-bento-bg/60 text-sm">Manage incoming coffee requests</p>
+              <h3 className="text-2xl font-bold mb-1">{t('live_orders')}</h3>
+              <p className="text-bento-bg/60 text-sm">{t('live_orders_desc')}</p>
             </div>
             <div className="p-4 bg-white/10 rounded-full group-hover:bg-bento-accent group-hover:text-bento-primary transition-all">
               <Package size={32} />
@@ -550,8 +552,8 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <div className="text-left">
-              <h3 className="text-2xl font-bold mb-1">Menu Designer</h3>
-              <p className="text-stone-400 text-sm">Update products and availability</p>
+              <h3 className="text-2xl font-bold mb-1">{t('menu_designer')}</h3>
+              <p className="text-stone-400 text-sm">{t('menu_designer_desc')}</p>
             </div>
             <div className="p-4 bg-stone-100 rounded-full group-hover:bg-bento-primary group-hover:text-white transition-all">
               <SettingsIcon size={32} className="transition-colors" />
@@ -565,8 +567,8 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <div className="text-left">
-              <h3 className="text-2xl font-bold mb-1">Brand & Logo</h3>
-              <p className="text-stone-400 text-sm">Update app logo and branding</p>
+              <h3 className="text-2xl font-bold mb-1">{t('brand_logo')}</h3>
+              <p className="text-stone-400 text-sm">{t('brand_logo_desc')}</p>
             </div>
             <div className="p-4 bg-amber-50 rounded-full group-hover:bg-bento-accent group-hover:text-bento-primary transition-all">
               <Palette size={32} className="transition-colors" />
@@ -579,8 +581,8 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <div className="flex items-center justify-between pl-1">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-bento-primary tracking-tight">Customer Communities</h2>
-            <div className="px-2 py-0.5 bg-bento-accent/20 rounded-full text-bento-primary text-[10px] font-black uppercase tracking-widest">{users.length} Users</div>
+            <h2 className="text-xl font-bold text-bento-primary tracking-tight">{t('customer_communities')}</h2>
+            <div className="px-2 py-0.5 bg-bento-accent/20 rounded-full text-bento-primary text-[10px] font-black uppercase tracking-widest">{t('users_count', { count: users.length })}</div>
           </div>
         </div>
 
@@ -599,14 +601,14 @@ export default function AdminDashboard() {
                     {readyRewards > 0 ? <Gift className="text-bento-accent animate-bounce" size={24} /> : <Users size={24} />}
                   </div>
                   <div>
-                    <h4 className="font-bold text-bento-ink text-lg">{user.name || 'Anonymous User'}</h4>
+                    <h4 className="font-bold text-bento-ink text-lg">{user.name || (t('guest') === 'guest' ? 'Anonymous User' : t('anonymous_user', 'Anonymous User'))}</h4>
                     <div className="flex items-center gap-3 mt-0.5">
                       <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex items-center gap-1">
                         <Mail size={10} /> {user.email}
                       </p>
                       <div className="h-1 w-1 bg-stone-200 rounded-full" />
                       <p className="text-[10px] text-bento-accent font-black uppercase tracking-widest flex items-center gap-1">
-                        <Award size={10} /> {user.points} Points
+                        <Award size={10} /> {user.points} {t('reward_points')}
                       </p>
                     </div>
                   </div>
@@ -614,15 +616,15 @@ export default function AdminDashboard() {
 
                 <div className="flex items-center gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0">
                   <div className="flex-1 sm:flex-none">
-                    <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1 text-right">Loyalty Status</p>
+                    <p className="text-[9px] font-black text-stone-300 uppercase tracking-widest mb-1 text-right">{t('loyalty_status')}</p>
                     <div className="flex items-center gap-2">
                        {readyRewards > 0 ? (
                          <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100 flex items-center gap-2">
-                           <Gift size={12} /> {readyRewards} Reward(s) Ready
+                           <Gift size={12} /> {t('reward_ready_count', { count: readyRewards })}
                          </div>
                        ) : (
                          <div className="bg-stone-50 text-stone-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-stone-100">
-                           Collecting Points
+                           {t('collecting_points')}
                          </div>
                        )}
                     </div>

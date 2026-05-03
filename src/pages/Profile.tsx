@@ -80,36 +80,38 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   if (isGuest) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0">
+        {brand.profileBgUrl && (
           <OptimizedImage 
             priority
-            src={brand.profileBgUrl || 'https://images.unsplash.com/photo-1544333346-6466f28ecb0c?q=80&w=1600'} 
+            src={brand.profileBgUrl} 
             containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
             alt=""
           />
-          <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
-        </div>
+        )}
+        <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
+      </div>
 
         <div className="relative z-10 flex flex-col items-center">
           <div className="p-8 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-6 ring-1 ring-white/20">
             <Award size={64} strokeWidth={2.5} className="text-amber-400" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">Join the Club!</h2>
+          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">{t('join_club')}</h2>
           <p className="text-white/60 mb-8 font-medium max-w-sm">
-            Sign in to start earning exclusive ☕ rewards! Every coffee counts towards your next free one.
+            {t('loyalty_promo_desc')}
           </p>
           <button 
             onClick={() => navigate('/login')}
             className="bg-white text-bento-primary px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all"
           >
-            Sign In or Create Account
+            {t('sign_in_or_create')}
           </button>
           <button 
             onClick={handleLogout}
             className="mt-6 text-white/40 font-bold uppercase text-[10px] tracking-widest hover:text-white transition-colors"
           >
-            End Guest Session
+            {t('end_guest_session')}
           </button>
         </div>
       </div>
@@ -127,14 +129,16 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   return (
     <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative flex flex-col gap-10">
       {/* Immersive Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <OptimizedImage 
-          priority
-          src={brand.profileBgUrl || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1600'} 
-          containerClassName="w-full h-full"
-          className="w-full h-full object-cover fixed top-0 left-0" 
-          alt=""
-        />
+      <div className="absolute inset-0 z-0 pointer-events-none bg-stone-900">
+        {brand.profileBgUrl && (
+          <OptimizedImage 
+            priority
+            src={brand.profileBgUrl} 
+            containerClassName="w-full h-full"
+            className="w-full h-full object-cover fixed top-0 left-0" 
+            alt=""
+          />
+        )}
         <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-[1px]" />
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent" />
       </div>
@@ -344,7 +348,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                             {t(`products.${product.name}`, product.name)}
                           </h4>
                           <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${rewardReady ? 'text-amber-400' : 'text-white/40'}`}>
-                            {rewardReady ? `🎁 Ready to Redeem` : `LVL ${count} • Goal 11`}
+                            {rewardReady ? t('ready_to_redeem') : t('goal_lvl', { count })}
                           </p>
                         </div>
                       </div>
@@ -392,7 +396,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
               className="w-full bg-white/5 backdrop-blur-xl p-10 rounded-[3rem] flex items-center justify-center gap-4 group hover:bg-white text-white hover:text-stone-900 transition-all border border-white/10 shadow-2xl"
             >
               <LogOut className="rotate-180" size={32} />
-              <h4 className="font-black uppercase tracking-[0.2em] text-lg italic">Admin Dashboard Console</h4>
+              <h4 className="font-black uppercase tracking-[0.2em] text-lg italic">{t('admin_dashboard_console')}</h4>
             </button>
           </div>
         )}

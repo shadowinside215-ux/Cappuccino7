@@ -106,6 +106,10 @@
   .animate-marquee2 {
     animation: marquee2 40s linear infinite;
   }
+  .golden-glow {
+    color: #fbbf24;
+    text-shadow: 0 0 15px rgba(251, 191, 36, 0.6), 0 0 30px rgba(251, 191, 36, 0.3);
+  }
 }
 
 @keyframes marquee {

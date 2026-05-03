@@ -154,15 +154,17 @@ export default function Login() {
   return (
     <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 group/login relative flex items-center justify-center p-6">
       {/* Immersive Background */}
-      <div className="absolute inset-0 z-0">
-        <OptimizedImage 
-          priority
-          src={brand.loginBgUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600'} 
-          containerClassName="w-full h-full"
-          className="w-full h-full object-cover fixed top-0 left-0" 
-          alt=""
-          referrerPolicy="no-referrer"
-        />
+      <div className="absolute inset-0 z-0 bg-stone-900">
+        {brand.loginBgUrl && (
+          <OptimizedImage 
+            priority
+            src={brand.loginBgUrl} 
+            containerClassName="w-full h-full"
+            className="w-full h-full object-cover fixed top-0 left-0" 
+            alt=""
+            referrerPolicy="no-referrer"
+          />
+        )}
         <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent" />
       </div>

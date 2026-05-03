@@ -18,7 +18,8 @@ const DEFAULT_HERO = 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4
 export function useBrandSettings() {
   const [settings, setSettings] = useState<BrandSettings>({
     logoUrl: DEFAULT_LOGO,
-    heroImageUrl: DEFAULT_HERO
+    heroImageUrl: undefined,
+    loginBgUrl: undefined
   });
   const [loading, setLoading] = useState(true);
 

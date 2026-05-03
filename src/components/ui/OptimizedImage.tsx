@@ -18,7 +18,7 @@ export default function OptimizedImage({
   alt, 
   className, 
   containerClassName = '', 
-  fallbackSrc = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800',
+  fallbackSrc = '',
   priority = false,
   showOverlay = true,
   ...props 

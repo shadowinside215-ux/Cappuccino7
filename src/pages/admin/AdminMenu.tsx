@@ -4,6 +4,7 @@ import { db, auth } from '../../lib/firebase';
 import { Product, Category } from '../../types';
 import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 enum OperationType {
@@ -54,6 +55,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 export default function AdminMenu() {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isAdding, setIsAdding] = useState(false);
@@ -284,13 +286,7 @@ export default function AdminMenu() {
   };
 
   const getSubSectionLabel = (sub: string) => {
-    switch (sub) {
-      case 'crepes_salees': return '🌯 CRÊPES SALÉES';
-      case 'crepes_sucrees': return '🍫 CRÊPES SUCRÉES';
-      case 'gaufres': return '🧇 GAUFRES';
-      case 'pancakes': return '🥞 PANCAKES';
-      default: return sub.replace('_', ' ').toUpperCase();
-    }
+    return t(`sections.${sub}`, sub.replace('_', ' ').toUpperCase());
   };
 
   return (
@@ -615,7 +611,12 @@ export default function AdminMenu() {
                         {editingId === product.id && (
                           <form onSubmit={handleUpdateItem} className="card !p-6 border-bento-accent/30 animate-in zoom-in-95 duration-200">
                             <div className="flex justify-between items-center mb-6">
-                              <p className="text-[10px] font-black text-bento-accent uppercase tracking-widest">Editing Product</p>
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-black text-bento-accent uppercase tracking-widest">Editing Product</p>
+                                <p className="text-[8px] font-black text-stone-400 uppercase tracking-[0.2em]">
+                                  {cat.name} {product.subSection ? `> ${getSubSectionLabel(product.subSection)}` : ''}
+                                </p>
+                              </div>
                               <button type="button" onClick={() => setEditingId(null)} className="text-stone-300 hover:text-stone-500 transition-colors"><X size={18} /></button>
                             </div>
                             

@@ -84,7 +84,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const isEmpty = !loading && categories.length === 0;
 
   const starterMenu: Product[] = [
-    { id: 'start-1', name: 'Occidental Breakfast', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800', categoryId: 'breakfast', isAvailable: true },
+    { id: 'start-1', name: 'Occidental Breakfast', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: '', categoryId: 'breakfast', isAvailable: true },
     { id: 'start-2', name: 'Amazigh Breakfast', price: 48, description: 'Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d\'orange, Balboula, Boisson chaude...', image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?q=80&w=800', categoryId: 'breakfast', isAvailable: true },
     { id: 'start-3', name: 'Brunch (1 Personne)', price: 87, description: 'Omelette, saucisses, Beghrir, Harcha, Meloui, Miel, Amlou, Fromage, Jus orange, Pancakes Nutella, Boisson chaude...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=80&w=800', categoryId: 'brunch', isAvailable: true }
   ];
@@ -301,17 +301,19 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         </div>
       )}
       {/* Hero Section */}
-      <header className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] min-h-[600px] md:min-h-[850px] flex flex-col justify-end p-8 md:p-20 mb-16 md:mb-24 group/hero shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
+      <header className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] min-h-[600px] md:min-h-[850px] flex flex-col justify-end p-8 md:p-20 mb-16 md:mb-24 group/hero shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] bg-stone-900">
         {/* Background Image/Overlay */}
         <div className="absolute inset-0 z-0">
-          <OptimizedImage 
-            priority
-            src={brandSettings.heroImageUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600'} 
-            containerClassName="w-full h-full"
-            className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover/hero:scale-105"
-            alt=""
-            referrerPolicy="no-referrer"
-          />
+          {brandSettings.heroImageUrl && (
+            <OptimizedImage 
+              priority
+              src={brandSettings.heroImageUrl} 
+              containerClassName="w-full h-full"
+              className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover/hero:scale-105"
+              alt=""
+              referrerPolicy="no-referrer"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-stone-950/50 to-transparent md:from-stone-950/70" />
         </div>
@@ -347,10 +349,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           >
             <p className="text-white/80 uppercase tracking-[0.3em] md:tracking-[0.4em] text-[10px] md:text-xs font-black pl-1 flex items-center gap-3 italic">
               <MapPin size={16} className="text-amber-400" />
-              Salé • Palace Taha • Avenue Moulay Rachid
+              {t('hero_location')}
             </p>
             <p className="text-white/50 text-[11px] md:text-sm font-medium italic pl-1 max-w-sm md:max-w-md leading-relaxed">
-              Crafting exceptional coffee moments and artisan morning experiences in the heart of the city.
+              {t('hero_description')}
             </p>
           </motion.div>
 
@@ -367,7 +369,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               }}
               className="flex-1 md:flex-none justify-center bg-white text-stone-900 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black shadow-[0_20px_50px_rgba(255,255,255,0.15)] flex items-center gap-3 hover:scale-[1.03] transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest"
             >
-              Start Order <Plus size={18} />
+              {t('start_order')} <Plus size={18} />
             </button>
             <button 
               onClick={() => {
@@ -376,7 +378,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               }}
               className="flex-1 md:flex-none justify-center bg-white/5 backdrop-blur-2xl border border-white/10 text-white px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black shadow-2xl flex items-center gap-3 hover:bg-white/20 transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest"
             >
-              Explore <Coffee size={18} className="text-amber-400" />
+              {t('explore')} <Coffee size={18} className="text-amber-400" />
             </button>
           </motion.div>
         </div>
@@ -416,7 +418,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative bg-[#1a120b] rounded-[2.5rem] p-8 md:p-12 overflow-hidden border border-white/5 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.7)] group cursor-default"
+          className="relative bg-gradient-to-br from-[#1a120b] to-[#2a1d12] rounded-[3rem] p-8 md:p-14 overflow-hidden border border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] group cursor-default ring-1 ring-white/10"
         >
           {/* Internal Header Requested by User - Coffee Style */}
           <div className="absolute top-0 left-0 right-0 bg-stone-950/20 backdrop-blur-sm px-8 py-4 border-b border-white/5 flex items-center justify-between z-20">
@@ -452,21 +454,24 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
                       <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">1</div>
-                      <p className="text-white/80 text-sm leading-relaxed">
-                        Order any drink or dish from our menu.
-                      </p>
+                      <p 
+                        className="text-white/80 text-sm leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: t('loyalty_step_1') }}
+                      />
                     </div>
                     <div className="flex items-start gap-4">
                       <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">2</div>
-                      <p className="text-white/80 text-sm leading-relaxed">
-                        Collect <span className="text-amber-400 font-black italic underline decoration-amber-400/30 decoration-2 underline-offset-4 mx-0.5">11 Stamps</span> on that specific item.
-                      </p>
+                      <p 
+                        className="text-white/80 text-sm leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: t('loyalty_step_2') }}
+                      />
                     </div>
                     <div className="flex items-start gap-4">
                       <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">3</div>
-                      <p className="text-white/80 text-sm leading-relaxed">
-                        The <span className="text-amber-400 font-black">12th one is on us</span>! Automatically unlocked in your account.
-                      </p>
+                      <p 
+                        className="text-white/80 text-sm leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: t('loyalty_step_3') }}
+                      />
                     </div>
                   </div>
                 </div>
