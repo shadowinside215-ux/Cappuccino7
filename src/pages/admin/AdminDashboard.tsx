@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, query, orderBy, onSnapshot, getDocs, doc, setDoc, writeBatch, addDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, getDoc, doc, setDoc, writeBatch, addDoc, where } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
@@ -20,7 +21,27 @@ export default function AdminDashboard() {
   const [isRegisteringAdmin, setIsRegisteringAdmin] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [productsMap, setProductsMap] = useState<Record<string, string>>({});
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [userOrders, setUserOrders] = useState<Order[]>([]);
   const navigate = useNavigate();
+
+  const fetchProductsForMapping = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'products'));
+      const mapping: Record<string, string> = {};
+      snap.docs.forEach(doc => {
+        mapping[doc.id] = doc.data().name;
+      });
+      setProductsMap(mapping);
+    } catch (err) {
+      console.error("Mapping error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProductsForMapping();
+  }, []);
 
   const seedNewItems = async () => {
     if (!auth.currentUser) {
@@ -114,11 +135,133 @@ export default function AdminDashboard() {
     }
   };
 
-  const registerAdmin = async () => {
-    if (!auth.currentUser) {
-      toast.error('You must be signed in to register as admin');
-      return;
+  const wipeDatabase = async () => {
+    const confirmation = confirm('🚨 CRITICAL ACTION: This will PERMANENTLY DELETE all orders and RESET all customer points/loyalty to zero. This action cannot be reversed. Continue?');
+    if (!confirmation) return;
+    
+    const wipeId = toast.loading('Starting system-wide wipe...', { duration: 0 });
+    try {
+      console.log("Starting full database wipe...");
+      
+      // 1. Delete all orders
+      const ordersSnap = await getDocs(collection(db, 'orders'));
+      const orderDocs = ordersSnap.docs;
+      console.log(`Found ${orderDocs.length} orders to delete.`);
+      
+      for (let i = 0; i < orderDocs.length; i += 500) {
+        const batch = writeBatch(db);
+        const chunk = orderDocs.slice(i, i + 500);
+        chunk.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        const deletedCount = Math.min(i + chunk.length, orderDocs.length);
+        toast.loading(`Orders: Deleted ${deletedCount}/${orderDocs.length}`, { id: wipeId });
+        console.log(`Deleted chunk ${i/500 + 1}. Total deleted: ${deletedCount}`);
+      }
+
+      // 2. Reset all users
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const userDocs = usersSnap.docs;
+      console.log(`Found ${userDocs.length} users to reset.`);
+      
+      for (let i = 0; i < userDocs.length; i += 500) {
+        const batch = writeBatch(db);
+        const chunk = userDocs.slice(i, i + 500);
+        chunk.forEach(d => {
+          batch.update(d.ref, {
+            points: 0,
+            itemLoyalty: {},
+            coffeeCount: 0,
+            totalSpent: 0 // Adding this just in case
+          });
+        });
+        await batch.commit();
+        const resetCount = Math.min(i + chunk.length, userDocs.length);
+        toast.loading(`Users: Reset ${resetCount}/${userDocs.length}`, { id: wipeId });
+        console.log(`Reset chunk ${i/500 + 1}. Total reset: ${resetCount}`);
+      }
+      
+      toast.success('System reset complete! All orders deleted and points zeroed out.', { id: wipeId });
+      
+      // Refresh local UI
+      setUsers(prev => prev.map(u => ({ ...u, points: 0, itemLoyalty: {}, coffeeCount: 0 })));
+      setStats(prev => ({ ...prev, todayRevenue: 0, activeOrders: 0, totalUsers: userDocs.length }));
+      setIsEmpty(false); // Make sure it doesn't think it's empty of categories
+      
+    } catch (err) {
+      console.error("CRITICAL WIPE ERROR:", err);
+      handleFirestoreError(err, OperationType.WRITE, 'global_wipe');
+      toast.error('Wipe failed! Check internet and admin permissions.', { id: wipeId });
     }
+  };
+
+  const clearOrders = async () => {
+    if (!confirm('Delete all orders only? (Loyalty points will be kept)')) return;
+    const toastId = toast.loading('Clearing orders...', { duration: 0 });
+    try {
+      const q = query(collection(db, 'orders'));
+      const snap = await getDocs(q);
+      const docs = snap.docs;
+      
+      for (let i = 0; i < docs.length; i += 500) {
+        const batch = writeBatch(db);
+        const chunk = docs.slice(i, i + 500);
+        chunk.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        toast.loading(`Orders: Deleted ${Math.min(i + chunk.length, docs.length)}`, { id: toastId });
+      }
+      toast.success('Orders cleared.', { id: toastId });
+      setStats(prev => ({ ...prev, activeOrders: 0, todayRevenue: 0 }));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'orders');
+      toast.error('Failed to clear orders', { id: toastId });
+    }
+  };
+
+  const viewUserDetails = async (user: UserProfile) => {
+    setSelectedUser(user);
+    toast.loading(`Fetching history for ${user.name}...`, { id: 'details' });
+    try {
+      const q = query(
+        collection(db, 'orders'),
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
+      );
+      const snap = await getDocs(q);
+      const orders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+      setUserOrders(orders);
+      toast.success('History loaded', { id: 'details' });
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to fetch history', { id: 'details' });
+    }
+  };
+
+  useEffect(() => {
+    // Auto-register super admin if email matches
+    const autoRegisterAdmin = async () => {
+      if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
+        try {
+          const adminRef = doc(db, 'admins', auth.currentUser.uid);
+          const adminDoc = await getDoc(adminRef);
+          if (!adminDoc.exists()) {
+            console.log("Auto-registering super admin database entry...");
+            await setDoc(adminRef, {
+              email: auth.currentUser.email,
+              registeredAt: new Date().toISOString(),
+              role: 'super_admin'
+            });
+          }
+        } catch (err) {
+          console.error("Auto-registration check failed:", err);
+        }
+      }
+    };
+    autoRegisterAdmin();
+  }, []);
+
+  const registerAdmin = async () => {
+    // Keep the manual button for robustness
+    if (!auth.currentUser) return;
     setIsRegisteringAdmin(true);
     try {
       await setDoc(doc(db, 'admins', auth.currentUser.uid), {
@@ -126,10 +269,9 @@ export default function AdminDashboard() {
         registeredAt: new Date().toISOString(),
         role: 'super_admin'
       });
-      toast.success('Admin permissions registered successfully!');
+      toast.success('Admin Document Created in Firestore');
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to register admin permissions. You might not have the required email.');
+      handleFirestoreError(err, OperationType.WRITE, 'admins');
     } finally {
       setIsRegisteringAdmin(false);
     }
@@ -146,13 +288,20 @@ export default function AdminDashboard() {
       
       const today = new Date().toISOString().split('T')[0];
       const todayTotal = docs.reduce((acc, o) => {
-        const orderDate = o.createdAt?.toDate().toISOString().split('T')[0];
-        return orderDate === today ? acc + o.total : acc;
+        try {
+          const dateObj = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+          const orderDate = dateObj.toISOString().split('T')[0];
+          return orderDate === today ? acc + o.total : acc;
+        } catch (e) {
+          return acc;
+        }
       }, 0);
 
       setStats(prev => ({ ...prev, activeOrders: activeCount, todayRevenue: todayTotal }));
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'orders');
+      if (auth.currentUser) {
+        handleFirestoreError(error, OperationType.LIST, 'orders');
+      }
     });
 
     const fetchStats = async () => {
@@ -438,6 +587,8 @@ export default function AdminDashboard() {
     }
   };
 
+  const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -450,11 +601,26 @@ export default function AdminDashboard() {
             <LogOut size={24} />
           </button>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 pl-1">{t('admin_overview')}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] pl-1">{t('admin_overview')}</p>
+              {isCreator && <span className="bg-amber-400 text-stone-900 text-[8px] font-black px-2 py-0.5 rounded-full uppercase italic">Super Admin</span>}
+            </div>
             <h1 className="text-4xl font-bold text-bento-primary">{t('dashboard')}</h1>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3 flex-wrap sm:flex-nowrap">
+          <button 
+            onClick={wipeDatabase}
+            className="bg-amber-400 text-stone-900 px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-amber-500 transition-all font-black uppercase text-[11px] tracking-widest shadow-xl ring-4 ring-amber-400/20 active:scale-95"
+          >
+            🔥 Wipe All & Reset Points
+          </button>
+          <button 
+            onClick={clearOrders}
+            className="bg-white text-stone-900 px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-stone-50 transition-all font-black uppercase text-[11px] tracking-widest border-2 border-stone-100 shadow-lg active:scale-95"
+          >
+            🗑️ Clear Orders Only
+          </button>
           <button 
             onClick={seedNewItems}
             disabled={isSeeding}
@@ -607,8 +773,8 @@ export default function AdminDashboard() {
                         <Mail size={10} /> {user.email}
                       </p>
                       <div className="h-1 w-1 bg-stone-200 rounded-full" />
-                      <p className="text-[10px] text-bento-accent font-black uppercase tracking-widest flex items-center gap-1">
-                        <Award size={10} /> {user.points} {t('reward_points')}
+                      <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest flex items-center gap-1 italic">
+                        <Star size={10} /> Status: Gold
                       </p>
                     </div>
                   </div>
@@ -631,7 +797,7 @@ export default function AdminDashboard() {
                   </div>
                   
                   <button 
-                    onClick={() => toast.success(`Viewing details for ${user.name}...`)}
+                    onClick={() => viewUserDetails(user)}
                     className="p-3 bg-stone-50 text-stone-300 hover:bg-bento-primary hover:text-white rounded-2xl transition-all"
                   >
                     <ChevronRight size={20} />
@@ -642,6 +808,149 @@ export default function AdminDashboard() {
           })}
         </div>
       </div>
+      <AnimatePresence>
+        {selectedUser && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="p-8 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-bento-accent rounded-2xl flex items-center justify-center text-bento-primary shadow-lg transform -rotate-3">
+                    <Users size={28} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-stone-900 uppercase italic leading-none">{selectedUser.name}</h2>
+                    <p className="text-[10px] font-bold text-stone-400 mt-1 uppercase tracking-widest">{selectedUser.email}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedUser(null)}
+                  className="p-3 hover:bg-stone-100 rounded-full transition-colors text-stone-400"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                {/* Stats Summary */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Total Orders</p>
+                    <p className="text-3xl font-black text-stone-900 leading-none">{userOrders.length}</p>
+                  </div>
+                  <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Global Points</p>
+                    <p className="text-3xl font-black text-amber-500 leading-none">{selectedUser.points}</p>
+                  </div>
+                  <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Joined</p>
+                    <p className="text-xs font-bold text-stone-900">
+                      {new Date(selectedUser.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Loyalty Breakdown */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-1">
+                      <Award size={18} className="text-amber-500" />
+                      <h3 className="font-black text-stone-900 uppercase tracking-tight italic">Menu Item Loyalty</h3>
+                    </div>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      {Object.keys(selectedUser.itemLoyalty || {}).length === 0 ? (
+                         <div className="p-8 text-center text-stone-300 text-xs font-bold uppercase italic">No points collected yet</div>
+                      ) : (
+                        Object.entries(selectedUser.itemLoyalty).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([prodId, count]) => (
+                          <div key={prodId} className="flex justify-between items-center p-4 bg-stone-50 rounded-2xl border border-stone-100 hover:border-amber-200 transition-colors">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-black text-stone-900 uppercase italic">
+                                {productsMap[prodId] || `Item ${prodId.slice(-4)}`}
+                              </span>
+                              <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mt-1">ID: {prodId.slice(-4)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {(count as number) >= 11 && <Gift className="text-green-500" size={14} />}
+                              <span className="text-sm font-black text-stone-900">{count} {(count as number) > 1 ? 'Items' : 'Item'}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Recent Activity */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-1">
+                      <History size={18} className="text-stone-400" />
+                      <h3 className="font-black text-stone-900 uppercase tracking-tight italic">Recent History</h3>
+                    </div>
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      {userOrders.length === 0 ? (
+                        <div className="p-8 text-center text-stone-300 text-xs font-bold uppercase italic">No orders found</div>
+                      ) : (
+                        userOrders.map(order => {
+                          const orderTime = order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
+                          const deliveryTime = order.deliveredAt?.toDate ? order.deliveredAt.toDate() : (order.deliveredAt ? new Date(order.deliveredAt) : null);
+                          
+                          return (
+                            <div key={order.id} className="p-5 rounded-2xl border border-stone-100 bg-white shadow-sm hover:shadow-md transition-all">
+                              <div className="flex justify-between items-start mb-3">
+                                <div>
+                                   <p className="text-[10px] font-black text-stone-900 uppercase italic">
+                                     {orderTime.toLocaleDateString()}
+                                   </p>
+                                   <div className="flex flex-col gap-1 mt-1.5 font-bold uppercase text-[9px] tracking-wider">
+                                     <div className="flex items-center gap-2 text-stone-400">
+                                       <Clock size={10} /> Placed: {orderTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                     </div>
+                                     {deliveryTime && (
+                                       <div className="flex items-center gap-2 text-green-500">
+                                         <CheckCircle2 size={10} /> Delivered: {deliveryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                       </div>
+                                     )}
+                                   </div>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                  order.status === 'delivered' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
+                                }`}>
+                                  {order.status}
+                                </span>
+                              </div>
+                              <div className="pt-3 border-t border-stone-50 flex justify-between items-center">
+                                <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">{order.items.length} items • {order.total} DH</p>
+                                <div className="text-[9px] font-black text-stone-300 uppercase tracking-tighter">ID: {order.id.slice(-6)}</div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 bg-stone-50 flex justify-end">
+                <button 
+                  onClick={() => setSelectedUser(null)}
+                  className="bg-stone-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all"
+                >
+                  Close Profile
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

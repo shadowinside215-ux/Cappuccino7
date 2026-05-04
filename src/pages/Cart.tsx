@@ -152,21 +152,39 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       const pointsEarned = totalItems;
       const isGuest = auth.currentUser.isAnonymous;
 
-      // Calculate preparation time based on item types
-      // Logic: Drinks (10 min), Food (30 min). Max of all items.
-      const drinkCategories = ['drinks', 'coffee', 'tea', 'ice_tea', 'jus', 'frappuccino', 'special_hot', 'iced_latte'];
+      // Fetch metadata for all items first to determine categories
+      const itemsWithMetadata = await Promise.all(items.map(async (item) => {
+        try {
+          const productDoc = await getDoc(doc(db, 'products', item.productId));
+          if (productDoc.exists()) {
+            const productData = productDoc.data();
+            const catDoc = await getDoc(doc(db, 'categories', productData.categoryId));
+            return {
+              ...item,
+              categoryName: catDoc.exists() ? catDoc.data().name : 'Menu',
+              subSection: productData.subSection || ''
+            };
+          }
+        } catch (e) {
+          console.error("Error fetching item metadata", e);
+        }
+        return { ...item, categoryName: 'Menu', subSection: '' };
+      }));
+
+      // Calculate preparation time based on item categories
+      // 10 mins for: drinks, juices, ice cream, coffee, infusions, iced latte
+      // 30 mins for everything else
+      const fastTimedCategories = [
+        'drinks', 'juices', 'ice cream', 'coffee', 'infusions', 'iced latte', 
+        'jus', 'café', 'glaces', 'the', 'thé', 'tea', 'infusion', 'boisson'
+      ];
       
-      // We need to fetch product info for categories, or check item names for hints
-      // For now, we'll use a simple heuristic based on item keywords if we can't get category easily
-      const hasFood = items.some(item => {
-        const name = item.name.toLowerCase();
-        return name.includes('breakfast') || name.includes('brunch') || name.includes('crepe') || 
-               name.includes('waffle') || name.includes('pancake') || name.includes('burger') || 
-               name.includes('sandwich') || name.includes('pizza') || name.includes('salade') ||
-               name.includes('pasta') || name.includes('pâte');
+      const hasSlowItem = itemsWithMetadata.some(item => {
+        const cat = (item.categoryName || '').toLowerCase();
+        return !fastTimedCategories.some(fastCat => cat.includes(fastCat));
       });
 
-      const prepTimeMinutes = hasFood ? 30 : 10;
+      const prepTimeMinutes = hasSlowItem ? 30 : 10;
       const now = new Date();
       const estimatedReadyAt = new Date(now.getTime() + prepTimeMinutes * 60000);
 
@@ -174,7 +192,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         userId: auth.currentUser.uid,
         customerName: userProfile?.name || auth.currentUser.displayName || (isGuest ? 'Guest' : 'Customer'),
         customerPhone: phone || userProfile?.phone || '',
-        items: items,
+        items: itemsWithMetadata,
         total: total,
         status: 'pending' as OrderStatus,
         deliveryType,

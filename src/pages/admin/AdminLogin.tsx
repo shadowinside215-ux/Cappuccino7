@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail } from 'lucide-react';
+import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -60,86 +61,119 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center -mt-20">
-      <div className="card w-full max-w-md !p-10 space-y-8 bg-white border-2 border-bento-primary/10 shadow-2xl">
-        <div className="text-center space-y-4">
-          <div className="w-36 h-36 bg-white rounded-full overflow-hidden shadow-2xl shadow-bento-primary/20 p-1 mx-auto rotate-3 border-2 border-stone-50">
-             <img 
-               src={brand.logoUrl} 
-               alt="Management Logo" 
-               className="w-full h-full object-contain rounded-full"
-             />
-          </div>
-          <div>
-            <h1 className="text-4xl font-black italic text-bento-primary tracking-tighter">Cappuccino7</h1>
-            <p className="text-stone-400 font-bold uppercase tracking-widest text-[10px] mt-2">Management Console</p>
-          </div>
-        </div>
-
-        {!isFirebaseAuthed && !auth.currentUser ? (
-          <div className="space-y-6">
-            <div className="bg-stone-50 p-6 rounded-2xl border border-dashed border-stone-200">
-              <p className="text-center text-xs font-bold text-stone-500 uppercase tracking-widest mb-4">Step 1: Identity Verification</p>
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full bg-white border-2 border-stone-200 text-stone-700 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-stone-50 transition-all shadow-sm active:scale-95"
-              >
-                <Mail size={20} className="text-bento-accent" />
-                {loading ? 'Connecting...' : 'Verify with Google'}
-              </button>
-            </div>
-            <p className="text-[10px] text-center text-stone-400 font-medium">Firebase identity is required for security rules</p>
-          </div>
-        ) : (
-          <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex items-center gap-3 bg-green-50 text-green-700 p-3 rounded-xl border border-green-100 mb-2">
-              <ShieldCheck size={16} />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Identity Verified: {auth.currentUser?.email}</span>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-stone-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                <UserIcon size={12} /> Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-stone-50 border border-stone-200 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-bento-accent transition-all outline-none font-medium"
-                placeholder="Enter admin name"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-stone-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                <Lock size={12} /> Access Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-stone-50 border border-stone-200 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-bento-accent transition-all outline-none font-medium"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-bento-primary text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-bento-primary/20 hover:bg-bento-ink transition-all active:scale-[0.98] flex items-center justify-center gap-3"
-            >
-              Unlock Console <Coffee size={20} />
-            </button>
-          </form>
-        )}
-
-        <p className="text-center text-stone-300 text-[10px] font-bold uppercase tracking-[0.2em] pt-4">
-          Strictly for authorized administrators
-        </p>
+    <div className="min-h-screen flex items-center justify-center -mt-20 p-6 relative overflow-hidden bg-stone-50">
+      <div className="absolute inset-0 z-0 opacity-10">
+         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-bento-primary rounded-full blur-[120px]" />
+         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-400 rounded-full blur-[120px]" />
       </div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="card !p-12 space-y-10 bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[3.5rem] border border-white relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-bento-primary via-amber-400 to-bento-primary" />
+          
+          <div className="text-center space-y-6">
+            <motion.div 
+              whileHover={{ rotate: 5, scale: 1.05 }}
+              className="w-32 h-32 bg-white rounded-[2.5rem] overflow-hidden shadow-2xl p-2 mx-auto border-2 border-stone-50 relative group"
+            >
+               <img 
+                 src={brand.logoUrl} 
+                 alt="Management Logo" 
+                 className="w-full h-full object-contain rounded-[2rem]"
+               />
+               <div className="absolute inset-0 bg-bento-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </motion.div>
+            <div>
+              <h1 className="text-4xl font-black italic text-bento-primary tracking-tighter uppercase leading-none">Console</h1>
+              <p className="text-amber-500 font-black uppercase tracking-[0.3em] text-[10px] mt-3">Admin Authority</p>
+            </div>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {!isFirebaseAuthed && !auth.currentUser ? (
+              <motion.div 
+                key="step1"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-6"
+              >
+                <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                  <p className="text-center text-[10px] font-black text-stone-400 uppercase tracking-widest mb-6">Identity Check</p>
+                  <button
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                    className="w-full bg-stone-900 text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-stone-200 active:scale-95 disabled:opacity-50 relative overflow-hidden group"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                    {loading ? <Loader2 size={20} className="animate-spin" /> : <Mail size={18} className="text-amber-400" />}
+                    {loading ? 'Verifying...' : 'Sign in to confirm'}
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.form 
+                key="step2"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onSubmit={handleLogin} 
+                className="space-y-8"
+              >
+                <div className="flex items-center gap-3 bg-green-50 text-green-700 p-4 rounded-2xl border border-green-100">
+                  <div className="bg-green-500 rounded-full p-1">
+                    <ShieldCheck size={12} className="text-white" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest truncate">{auth.currentUser?.email}</span>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-4 flex items-center gap-2">
+                    <UserIcon size={12} /> ID
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-100 rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-bento-primary/20 transition-all outline-none font-bold text-stone-900"
+                    placeholder="Admin username"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-4 flex items-center gap-2">
+                    <Lock size={12} /> Key
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-100 rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-bento-primary/20 transition-all outline-none font-bold text-stone-900"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-bento-primary text-white py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-bento-primary/40 hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
+                >
+                  Enter Console <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+
+          <p className="text-center text-stone-300 text-[10px] font-bold uppercase tracking-[0.3em]">
+            Restricted Admin Area
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }

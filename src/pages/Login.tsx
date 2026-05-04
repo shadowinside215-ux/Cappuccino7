@@ -144,6 +144,7 @@ export default function Login() {
       const message = error.code === 'auth/user-not-found' ? 'User not found.' :
                       error.code === 'auth/wrong-password' ? 'Invalid password.' :
                       error.code === 'auth/email-already-in-use' ? 'Email already in use.' :
+                      error.code === 'auth/invalid-credential' ? 'Invalid email or password.' :
                       error.message;
       toast.error(message);
     } finally {

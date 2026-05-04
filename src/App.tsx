@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { Toaster } from 'react-hot-toast';
+import { doc, getDoc, onSnapshot, query, collection, where } from 'firebase/firestore';
+import { Toaster, toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
@@ -103,7 +103,9 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   const location = useLocation();
   const { t } = useTranslation();
 
-  if (location.pathname === '/login') return null;
+  const isWaiter = userProfile?.isWaiter || localStorage.getItem('waiter_session_active') === 'true';
+
+  if (location.pathname === '/login' || isWaiter) return null;
 
   return (
     <nav className="fixed bottom-6 left-6 right-6 z-[60] lg:hidden">
@@ -151,6 +153,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   setTheme: (theme: 'light' | 'dark') => void
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { settings: brand } = useBrandSettings();
@@ -165,149 +168,176 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bento-bg">
-        <div className="animate-spin text-bento-primary">
-          <Coffee size={40} />
-        </div>
-      </div>
+  const isWaiter = userProfile?.isWaiter || localStorage.getItem('waiter_session_active') === 'true';
+
+  useEffect(() => {
+    if (!userProfile?.uid || isWaiter) return;
+
+    const q = query(
+      collection(db, 'orders'),
+      where('userId', '==', userProfile.uid),
+      where('status', '==', 'ready')
     );
-  }
-  
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' || (change.type === 'modified' && change.doc.data().status === 'ready' && change.doc.data().updatedAt)) {
+          toast.success(`🎉 Your order is ready!`, {
+            duration: 10000,
+            icon: '☕',
+            position: 'top-center'
+          });
+          
+          // Play a notification sound
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+          audio.play().catch(e => console.log('Audio blocked', e));
+        }
+      });
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders');
+    });
+
+    return () => unsubscribe();
+  }, [userProfile?.uid]);
+
   const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
-   const isAdmin = userProfile?.isAdmin || isCreator;
- 
-   const isIncompleteProfile = userProfile && 
+  const isAdmin = userProfile?.isAdmin || isCreator;
+
+  // If user is a waiter, they should only be able to see the waiter dashboard
+  useEffect(() => {
+    if (isWaiter && !location.pathname.startsWith('/waiter') && location.pathname !== '/login') {
+      navigate('/waiter/dashboard');
+    }
+  }, [isWaiter, location.pathname, navigate]);
+
+  const isIncompleteProfile = userProfile && 
      !userProfile.isAnonymous && 
      (!userProfile.name || userProfile.name === 'Guest User' || userProfile.name === '');
- 
-   return (
-     <div className="min-h-screen bg-bento-bg pb-24 sm:pb-0 sm:pt-20">
-       <Toaster position="top-center" />
-       
-       {userProfile && (
-         <Onboarding 
-           userProfile={userProfile} 
-           isOpen={!!isIncompleteProfile} 
-           onComplete={() => {}} // Profile will update via onSnapshot in App.tsx
-         />
-       )}
-       
-       {/* Universal Header - Responsive */}
-      <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-950/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
-          <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
-              <OptimizedImage 
-                priority
-                src={brand.logoUrl} 
-                alt="Logo" 
-                showOverlay={false}
-                containerClassName="w-full h-full flex items-center justify-center"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <span className="text-xl sm:text-2xl font-black italic text-white tracking-tighter uppercase drop-shadow-lg">{t('app_name')}</span>
-          </Link>
 
-          <div className="flex items-center gap-6">
-            {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center gap-2 pr-6">
-              <Link to="/" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
-                <Coffee size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{t('menu')}</span>
-                {location.pathname === '/' && (
-                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
-                )}
-              </Link>
-              <Link to="/cart" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/cart' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
-                <ShoppingCart size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{t('cart')}</span>
-                {location.pathname === '/cart' && (
-                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
-                )}
-              </Link>
-              <Link to="/orders" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/orders' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
-                <ListOrdered size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{t('orders')}</span>
-                {location.pathname === '/orders' && (
-                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
-                )}
-              </Link>
-              <Link to="/profile" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/profile' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
-                <UserIcon size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{t('profile')}</span>
-                {location.pathname === '/profile' && (
-                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
-                )}
-              </Link>
-              <Link to="/settings" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/settings' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
-                <SettingsIcon size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{t('settings', { defaultValue: 'Settings' })}</span>
-                {location.pathname === '/settings' && (
-                  <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
-                )}
-              </Link>
-              {isAdmin && (
-                <Link to="/admin" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${location.pathname.startsWith('/admin') ? 'bg-amber-400 text-stone-900 font-bold' : 'text-white/40 hover:text-white'}`}>
-                  <LayoutDashboard size={18} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">{t('admin')}</span>
-                </Link>
-              )}
-            </div>
-
-            {/* Points Summary for logged in users */}
-            {userProfile ? (
-              <div className="hidden lg:flex gap-3">
-                {userProfile.coffeeCount !== undefined && (
-                  <div className="bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100">
-                    <Coffee size={14} className="text-amber-700" />
-                    <span className="text-[10px] font-black text-amber-900 leading-none">{userProfile.coffeeCount}/10</span>
-                  </div>
-                )}
-                <div className="bg-bento-card-bg px-3 py-1.5 rounded-xl flex items-center gap-2 border border-stone-100 dark:border-white/5">
-                  <Award size={14} className="text-bento-accent" />
-                  <span className="text-[10px] font-black text-bento-primary leading-none">{userProfile.points} {t('reward_points')}</span>
-                </div>
-              </div>
-            ) : (
-              <Link 
-                to="/login"
-                className="hidden lg:flex items-center gap-2 bg-amber-50 text-amber-900 px-4 py-2 rounded-xl border border-amber-100 hover:bg-amber-100 transition-colors"
-              >
-                <Award size={16} />
-                <span className="text-[10px] font-black uppercase tracking-widest leading-none">Login for Rewards</span>
-              </Link>
-            )}
-
-            {/* Desktop Language Switcher - Compact */}
-            <div className="hidden lg:flex gap-1">
-              {['en', 'fr', 'ar'].map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => changeLanguage(lang)}
-                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${
-                    i18n.language === lang 
-                    ? 'bg-bento-primary text-white border-bento-primary shadow-sm' 
-                    : 'bg-bento-card-bg text-stone-400 border-stone-100 dark:border-white/5 hover:border-bento-primary/30'
-                  }`}
-                >
-                  {lang === 'ar' ? 'عربي' : lang.toUpperCase()}
-                </button>
-              ))}
-            </div>
-
-            {/* Mobile Menu Toggle (3 Dots) */}
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 text-bento-primary bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors lg:hidden"
-            >
-              {isMenuOpen ? <X size={24} /> : <MoreVertical size={24} />}
-            </button>
+  return (
+    <div className={`min-h-screen bg-bento-bg ${!isWaiter ? 'pb-24 sm:pb-0 sm:pt-20' : ''}`}>
+      <Toaster position="top-center" />
+      
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-bento-bg">
+          <div className="animate-spin text-bento-primary">
+            <Coffee size={40} />
           </div>
         </div>
-      </header>
+      ) : (
+        <>
+          {userProfile && !isWaiter && (
+            <Onboarding 
+              userProfile={userProfile} 
+              isOpen={!!isIncompleteProfile} 
+              onComplete={() => {}} // Profile will update via onSnapshot in App.tsx
+            />
+          )}
+          
+          {/* Universal Header - Responsive */}
+          {!isWaiter && (
+            <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
+          <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-950/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
+            <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
+                <OptimizedImage 
+                  priority
+                  src={brand.logoUrl} 
+                  alt="Logo" 
+                  showOverlay={false}
+                  containerClassName="w-full h-full flex items-center justify-center"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="text-xl sm:text-2xl font-black italic text-white tracking-tighter uppercase drop-shadow-lg">{t('app_name')}</span>
+            </Link>
+
+            <div className="flex items-center gap-6">
+              {/* Desktop Navigation Links */}
+              <div className="hidden lg:flex items-center gap-2 pr-6">
+                <Link to="/" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                  <Coffee size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{t('menu')}</span>
+                  {location.pathname === '/' && (
+                    <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                  )}
+                </Link>
+                <Link to="/cart" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/cart' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                  <ShoppingCart size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{t('cart')}</span>
+                  {location.pathname === '/cart' && (
+                    <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                  )}
+                </Link>
+                <Link to="/orders" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/orders' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                  <ListOrdered size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{t('orders')}</span>
+                  {location.pathname === '/orders' && (
+                    <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                  )}
+                </Link>
+                <Link to="/profile" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/profile' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                  <UserIcon size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{t('profile')}</span>
+                  {location.pathname === '/profile' && (
+                    <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                  )}
+                </Link>
+                <Link to="/settings" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/settings' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                  <SettingsIcon size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{t('settings', { defaultValue: 'Settings' })}</span>
+                  {location.pathname === '/settings' && (
+                    <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                  )}
+                </Link>
+                {isAdmin && (
+                  <Link to="/admin" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${location.pathname.startsWith('/admin') ? 'bg-amber-400 text-stone-900 font-bold' : 'text-white/40 hover:text-white'}`}>
+                    <LayoutDashboard size={18} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">{t('admin')}</span>
+                  </Link>
+                )}
+              </div>
+
+              {/* Points Summary for logged in users */}
+              {userProfile && (
+                <div className="hidden lg:flex gap-3">
+                  {userProfile.coffeeCount !== undefined && (
+                    <div className="bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100">
+                      <Coffee size={14} className="text-amber-700" />
+                      <span className="text-[10px] font-black text-amber-900 leading-none">{userProfile.coffeeCount}/10</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Desktop Language Switcher - Compact */}
+              <div className="hidden lg:flex gap-1">
+                {['en', 'fr', 'ar'].map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => changeLanguage(lang)}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${
+                      i18n.language === lang 
+                      ? 'bg-bento-primary text-white border-bento-primary shadow-sm' 
+                      : 'bg-bento-card-bg text-stone-400 border-stone-100 dark:border-white/5 hover:border-bento-primary/30'
+                    }`}
+                  >
+                    {lang === 'ar' ? 'عربي' : lang.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              {/* Mobile Menu Toggle (3 Dots) */}
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-bento-primary bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors lg:hidden"
+              >
+                {isMenuOpen ? <X size={24} /> : <MoreVertical size={24} />}
+              </button>
+            </div>
+          </div>
+        </header>
+      )}
 
       {/* Mobile Overlay Menu */}
       <AnimatePresence>
@@ -385,7 +415,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               <div className="mt-8 p-6 bg-bento-primary rounded-[32px] text-white flex items-center justify-between">
                 <div>
                   <p className="text-[9px] font-bold text-white/50 uppercase tracking-[0.2em] mb-1">Your Rewards</p>
-                  <p className="text-xl font-black">{userProfile.points} Points</p>
+                  <p className="text-xl font-black">{t('loyalty_club')}</p>
                 </div>
                 <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
                   <Award size={24} className="text-bento-accent" />
@@ -397,7 +427,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
-      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10`}>
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 ${isWaiter ? '!max-w-none !p-0 !pt-0' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -463,6 +493,8 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           </div>
         </footer>
       )}
+    </>
+    )}
     </div>
   );
 }
@@ -496,7 +528,7 @@ export default function App() {
         unsubscribeProfile = null;
       }
 
-      if (u && !u.isAnonymous) {
+      if (u) {
         // Use onSnapshot to handle the race condition between Login profile creation and App initialization
         unsubscribeProfile = onSnapshot(doc(db, 'users', u.uid), (docSnap) => {
           if (docSnap.exists()) {
@@ -507,7 +539,11 @@ export default function App() {
           setLoading(false);
         }, (error) => {
           setLoading(false);
-          handleFirestoreError(error, OperationType.GET, `users/${u.uid}`);
+          // If profile fetch fails (e.g. no permissions yet during creation), don't show scary error for now
+          // unless it's a real user
+          if (!u.isAnonymous) {
+            handleFirestoreError(error, OperationType.GET, `users/${u.uid}`);
+          }
         });
       } else {
         setUserProfile(null);

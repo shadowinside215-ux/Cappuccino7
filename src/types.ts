@@ -50,6 +50,10 @@ export interface Order {
   deliveryType: 'delivery' | 'pickup' | 'dine-in';
   prepTime: number; // in minutes
   estimatedReadyAt?: any; // Firestore Timestamp
+  preparingAt?: any; // Firestore Timestamp
+  readyAt?: any; // Firestore Timestamp
+  deliveredAt?: any; // Firestore Timestamp
+  deliveredInMinutes?: number;
   address: string;
   deliveryNotes?: string;
   location?: {

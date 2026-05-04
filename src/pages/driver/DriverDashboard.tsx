@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, OrderStatus } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../../lib/firebase';
 import toast from 'react-hot-toast';
 
 export default function DriverDashboard() {
@@ -77,12 +76,7 @@ export default function DriverDashboard() {
       setOrders(activeOrders);
       setLoading(false);
     }, (error) => {
-      console.error("Driver snapshot error:", error);
-      if (error.message.includes('permission')) {
-        toast.error("Permission Denied: Ensure you are logged in as an Admin/Driver account");
-      } else {
-        toast.error("Real-time updates failed");
-      }
+      handleFirestoreError(error, OperationType.LIST, 'orders');
       setLoading(false);
     });
 

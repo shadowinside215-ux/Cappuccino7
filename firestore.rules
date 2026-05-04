@@ -14,7 +14,7 @@ service cloud.firestore {
     function isAdmin() { 
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        request.auth.token.email.lower() == 'dragonballsam86@gmail.com'
+        (request.auth.token.get('email', '') == 'dragonballsam86@gmail.com')
       );
     }
     
@@ -23,12 +23,14 @@ service cloud.firestore {
     function isWaiter() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/waiters/$(request.auth.uid)) ||
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isWaiter == true)
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isWaiter', false) == true)
       );
     }
     
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
 
     // --- Connection Test ---
     match /test/connection {
@@ -49,9 +51,13 @@ service cloud.firestore {
       
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isAdmin() || (
+        isWaiter() && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty'])
+      ) || (
         isOwner(userId) && 
         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'address'])
       );
+      allow delete: if isAdmin();
     }
 
     // --- Admin List ---
@@ -93,27 +99,26 @@ service cloud.firestore {
 
     match /orders/{orderId} {
       // List permission:
-      // 1. Admins see all.
-      // 2. Waiters see all.
-      // 3. Regular users see their own (requires where('userId', '==', uid) in query).
-      // 4. Drivers see delivery orders (requires where('deliveryType', '==', 'delivery') in query).
-      allow list: if isSignedIn() && (
-        isAdmin() || 
-        isWaiter() ||
-        (resource.data.userId == request.auth.uid) || 
-        (resource.data.deliveryType == 'delivery')
-      );
+      allow list: if isAdmin();
+      allow list: if isWaiter();
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      // Allow drivers to see orders intended for delivery
+      allow list: if isSignedIn() && resource.data.deliveryType == 'delivery';
       
-      allow get: if isSignedIn() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin() || 
-        isWaiter() ||
-        resource.data.deliveryType == 'delivery'
-      );
+      // Get permission:
+      allow get: if isAdmin();
+      allow get: if isWaiter();
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.deliveryType == 'delivery';
       
       allow create: if isSignedIn() && (isValidOrder(incoming()) || isAdmin());
       
-      allow update: if isAdmin() || isWaiter() || (isSignedIn() && existing().deliveryType == 'delivery');
+      allow update: if isAdmin();
+      allow update: if isWaiter();
+      // Allow drivers to update delivery status
+      allow update: if isSignedIn() && existing().deliveryType == 'delivery' && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+                    
       allow delete: if isAdmin();
     }
   }

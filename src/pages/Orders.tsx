@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Order, OrderStatus } from '../types';
 import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus, ExternalLink, MessageCircle, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -9,18 +9,24 @@ import { useNavigate } from 'react-router-dom';
 import { useBrandSettings } from '../lib/brand';
 import OptimizedImage from '../components/ui/OptimizedImage';
 
-function ClientOrderTimer({ createdAt, prepTime, status }: { createdAt: any, prepTime: number, status: OrderStatus }) {
+function ClientOrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (status !== 'pending' && status !== 'preparing') {
+    if (status !== 'preparing') {
       setTimeLeft(null);
       return;
     }
 
     const calculateTime = () => {
-      const createdDate = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
-      const targetDate = new Date(createdDate.getTime() + (prepTime || 10) * 60000);
+      const startTime = preparingAt?.toDate ? preparingAt.toDate() : (preparingAt ? new Date(preparingAt) : null);
+      
+      if (!startTime) {
+        setTimeLeft(null);
+        return;
+      }
+
+      const targetDate = new Date(startTime.getTime() + (prepTime || 10) * 60000);
       const diff = Math.floor((targetDate.getTime() - new Date().getTime()) / 1000);
       setTimeLeft(diff > -300 ? diff : null); // Show for up to 5 mins overdue
     };
@@ -84,6 +90,8 @@ export default function Orders() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders');
     });
 
     return unsubscribe;
@@ -188,6 +196,7 @@ export default function Orders() {
                       </span>
                       <ClientOrderTimer 
                         createdAt={order.createdAt} 
+                        preparingAt={order.preparingAt}
                         prepTime={order.prepTime} 
                         status={order.status} 
                       />

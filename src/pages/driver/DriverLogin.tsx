@@ -36,20 +36,29 @@ export default function DriverLogin() {
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">
-          <div className="flex flex-col items-center gap-6 mb-12">
-            <div className="w-20 h-20 bg-amber-400 rounded-3xl flex items-center justify-center rotate-3 shadow-2xl">
-              <Truck size={40} className="text-stone-900 -rotate-3" />
-            </div>
-            <div className="text-center space-y-2">
+        <div className="bg-stone-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-white/50 to-amber-400" />
+          
+          <div className="flex flex-col items-center gap-8 mb-12">
+            <motion.div 
+              whileHover={{ rotate: 5, scale: 1.1 }}
+              className="w-24 h-24 bg-amber-400 rounded-3xl flex items-center justify-center shadow-[0_20px_50px_rgba(251,191,36,0.3)]"
+            >
+              <Truck size={44} className="text-stone-900" />
+            </motion.div>
+            <div className="text-center space-y-3">
               <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none">
                 {t('driver_login')}
               </h1>
-              <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Authorized Personnel Only</p>
+              <div className="flex items-center justify-center gap-2">
+                <div className="h-1 w-1 bg-amber-400 rounded-full" />
+                <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em]">Fleet Management</p>
+                <div className="h-1 w-1 bg-amber-400 rounded-full" />
+              </div>
             </div>
           </div>
 

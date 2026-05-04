@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
+import { awardOrderPoints } from '../../services/orderService';
 import { 
   ChefHat, 
   Clock, 
@@ -22,18 +23,25 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
 // Dedicated Order Timer Component
-function OrderTimer({ createdAt, prepTime, status }: { createdAt: any, prepTime: number, status: OrderStatus }) {
+function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (status === 'ready' || status === 'delivered' || status === 'cancelled') {
+    if (status === 'ready' || status === 'delivered' || status === 'cancelled' || status === 'pending' || status === 'accepted') {
       setTimeLeft(null);
       return;
     }
 
     const calculateTime = () => {
-      const createdDate = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
-      const targetDate = new Date(createdDate.getTime() + prepTime * 60000);
+      // The timer starts from preparingAt, not createdAt
+      const startTime = preparingAt?.toDate ? preparingAt.toDate() : (preparingAt ? new Date(preparingAt) : null);
+      
+      if (!startTime) {
+        setTimeLeft(null);
+        return;
+      }
+
+      const targetDate = new Date(startTime.getTime() + prepTime * 60000);
       const diff = Math.floor((targetDate.getTime() - new Date().getTime()) / 1000);
       setTimeLeft(diff);
     };
@@ -84,55 +92,112 @@ export default function WaiterDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Orders subscription
-    const qOrders = query(
-      collection(db, 'orders'),
-      orderBy('createdAt', 'asc')
-    );
+    let unsubscribeOrders: (() => void) | null = null;
+    let unsubscribeClients: (() => void) | null = null;
 
-    const unsubscribeOrders = onSnapshot(qOrders, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
-      const activeOrders = data.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
-      setOrders(activeOrders);
-      
-      const lastOrderCount = parseInt(sessionStorage.getItem('last_order_count') || '0');
-      if (activeOrders.length > lastOrderCount) {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-        audio.play().catch(e => console.log('Audio blocked', e));
-        toast('New Order!', { icon: '🔔' });
+    const unsubAuth = auth.onAuthStateChanged((user) => {
+      // Clean up previous listeners if auth state changes
+      if (unsubscribeOrders) unsubscribeOrders();
+      if (unsubscribeClients) unsubscribeClients();
+
+      if (!user) {
+        setLoading(false);
+        return;
       }
-      sessionStorage.setItem('last_order_count', activeOrders.length.toString());
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'orders');
-      setLoading(false);
-    });
 
-    // Clients subscription
-    const qClients = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const unsubscribeClients = onSnapshot(qClients, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-      setClients(data);
-    }, (error) => {
-      console.error('Clients fetch error:', error);
+      // Orders subscription
+      const qOrders = query(
+        collection(db, 'orders'),
+        orderBy('createdAt', 'asc')
+      );
+
+      unsubscribeOrders = onSnapshot(qOrders, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+        const activeOrders = data.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+        setOrders(activeOrders);
+        
+        const lastOrderCount = parseInt(sessionStorage.getItem('last_order_count') || '0');
+        if (activeOrders.length > lastOrderCount) {
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+          audio.play().catch(e => console.log('Audio blocked', e));
+          toast('New Order!', { icon: '🔔' });
+        }
+        sessionStorage.setItem('last_order_count', activeOrders.length.toString());
+        setLoading(false);
+      }, (error) => {
+        // Only report error if we still have a user
+        if (auth.currentUser) {
+          handleFirestoreError(error, OperationType.LIST, 'orders');
+        }
+        setLoading(false);
+      });
+
+      // Clients subscription
+      const qClients = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      unsubscribeClients = onSnapshot(qClients, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+        setClients(data);
+      }, (error) => {
+        if (auth.currentUser) {
+          console.error('Clients fetch error:', error);
+        }
+      });
     });
 
     return () => {
-      unsubscribeOrders();
-      unsubscribeClients();
+      unsubAuth();
+      if (unsubscribeOrders) unsubscribeOrders();
+      if (unsubscribeClients) unsubscribeClients();
     };
   }, []);
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
       const orderRef = doc(db, 'orders', orderId);
-      await updateDoc(orderRef, {
+      const updateData: any = {
         status: newStatus,
         updatedAt: serverTimestamp()
-      });
-      toast.success(`Order: ${newStatus}`);
+      };
+
+      if (newStatus === 'preparing') {
+        updateData.preparingAt = serverTimestamp();
+      } else if (newStatus === 'ready') {
+        updateData.readyAt = serverTimestamp();
+      }
+
+      await updateDoc(orderRef, updateData);
+      toast.success(`Order status updated: ${newStatus}`);
+      
+      if (newStatus === 'ready') {
+        // This is where we notify the client (via status change)
+        toast('Client notified: Order Ready!', { icon: '📢' });
+      }
     } catch (err: any) {
       handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+    }
+  };
+
+  const completeOrder = async (order: Order) => {
+    try {
+      const now = new Date();
+      const createdDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
+      const diffMs = now.getTime() - createdDate.getTime();
+      const diffMins = Math.round(diffMs / 60000);
+
+      const orderRef = doc(db, 'orders', order.id);
+      await updateDoc(orderRef, {
+        status: 'delivered',
+        deliveredAt: serverTimestamp(),
+        deliveredInMinutes: diffMins,
+        updatedAt: serverTimestamp()
+      });
+      
+      // Award points
+      await awardOrderPoints(order);
+      
+      toast.success(`Order delivered in ${diffMins} minutes!`);
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
     }
   };
 
@@ -239,20 +304,32 @@ export default function WaiterDashboard() {
                     </div>
 
                     <div className="bg-stone-50 rounded-[2rem] p-6 space-y-4 mb-6">
-                       {order.items.map((item, idx) => (
-                         <div key={idx} className="flex justify-between items-center text-sm">
-                           <span className="font-bold text-stone-700">{item.quantity}x {item.name}</span>
-                           <span className="text-xs font-black text-stone-400">{item.price * item.quantity} MAD</span>
-                         </div>
-                       ))}
+                        {order.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-start text-sm">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-stone-700">{item.quantity}x {item.name}</span>
+                              {(item as any).categoryName && (
+                                <span className="text-[8px] font-black uppercase tracking-widest text-amber-600">
+                                  {(item as any).categoryName} {(item as any).subSection ? `• ${(item as any).subSection.replace('_', ' ')}` : ''}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs font-black text-stone-400">{item.price * item.quantity} MAD</span>
+                          </div>
+                        ))}
                        <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
                           <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Total</span>
                           <span className="text-lg font-black text-stone-900">{order.total} MAD</span>
                        </div>
                     </div>
 
-                    {order.status !== 'ready' && (
-                      <OrderTimer createdAt={order.createdAt} prepTime={order.prepTime} status={order.status} />
+                    {order.status === 'preparing' && (
+                      <OrderTimer 
+                        createdAt={order.createdAt} 
+                        preparingAt={order.preparingAt}
+                        prepTime={order.prepTime} 
+                        status={order.status} 
+                      />
                     )}
 
                     <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-stone-50">
@@ -264,7 +341,7 @@ export default function WaiterDashboard() {
                          <CheckCircle2 size={18} className="text-stone-400 group-hover:text-green-500" />
                          <span className="text-[8px] font-black uppercase tracking-tighter">Ready</span>
                        </button>
-                       <button onClick={() => updateStatus(order.id, 'delivered')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-900 text-white hover:bg-black">
+                       <button onClick={() => completeOrder(order)} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-900 text-white hover:bg-black">
                          <CheckCheck size={18} className="text-amber-400" />
                          <span className="text-[8px] font-black uppercase tracking-tighter">Complete</span>
                        </button>
@@ -299,6 +376,7 @@ export default function WaiterDashboard() {
                    <thead>
                      <tr className="border-b border-stone-50">
                         <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Client</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Status</th>
                         <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Points</th>
                         <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Contact</th>
                         <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Type</th>
@@ -317,6 +395,28 @@ export default function WaiterDashboard() {
                                   <p className="text-[10px] font-bold text-stone-400">UID: {client.uid.substring(0, 8)}</p>
                                </div>
                             </div>
+                         </td>
+                         <td className="px-8 py-6">
+                            {(() => {
+                              const activeOrder = orders.find(o => o.userId === client.uid && o.status !== 'delivered');
+                              if (activeOrder) {
+                                return (
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2 text-amber-600 font-bold">
+                                      <Timer size={14} className="animate-pulse" />
+                                      <span className="text-xs">Active Order</span>
+                                    </div>
+                                    <OrderTimer 
+                                      createdAt={activeOrder.createdAt} 
+                                      preparingAt={activeOrder.preparingAt}
+                                      prepTime={activeOrder.prepTime} 
+                                      status={activeOrder.status} 
+                                    />
+                                  </div>
+                                );
+                              }
+                              return <span className="text-xs text-stone-400">No active orders</span>;
+                            })()}
                          </td>
                          <td className="px-8 py-6 text-sm font-black text-stone-900">{client.points} pts</td>
                          <td className="px-8 py-6 text-sm font-bold text-stone-500">{client.email}</td>

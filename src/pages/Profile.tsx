@@ -235,14 +235,14 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             
             <div className="w-full pt-10 border-t border-white/5 flex justify-around">
               <div className="text-center">
-                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">{t('total_points')}</p>
+                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">{t('membership')}</p>
                 <motion.p 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
                   className="text-4xl font-black text-white tracking-tighter"
                 >
-                  {userProfile.points}
+                  PREMIUM
                 </motion.p>
               </div>
               <div className="text-center">
