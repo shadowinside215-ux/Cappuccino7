@@ -1,13 +1,54 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { Order } from '../types';
-import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus, ExternalLink, MessageCircle } from 'lucide-react';
+import { Order, OrderStatus } from '../types';
+import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus, ExternalLink, MessageCircle, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useBrandSettings } from '../lib/brand';
 import OptimizedImage from '../components/ui/OptimizedImage';
+
+function ClientOrderTimer({ createdAt, prepTime, status }: { createdAt: any, prepTime: number, status: OrderStatus }) {
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (status !== 'pending' && status !== 'preparing') {
+      setTimeLeft(null);
+      return;
+    }
+
+    const calculateTime = () => {
+      const createdDate = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
+      const targetDate = new Date(createdDate.getTime() + (prepTime || 10) * 60000);
+      const diff = Math.floor((targetDate.getTime() - new Date().getTime()) / 1000);
+      setTimeLeft(diff > -300 ? diff : null); // Show for up to 5 mins overdue
+    };
+
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt, prepTime, status]);
+
+  if (timeLeft === null) return null;
+
+  const isOverdue = timeLeft < 0;
+  const absTime = Math.abs(timeLeft);
+  const mins = Math.floor(absTime / 60);
+  const secs = absTime % 60;
+  const displayTime = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+  return (
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border animate-in fade-in zoom-in duration-500 ${
+      isOverdue ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-white/5 border-white/10 text-amber-400'
+    }`}>
+      <Timer size={14} className={isOverdue ? 'animate-pulse' : ''} />
+      <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+        {isOverdue ? 'Ready Soon' : `Ready in ${displayTime}`}
+      </span>
+    </div>
+  );
+}
 
 const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
@@ -145,6 +186,11 @@ export default function Orders() {
                       }`}>
                         {order.status}
                       </span>
+                      <ClientOrderTimer 
+                        createdAt={order.createdAt} 
+                        prepTime={order.prepTime} 
+                        status={order.status} 
+                      />
                     </div>
                     <p className="text-[10px] text-white/40 font-black uppercase tracking-widest font-mono">
                       {order.createdAt?.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} at {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

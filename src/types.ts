@@ -4,11 +4,13 @@ export interface UserProfile {
   uid: string;
   name: string;
   email: string;
-  phone?: string; // Optional phone
+  phone?: string;
   points: number;
-  coffeeCount: number; // Keep for legacy or general coffee tracking
-  itemLoyalty: Record<string, number>; // productId -> count mapping
+  coffeeCount: number;
+  itemLoyalty: Record<string, number>;
   isAdmin: boolean;
+  isWaiter?: boolean;
+  isDriver?: boolean;
   isAnonymous?: boolean;
   createdAt: string;
 }
@@ -41,11 +43,13 @@ export interface Order {
   id: string;
   userId: string;
   customerName: string;
-  customerPhone?: string; // Add optional phone for deliveries
+  customerPhone?: string;
   items: OrderItem[];
   total: number;
   status: OrderStatus;
-  deliveryType: 'delivery' | 'pickup';
+  deliveryType: 'delivery' | 'pickup' | 'dine-in';
+  prepTime: number; // in minutes
+  estimatedReadyAt?: any; // Firestore Timestamp
   address: string;
   deliveryNotes?: string;
   location?: {

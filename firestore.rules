@@ -20,6 +20,13 @@ service cloud.firestore {
     
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
+    function isWaiter() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/waiters/$(request.auth.uid)) ||
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isWaiter == true)
+      );
+    }
+    
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
 
@@ -32,23 +39,29 @@ service cloud.firestore {
     function isValidUser(data) {
       return data.uid == request.auth.uid &&
              data.name is string &&
-             data.points is number;
+             data.points is number &&
+             (data.get('isWaiter', false) is bool);
     }
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin(); 
+      allow get: if isOwner(userId) || isAdmin() || isWaiter();
+      allow list: if isAdmin() || isWaiter(); 
       
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isAdmin() || (
         isOwner(userId) && 
-        isValidUser(incoming()) && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'address'])
       );
     }
 
     // --- Admin List ---
     match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Waiter List ---
+    match /waiters/{waiterId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
@@ -81,10 +94,12 @@ service cloud.firestore {
     match /orders/{orderId} {
       // List permission:
       // 1. Admins see all.
-      // 2. Regular users see their own (requires where('userId', '==', uid) in query).
-      // 3. Drivers see delivery orders (requires where('deliveryType', '==', 'delivery') in query).
+      // 2. Waiters see all.
+      // 3. Regular users see their own (requires where('userId', '==', uid) in query).
+      // 4. Drivers see delivery orders (requires where('deliveryType', '==', 'delivery') in query).
       allow list: if isSignedIn() && (
         isAdmin() || 
+        isWaiter() ||
         (resource.data.userId == request.auth.uid) || 
         (resource.data.deliveryType == 'delivery')
       );
@@ -92,12 +107,13 @@ service cloud.firestore {
       allow get: if isSignedIn() && (
         resource.data.userId == request.auth.uid || 
         isAdmin() || 
+        isWaiter() ||
         resource.data.deliveryType == 'delivery'
       );
       
       allow create: if isSignedIn() && (isValidOrder(incoming()) || isAdmin());
       
-      allow update: if isAdmin() || (isSignedIn() && existing().deliveryType == 'delivery');
+      allow update: if isAdmin() || isWaiter() || (isSignedIn() && existing().deliveryType == 'delivery');
       allow delete: if isAdmin();
     }
   }

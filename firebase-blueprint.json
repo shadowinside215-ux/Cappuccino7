@@ -24,13 +24,17 @@
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
+        "customerName": { "type": "string" },
         "items": { "type": "array" },
         "total": { "type": "number" },
         "status": { "type": "string", "enum": ["pending", "preparing", "ready", "delivered", "cancelled"] },
+        "deliveryType": { "type": "string", "enum": ["delivery", "pickup", "dine-in"] },
+        "prepTime": { "type": "number" },
+        "estimatedReadyAt": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "items", "total", "status"]
+      "required": ["userId", "items", "total", "status", "deliveryType", "prepTime"]
     },
     "BrandSettings": {
       "title": "Brand Settings",
@@ -68,6 +72,15 @@
         }
       },
       "description": "List of admin UIDs"
+    },
+    "/waiters/{waiterId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "uid": { "type": "string" }
+        }
+      },
+      "description": "List of waiter UIDs"
     },
     "/categories/{categoryId}": {
       "schema": {

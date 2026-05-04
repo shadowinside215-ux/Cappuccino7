@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { OrderItem, OrderStatus, UserProfile } from '../types';
-import { Minus, Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle } from 'lucide-react';
+import { Minus, Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle, Coffee } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +17,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState(userProfile?.phone || '');
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
+  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dine-in'>('dine-in');
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [locatingError, setLocatingError] = useState<string | null>(null);
@@ -152,6 +152,24 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       const pointsEarned = totalItems;
       const isGuest = auth.currentUser.isAnonymous;
 
+      // Calculate preparation time based on item types
+      // Logic: Drinks (10 min), Food (30 min). Max of all items.
+      const drinkCategories = ['drinks', 'coffee', 'tea', 'ice_tea', 'jus', 'frappuccino', 'special_hot', 'iced_latte'];
+      
+      // We need to fetch product info for categories, or check item names for hints
+      // For now, we'll use a simple heuristic based on item keywords if we can't get category easily
+      const hasFood = items.some(item => {
+        const name = item.name.toLowerCase();
+        return name.includes('breakfast') || name.includes('brunch') || name.includes('crepe') || 
+               name.includes('waffle') || name.includes('pancake') || name.includes('burger') || 
+               name.includes('sandwich') || name.includes('pizza') || name.includes('salade') ||
+               name.includes('pasta') || name.includes('pâte');
+      });
+
+      const prepTimeMinutes = hasFood ? 30 : 10;
+      const now = new Date();
+      const estimatedReadyAt = new Date(now.getTime() + prepTimeMinutes * 60000);
+
       const orderData = {
         userId: auth.currentUser.uid,
         customerName: userProfile?.name || auth.currentUser.displayName || (isGuest ? 'Guest' : 'Customer'),
@@ -160,7 +178,9 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         total: total,
         status: 'pending' as OrderStatus,
         deliveryType,
-        address: address || (deliveryType === 'pickup' ? 'Store Pickup' : ''),
+        prepTime: prepTimeMinutes,
+        estimatedReadyAt: estimatedReadyAt,
+        address: address || (deliveryType === 'dine-in' ? 'Palace Taha (Eat-in)' : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
         deliveryNotes,
         location: finalLocation ? {
           lat: finalLocation.lat,
@@ -388,17 +408,17 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                 <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4 mb-4">
                   {t('delivery_options')}
                 </label>
-                <div className="flex gap-4 p-2 bg-white/5 rounded-[2.5rem] ring-1 ring-white/10">
+                <div className="flex flex-wrap sm:flex-nowrap gap-4 p-2 bg-white/5 rounded-[2.5rem] ring-1 ring-white/10">
                   <button
-                    onClick={() => setDeliveryType('delivery')}
+                    onClick={() => setDeliveryType('dine-in')}
                     className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[2rem] font-black uppercase text-xs tracking-widest transition-all ${
-                      deliveryType === 'delivery' 
-                        ? 'bg-white text-stone-900 shadow-xl' 
+                      deliveryType === 'dine-in' 
+                        ? 'bg-amber-400 text-stone-900 shadow-xl' 
                         : 'text-white/40 hover:text-white'
                     }`}
                   >
-                    <Truck size={18} />
-                    {t('delivery')}
+                    <Coffee size={18} />
+                    {t('dine_in', { defaultValue: 'Dine-in' })}
                   </button>
                   <button
                     onClick={() => setDeliveryType('pickup')}
@@ -410,6 +430,17 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                   >
                     <ShoppingBag size={18} />
                     {t('pickup')}
+                  </button>
+                  <button
+                    onClick={() => setDeliveryType('delivery')}
+                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[2rem] font-black uppercase text-xs tracking-widest transition-all ${
+                      deliveryType === 'delivery' 
+                        ? 'bg-white text-stone-900 shadow-xl' 
+                        : 'text-white/40 hover:text-white'
+                    }`}
+                  >
+                    <Truck size={18} />
+                    {t('delivery')}
                   </button>
                 </div>
               </div>

@@ -21,6 +21,8 @@ import AdminMenu from './pages/admin/AdminMenu';
 import AdminOrders from './pages/admin/AdminOrders';
 import Login from './pages/Login';
 import AdminLogin from './pages/admin/AdminLogin';
+import WaiterLogin from './pages/waiter/WaiterLogin';
+import WaiterDashboard from './pages/waiter/WaiterDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import Settings from './pages/Settings';
 import DriverLogin from './pages/driver/DriverLogin';
@@ -58,6 +60,43 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
   }
 
   return <Navigate to="/admin/login" />;
+};
+
+const WaiterGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  const [isWaiterDocument, setIsWaiterDocument] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkWaiter = async () => {
+      // Priority 1: Check localStorage for magic login session
+      if (localStorage.getItem('waiter_session_active') === 'true') {
+        setIsWaiterDocument(true);
+        return;
+      }
+
+      // Priority 2: Check profile flags
+      if (userProfile?.isWaiter || userProfile?.isAdmin) {
+        setIsWaiterDocument(true);
+        return;
+      }
+      
+      // Priority 3: Check dedicated waiters collection
+      if (userProfile?.uid) {
+        const waiterDoc = await getDoc(doc(db, 'waiters', userProfile.uid));
+        setIsWaiterDocument(waiterDoc.exists());
+      } else {
+        setIsWaiterDocument(false);
+      }
+    };
+    checkWaiter();
+  }, [userProfile]);
+
+  if (isWaiterDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Checking permissions...</div>;
+
+  if (isWaiterDocument || userProfile?.isWaiter) {
+    return <>{children}</>;
+  }
+
+  return <Navigate to="/waiter/login" />;
 };
 
 function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
@@ -387,6 +426,10 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
               <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />
 
+              {/* Waiter Routes */}
+              <Route path="/waiter/login" element={<WaiterLogin />} />
+              <Route path="/waiter/dashboard" element={<WaiterGuard userProfile={userProfile}><WaiterDashboard /></WaiterGuard>} />
+
               {/* Driver Routes */}
               <Route path="/driver/login" element={<DriverLogin />} />
               <Route path="/driver/dashboard" element={<DriverDashboard />} />
@@ -396,14 +439,20 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       </main>
 
       {/* Persistent Access Footers */}
-      {!location.pathname.startsWith('/admin') && !location.pathname.startsWith('/driver') && (
+      {!location.pathname.startsWith('/admin') && !location.pathname.startsWith('/waiter') && !location.pathname.startsWith('/driver') && (
         <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-12 text-center opacity-30 hover:opacity-100 transition-opacity space-y-4">
-          <div className="flex justify-center gap-8">
+          <div className="flex justify-center gap-8 flex-wrap">
             <Link 
               to="/admin/login" 
               className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-bento-primary"
             >
               {t('admin_access')}
+            </Link>
+            <Link 
+              to="/waiter/login" 
+              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-amber-500"
+            >
+              {t('waiter_access')}
             </Link>
             <Link 
               to="/driver/login" 
