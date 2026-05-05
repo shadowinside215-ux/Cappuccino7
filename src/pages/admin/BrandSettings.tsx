@@ -170,7 +170,7 @@ export default function BrandSettings() {
                   </div>
                 ) : logoUrl ? (
                   <>
-                    <div className="w-40 h-40 rounded-full overflow-hidden border border-stone-100 shadow-sm p-2 bg-white">
+                    <div className="w-40 h-40 rounded-full overflow-hidden border border-stone-100 shadow-sm p-2 bg-[#FDF8F3]">
                       <img src={logoUrl} className="w-full h-full object-contain" alt="Logo preview" />
                     </div>
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

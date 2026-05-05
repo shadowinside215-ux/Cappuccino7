@@ -331,7 +331,7 @@ export default function AdminMenu() {
       </div>
 
       {isAdding && (
-        <form onSubmit={handleAddItem} className="card !p-8 animate-in fade-in slide-in-from-top-4 space-y-6 bg-white border-2 border-bento-accent/10 shadow-2xl">
+        <form onSubmit={handleAddItem} className="card !p-8 animate-in fade-in slide-in-from-top-4 space-y-6 !bg-[#FDF8F3] border-2 border-bento-accent/10 shadow-2xl">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-xl text-bento-primary">New Beverage or Dish</h3>
             <button type="button" onClick={() => setIsAdding(false)} className="text-stone-300 hover:text-stone-500 transition-colors"><X size={24} /></button>
@@ -412,7 +412,7 @@ export default function AdminMenu() {
                   </>
                 ) : (
                   <>
-                    <div className="p-4 bg-white rounded-full shadow-sm text-stone-300 group-hover:text-bento-accent transition-colors">
+                    <div className="p-4 bg-[#FDF8F3] rounded-full shadow-sm text-stone-300 group-hover:text-bento-accent transition-colors">
                       <Upload size={32} />
                     </div>
                     <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest text-center px-4">
@@ -538,7 +538,7 @@ export default function AdminMenu() {
                     )}
                     {subProducts.map((product: Product) => (
                       <div key={product.id} className="flex flex-col gap-4">
-                        <div className="card group !p-4 flex items-center gap-5 hover:border-bento-accent/20">
+                        <div className="card group !p-4 flex items-center gap-5 hover:border-bento-accent/20 !bg-[#FDF8F3]">
                           <div className="relative w-20 h-20 flex-shrink-0">
                             <img 
                               src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
@@ -609,7 +609,7 @@ export default function AdminMenu() {
                         </div>
 
                         {editingId === product.id && (
-                          <form onSubmit={handleUpdateItem} className="card !p-6 border-bento-accent/30 animate-in zoom-in-95 duration-200">
+                          <form onSubmit={handleUpdateItem} className="card !p-6 border-bento-accent/30 animate-in zoom-in-95 duration-200 !bg-[#FDF8F3]">
                             <div className="flex justify-between items-center mb-6">
                               <div className="space-y-1">
                                 <p className="text-[10px] font-black text-bento-accent uppercase tracking-widest">Editing Product</p>

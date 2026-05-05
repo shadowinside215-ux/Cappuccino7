@@ -57,12 +57,12 @@ export default function AdminOrders() {
 
       <div className="space-y-6">
         {activeOrders.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-100">
+          <div className="text-center py-20 bg-[#FDF8F3] rounded-3xl border-2 border-dashed border-stone-200">
             <p className="text-gray-400 font-medium">No active orders right now.</p>
           </div>
         ) : (
           activeOrders.map((order) => (
-            <div key={order.id} className="bg-white rounded-[2rem] p-8 shadow-sm border-2 border-transparent hover:border-brown-100 transition-all">
+            <div key={order.id} className="bg-[#FDF8F3] rounded-[2rem] p-8 shadow-sm border-2 border-stone-100/50 hover:border-brown-100 transition-all">
               <div className="flex flex-col md:flex-row justify-between gap-6 mb-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -150,7 +150,7 @@ export default function AdminOrders() {
                     className={`flex-shrink-0 px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all border-2 ${
                       order.status === status
                       ? 'bg-brown-600 border-brown-600 text-white shadow-lg shadow-brown-100 scale-105'
-                      : 'bg-white border-gray-100 text-gray-400 hover:border-brown-200'
+                      : 'bg-[#FDF8F3] border-gray-100 text-gray-400 hover:border-brown-200'
                     }`}
                   >
                     {status}
@@ -173,7 +173,7 @@ export default function AdminOrders() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {completedOrders.map((order) => (
-              <div key={order.id} className="bg-white p-6 rounded-[2rem] shadow-sm border border-stone-100 flex flex-col justify-between group hover:shadow-md transition-all">
+              <div key={order.id} className="bg-[#FDF8F3] p-6 rounded-[2rem] shadow-sm border border-stone-100 flex flex-col justify-between group hover:shadow-md transition-all">
                 <div className="mb-4">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-black text-stone-900 uppercase italic leading-none">{order.customerName}</h4>

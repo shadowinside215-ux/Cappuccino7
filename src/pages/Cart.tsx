@@ -172,16 +172,21 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       }));
 
       // Calculate preparation time based on item categories
-      // 10 mins for: drinks, juices, ice cream, coffee, infusions, iced latte
-      // 30 mins for everything else
+      // 10 mins for: drinks, juices, ice_cream, coffee, etc.
+      // 30 mins for: everything else (dishes, breakfast, brunch, crepes)
       const fastTimedCategories = [
-        'drinks', 'juices', 'ice cream', 'coffee', 'infusions', 'iced latte', 
-        'jus', 'café', 'glaces', 'the', 'thé', 'tea', 'infusion', 'boisson'
+        'drinks', 'juices', 'juice', 'ice_cream', 'ice cream', 'coffee', 'infusions', 'iced_latte', 
+        'jus', 'café', 'glaces', 'the', 'thé', 'tea', 'infusion', 'boisson', 'jus d\'orange'
       ];
       
       const hasSlowItem = itemsWithMetadata.some(item => {
         const cat = (item.categoryName || '').toLowerCase();
-        return !fastTimedCategories.some(fastCat => cat.includes(fastCat));
+        const itemName = (item.name || '').toLowerCase();
+        // Check both category and name for "juice"
+        const isFast = fastTimedCategories.some(fastCat => 
+          cat.includes(fastCat) || itemName.includes(fastCat)
+        );
+        return !isFast;
       });
 
       const prepTimeMinutes = hasSlowItem ? 30 : 10;

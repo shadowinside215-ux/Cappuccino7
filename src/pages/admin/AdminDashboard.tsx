@@ -180,11 +180,16 @@ export default function AdminDashboard() {
         console.log(`Reset chunk ${i/500 + 1}. Total reset: ${resetCount}`);
       }
       
+      const clientsOnlyCount = userDocs.filter(d => {
+        const data = d.data();
+        return !data.isAdmin && !data.isWaiter && !data.isDriver;
+      }).length;
+      
       toast.success('System reset complete! All orders deleted and points zeroed out.', { id: wipeId });
       
       // Refresh local UI
       setUsers(prev => prev.map(u => ({ ...u, points: 0, itemLoyalty: {}, coffeeCount: 0 })));
-      setStats(prev => ({ ...prev, todayRevenue: 0, activeOrders: 0, totalUsers: userDocs.length }));
+      setStats(prev => ({ ...prev, todayRevenue: 0, activeOrders: 0, totalUsers: clientsOnlyCount }));
       setIsEmpty(false); // Make sure it doesn't think it's empty of categories
       
     } catch (err) {
@@ -310,8 +315,9 @@ export default function AdminDashboard() {
         const prodsSnap = await getDocs(collection(db, 'products'));
         const catsSnap = await getDocs(collection(db, 'categories'));
         
-        const usersData = usersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-        setUsers(usersData);
+        const allUsers = usersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+        const clientsOnly = allUsers.filter(u => !u.isAdmin && !u.isWaiter && !u.isDriver);
+        setUsers(clientsOnly);
 
         // Robust auto-seed check: Check if category exists AND has items
         const hasDesserts = catsSnap.docs.some(d => d.id === 'crepes-desserts');
@@ -337,7 +343,7 @@ export default function AdminDashboard() {
         setIsEmpty(catsSnap.empty);
         setStats(prev => ({ 
           ...prev, 
-          totalUsers: usersSnap.size,
+          totalUsers: clientsOnly.length,
           totalItems: prodsSnap.size
         }));
       } catch (error) {
@@ -617,7 +623,7 @@ export default function AdminDashboard() {
           </button>
           <button 
             onClick={clearOrders}
-            className="bg-white text-stone-900 px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-stone-50 transition-all font-black uppercase text-[11px] tracking-widest border-2 border-stone-100 shadow-lg active:scale-95"
+            className="bg-[#FDF8F3] text-stone-900 px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-stone-50 transition-all font-black uppercase text-[11px] tracking-widest border-2 border-stone-100 shadow-lg active:scale-95"
           >
             🗑️ Clear Orders Only
           </button>
@@ -761,7 +767,7 @@ export default function AdminDashboard() {
               .length;
 
             return (
-              <div key={user.uid} className="card !p-5 flex flex-col sm:flex-row items-center gap-6 group hover:border-bento-accent/20 transition-all">
+              <div key={user.uid} className="card !p-5 !bg-[#FDF8F3] flex flex-col sm:flex-row items-center gap-6 group hover:border-bento-accent/20 transition-all">
                 <div className="flex items-center gap-4 flex-1">
                   <div className="w-12 h-12 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400 group-hover:bg-bento-accent/10 group-hover:text-bento-primary transition-all">
                     {readyRewards > 0 ? <Gift className="text-bento-accent animate-bounce" size={24} /> : <Users size={24} />}
@@ -820,7 +826,7 @@ export default function AdminDashboard() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
+              className="bg-[#FDF8F3] w-full max-w-4xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
             >
               <div className="p-8 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
                 <div className="flex items-center gap-4">
@@ -842,18 +848,14 @@ export default function AdminDashboard() {
 
               <div className="flex-1 overflow-y-auto p-8 space-y-8">
                 {/* Stats Summary */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100 flex flex-col justify-center">
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Total Orders</p>
                     <p className="text-3xl font-black text-stone-900 leading-none">{userOrders.length}</p>
                   </div>
-                  <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
-                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Global Points</p>
-                    <p className="text-3xl font-black text-amber-500 leading-none">{selectedUser.points}</p>
-                  </div>
-                  <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                  <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100 flex flex-col justify-center">
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Joined</p>
-                    <p className="text-xs font-bold text-stone-900">
+                    <p className="text-sm font-bold text-stone-900 tracking-tight leading-none pt-1">
                       {new Date(selectedUser.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -880,7 +882,7 @@ export default function AdminDashboard() {
                             </div>
                             <div className="flex items-center gap-2">
                               {(count as number) >= 11 && <Gift className="text-green-500" size={14} />}
-                              <span className="text-sm font-black text-stone-900">{count} {(count as number) > 1 ? 'Items' : 'Item'}</span>
+                              <span className="text-sm font-black text-stone-900">{count} {(count as number) > 1 ? 'Points' : 'Point'}</span>
                             </div>
                           </div>
                         ))
@@ -903,7 +905,7 @@ export default function AdminDashboard() {
                           const deliveryTime = order.deliveredAt?.toDate ? order.deliveredAt.toDate() : (order.deliveredAt ? new Date(order.deliveredAt) : null);
                           
                           return (
-                            <div key={order.id} className="p-5 rounded-2xl border border-stone-100 bg-white shadow-sm hover:shadow-md transition-all">
+                            <div key={order.id} className="p-5 rounded-2xl border border-stone-100 bg-[#FDF8F3]/50 shadow-sm hover:shadow-md transition-all">
                               <div className="flex justify-between items-start mb-3">
                                 <div>
                                    <p className="text-[10px] font-black text-stone-900 uppercase italic">
@@ -927,7 +929,7 @@ export default function AdminDashboard() {
                                 </span>
                               </div>
                               <div className="pt-3 border-t border-stone-50 flex justify-between items-center">
-                                <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">{order.items.length} items • {order.total} DH</p>
+                                <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">{order.items.length} Points • {order.total} DH</p>
                                 <div className="text-[9px] font-black text-stone-300 uppercase tracking-tighter">ID: {order.id.slice(-6)}</div>
                               </div>
                             </div>

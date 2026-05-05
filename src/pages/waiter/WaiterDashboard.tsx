@@ -33,23 +33,44 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
     }
 
     const calculateTime = () => {
-      // The timer starts from preparingAt, not createdAt
-      const startTime = preparingAt?.toDate ? preparingAt.toDate() : (preparingAt ? new Date(preparingAt) : null);
+      // Robust date parsing
+      let startTime: Date | null = null;
+      if (preparingAt) {
+        if (preparingAt.toDate) {
+          startTime = preparingAt.toDate();
+        } else if (preparingAt instanceof Date) {
+          startTime = preparingAt;
+        } else if (typeof preparingAt === 'number') {
+          startTime = new Date(preparingAt);
+        } else if (typeof preparingAt === 'string') {
+          startTime = new Date(preparingAt);
+        }
+      }
       
-      if (!startTime) {
+      // Safety check: ignore invalid dates or dates too far in the past/future
+      if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000000000) {
         setTimeLeft(null);
         return;
       }
 
-      const targetDate = new Date(startTime.getTime() + prepTime * 60000);
-      const diff = Math.floor((targetDate.getTime() - new Date().getTime()) / 1000);
+      const targetDate = new Date(startTime.getTime() + (prepTime || 30) * 60000);
+      let diff = Math.floor((targetDate.getTime() - Date.now()) / 1000);
+      
+      // SANITY CHECK: If diff is impossibly large (e.g. > 1 week or something crazy like 53K minutes)
+      // it means there is a massive clock drift. We cap it to the prepTime.
+      if (diff > (prepTime || 30) * 60) {
+        // Clock drift detected (likely user local time is in the past)
+        // We set it to the max prepTime to avoid scaring the waiter
+        diff = (prepTime || 30) * 60;
+      }
+      
       setTimeLeft(diff);
     };
 
     calculateTime();
     const interval = setInterval(calculateTime, 1000);
     return () => clearInterval(interval);
-  }, [createdAt, prepTime, status]);
+  }, [preparingAt, prepTime, status]); // Added preparingAt to dependencies
 
   if (timeLeft === null) return null;
 
