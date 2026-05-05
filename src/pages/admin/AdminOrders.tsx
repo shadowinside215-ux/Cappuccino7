@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
 import { awardOrderPoints } from '../../services/orderService';
@@ -8,6 +8,60 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
 const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivering', 'delivered'];
+
+// Import the OrderTimer logic (we'll define it locally since it's used in WaiterDashboard but they aren't in a common folder yet)
+function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
+  const [elapsed, setElapsed] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const calculateTimes = () => {
+      const now = Date.now();
+      let createdDate: Date | null = null;
+      if (createdAt) {
+        createdDate = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+      }
+      if (createdDate && !isNaN(createdDate.getTime())) {
+        setElapsed(Math.floor((now - createdDate.getTime()) / 1000));
+      }
+
+      if (status === 'preparing') {
+        let startTime: Date | null = null;
+        if (preparingAt) {
+          startTime = preparingAt.toDate ? preparingAt.toDate() : new Date(preparingAt);
+        }
+        if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
+          setTimeLeft((prepTime || 30) * 60);
+        } else {
+          const targetDate = new Date(startTime.getTime() + (Number(prepTime) || 30) * 60000);
+          let diff = Math.floor((targetDate.getTime() - now) / 1000);
+          if (Math.abs(diff) > 86400) diff = (Number(prepTime) || 30) * 60;
+          setTimeLeft(diff);
+        }
+      } else {
+        setTimeLeft(null);
+      }
+    };
+    calculateTimes();
+    const interval = setInterval(calculateTimes, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt, preparingAt, prepTime, status]);
+
+  const formatSecs = (totalSecs: number) => {
+    const absSecs = Math.abs(totalSecs);
+    const mins = Math.floor(absSecs / 60);
+    const secs = absSecs % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const isPreparing = status === 'preparing';
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${isPreparing ? (timeLeft !== null && timeLeft < 0 ? 'bg-red-500 text-white' : 'bg-stone-900 text-white') : 'bg-amber-100 text-amber-700'}`}>
+       <Clock size={12} className={isPreparing && timeLeft !== null && timeLeft < 0 ? 'animate-pulse' : 'text-amber-400'} />
+       <span>{isPreparing ? (timeLeft !== null ? `${timeLeft < 0 ? '-' : ''}${formatSecs(timeLeft)} LEFT` : '--:--') : `${formatSecs(elapsed)} WAITING`}</span>
+    </div>
+  );
+}
 
 export default function AdminOrders() {
   const { t } = useTranslation();
@@ -28,7 +82,27 @@ export default function AdminOrders() {
 
   const updateStatus = async (order: Order, newStatus: OrderStatus) => {
     try {
-      await updateDoc(doc(db, 'orders', order.id), { status: newStatus });
+      const updateData: any = { 
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      };
+      
+      if (newStatus === 'preparing' && !order.preparingAt) {
+        updateData.preparingAt = serverTimestamp();
+      } else if (newStatus === 'ready' && !order.readyAt) {
+        updateData.readyAt = serverTimestamp();
+      } else if (newStatus === 'delivered' && !order.deliveredAt) {
+        updateData.deliveredAt = serverTimestamp();
+        
+        // Calculate delivery time
+        if (order.createdAt) {
+          const start = order.createdAt.toDate();
+          const diffInMinutes = Math.round((new Date().getTime() - start.getTime()) / 60000);
+          updateData.deliveredInMinutes = diffInMinutes;
+        }
+      }
+      
+      await updateDoc(doc(db, 'orders', order.id), updateData);
       
       // If delivered, award points
       if (newStatus === 'delivered' && order.status !== 'delivered') {
@@ -62,8 +136,8 @@ export default function AdminOrders() {
           </div>
         ) : (
           activeOrders.map((order) => (
-            <div key={order.id} className="bg-[#FDF8F3] rounded-[2rem] p-8 shadow-sm border-2 border-stone-100/50 hover:border-brown-100 transition-all">
-              <div className="flex flex-col md:flex-row justify-between gap-6 mb-6">
+            <div key={order.id} className="bg-[#FDF8F3] rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-8 shadow-sm border-2 border-stone-100/50 hover:border-brown-100 transition-all">
+              <div className="flex flex-col md:flex-row justify-between gap-4 md:gap-6 mb-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-2xl font-bold text-brown-950">{order.customerName}</h3>
@@ -77,10 +151,12 @@ export default function AdminOrders() {
                     <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
                       <MapPin size={14} className="text-gray-400" /> {order.address}
                     </p>
-                    <div className="flex items-center gap-2 bg-stone-900 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                       <Clock size={12} className="text-amber-400" />
-                       <span>Ready in {order.prepTime} min</span>
-                    </div>
+                    <OrderTimer 
+                      createdAt={order.createdAt} 
+                      preparingAt={order.preparingAt} 
+                      prepTime={order.prepTime} 
+                      status={order.status} 
+                    />
                     {order.location && (
                       <a 
                         href={`https://www.google.com/maps?q=${order.location.lat},${order.location.lng}`}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, setDoc, increment } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
 import { awardOrderPoints } from '../../services/orderService';
@@ -24,81 +24,91 @@ import { useTranslation } from 'react-i18next';
 
 // Dedicated Order Timer Component
 function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
+  const [elapsed, setElapsed] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (status === 'ready' || status === 'delivered' || status === 'cancelled' || status === 'pending' || status === 'accepted') {
-      setTimeLeft(null);
-      return;
-    }
+    const calculateTimes = () => {
+      const now = Date.now();
+      
+      // 1. Calculate Elapsed Time since creation
+      let createdDate: Date | null = null;
+      if (createdAt) {
+        createdDate = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+      }
+      
+      if (createdDate && !isNaN(createdDate.getTime())) {
+        setElapsed(Math.floor((now - createdDate.getTime()) / 1000));
+      }
 
-    const calculateTime = () => {
-      // Robust date parsing
-      let startTime: Date | null = null;
-      if (preparingAt) {
-        if (preparingAt.toDate) {
-          startTime = preparingAt.toDate();
-        } else if (preparingAt instanceof Date) {
-          startTime = preparingAt;
-        } else if (typeof preparingAt === 'number') {
-          startTime = new Date(preparingAt);
-        } else if (typeof preparingAt === 'string') {
-          startTime = new Date(preparingAt);
+      // 2. Calculate Time Left if preparing
+      if (status === 'preparing') {
+        let startTime: Date | null = null;
+        if (preparingAt) {
+          startTime = preparingAt.toDate ? preparingAt.toDate() : new Date(preparingAt);
         }
-      }
-      
-      // Safety check: ignore invalid dates or dates too far in the past/future
-      if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000000000) {
+        
+        if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
+          // Fallback if timestamp hasn't synced yet
+          setTimeLeft((prepTime || 30) * 60);
+        } else {
+          const targetDate = new Date(startTime.getTime() + (Number(prepTime) || 30) * 60000);
+          let diff = Math.floor((targetDate.getTime() - now) / 1000);
+          
+          // Cap reasonable drift
+          if (Math.abs(diff) > 86400) diff = (Number(prepTime) || 30) * 60;
+          setTimeLeft(diff);
+        }
+      } else {
         setTimeLeft(null);
-        return;
       }
-
-      const targetDate = new Date(startTime.getTime() + (prepTime || 30) * 60000);
-      let diff = Math.floor((targetDate.getTime() - Date.now()) / 1000);
-      
-      // SANITY CHECK: Only cap if the difference is ABSURD (e.g. > 2 hours for a 30 min prep)
-      // This prevents the timer from getting stuck due to minor clock drifts (1-2 minutes)
-      const maxAllowedDiff = (prepTime || 30) * 60 + 600; // prepTime + 10 mins buffer
-      if (diff > maxAllowedDiff) {
-        diff = maxAllowedDiff;
-      }
-      
-      setTimeLeft(diff);
     };
 
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
+    calculateTimes();
+    const interval = setInterval(calculateTimes, 1000);
     return () => clearInterval(interval);
-  }, [preparingAt, prepTime, status]); // Added preparingAt to dependencies
+  }, [createdAt, preparingAt, prepTime, status]);
 
-  if (timeLeft === null) return null;
+  const formatSecs = (totalSecs: number) => {
+    const absSecs = Math.abs(totalSecs);
+    const mins = Math.floor(absSecs / 60);
+    const secs = absSecs % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
-  const isOverdue = timeLeft < 0;
-  const absTime = Math.abs(timeLeft);
-  const mins = Math.floor(absTime / 60);
-  const secs = absTime % 60;
-  const displayTime = `${mins}:${secs.toString().padStart(2, '0')}`;
-
-  const progress = Math.max(0, Math.min(100, (1 - (timeLeft / (prepTime * 60))) * 100));
-
+  const isPreparing = status === 'preparing';
+  
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center px-1">
-        <span className={`text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-red-500' : 'text-stone-400'}`}>
-          {isOverdue ? 'OVERDUE' : 'EST. READY IN'}
-        </span>
-        <div className={`flex items-center gap-2 ${isOverdue ? 'text-red-500' : 'text-stone-900'}`}>
-          <Timer size={14} className={isOverdue ? 'animate-pulse' : ''} />
-          <span className="text-lg font-black tabular-nums">{displayTime}</span>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">
+            {isPreparing ? 'Time Remaining' : 'Wait Time'}
+          </span>
+          <div className="flex items-center gap-2 text-stone-900">
+            <Clock size={12} className="text-amber-500" />
+            <span className="text-sm font-black tabular-nums">{isPreparing ? (timeLeft !== null ? formatSecs(timeLeft) : '--:--') : formatSecs(elapsed)}</span>
+          </div>
         </div>
+        
+        {isPreparing && timeLeft !== null && (
+          <div className="text-right">
+             <span className={`text-lg font-black tabular-nums ${timeLeft < 0 ? 'text-red-500 animate-pulse' : 'text-stone-900'}`}>
+               {timeLeft < 0 ? '-' : ''}{formatSecs(timeLeft)}
+             </span>
+          </div>
+        )}
       </div>
-      <div className="h-3 bg-stone-100 rounded-full overflow-hidden border border-stone-200 p-0.5">
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          className={`h-full rounded-full ${isOverdue ? 'bg-red-500' : progress > 80 ? 'bg-amber-400' : 'bg-green-500'}`}
-        />
-      </div>
+
+      {isPreparing && (
+        <div className="h-2 bg-stone-100 rounded-full overflow-hidden border border-stone-200">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.max(0, Math.min(100, (1 - (timeLeft || 0) / ((prepTime || 30) * 60))) * 100)}%` }}
+            className={`h-full ${timeLeft && timeLeft < 0 ? 'bg-red-500' : 'bg-green-500'}`}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -183,15 +193,6 @@ export default function WaiterDashboard() {
         updateData.preparingAt = serverTimestamp();
       } else if (newStatus === 'ready') {
         updateData.readyAt = serverTimestamp();
-        
-        // Calculate ready time for admin stats
-        const orderSnap = await getDoc(orderRef);
-        if (orderSnap.exists()) {
-          const orderData = orderSnap.data();
-          const createdAt = orderData.createdAt?.toDate ? orderData.createdAt.toDate() : new Date(orderData.createdAt);
-          const diffMs = Date.now() - createdAt.getTime();
-          updateData.readyInMinutes = Math.round(diffMs / 60000);
-        }
       }
 
       await updateDoc(orderRef, updateData);
@@ -352,14 +353,14 @@ export default function WaiterDashboard() {
                        </div>
                     </div>
 
-                    {order.status === 'preparing' && (
+                    <div className="mb-6 px-2">
                       <OrderTimer 
                         createdAt={order.createdAt} 
                         preparingAt={order.preparingAt}
                         prepTime={order.prepTime} 
                         status={order.status} 
                       />
-                    )}
+                    </div>
 
                     <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-stone-50">
                        <button onClick={() => updateStatus(order.id, 'preparing')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-50 hover:bg-amber-50 group transition-colors">

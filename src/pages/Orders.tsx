@@ -19,22 +19,37 @@ function ClientOrderTimer({ createdAt, preparingAt, prepTime, status }: { create
     }
 
     const calculateTime = () => {
-      const startTime = preparingAt?.toDate ? preparingAt.toDate() : (preparingAt ? new Date(preparingAt) : null);
+      let startTime = null;
+      if (preparingAt) {
+        if (preparingAt.toDate) {
+          startTime = preparingAt.toDate();
+        } else if (preparingAt instanceof Date) {
+          startTime = preparingAt;
+        } else {
+          startTime = new Date(preparingAt);
+        }
+      }
       
-      if (!startTime) {
-        setTimeLeft(null);
+      if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
+        setTimeLeft((prepTime || 30) * 60);
         return;
       }
 
-      const targetDate = new Date(startTime.getTime() + (prepTime || 10) * 60000);
-      const diff = Math.floor((targetDate.getTime() - new Date().getTime()) / 1000);
-      setTimeLeft(diff > -300 ? diff : null); // Show for up to 5 mins overdue
+      const targetDate = new Date(startTime.getTime() + (Number(prepTime) || 30) * 60000);
+      let diff = Math.floor((targetDate.getTime() - Date.now()) / 1000);
+      
+      // Handle massive clock drift
+      if (Math.abs(diff) > 86400) { 
+        diff = (Number(prepTime) || 30) * 60;
+      }
+      
+      setTimeLeft(diff);
     };
 
     calculateTime();
     const interval = setInterval(calculateTime, 1000);
     return () => clearInterval(interval);
-  }, [createdAt, prepTime, status]);
+  }, [preparingAt, prepTime, status]);
 
   if (timeLeft === null) return null;
 

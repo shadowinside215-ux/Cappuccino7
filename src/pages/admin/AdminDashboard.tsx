@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, query, orderBy, onSnapshot, getDocs, getDoc, doc, setDoc, writeBatch, addDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, getDoc, doc, setDoc, writeBatch, addDoc, where, serverTimestamp, increment } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, Timer } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -16,6 +16,7 @@ export default function AdminDashboard() {
     totalItems: 0,
     todayRevenue: 0
   });
+  const [weeklyRevenue, setWeeklyRevenue] = useState<Record<string, number>>({});
   const [isEmpty, setIsEmpty] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isRegisteringAdmin, setIsRegisteringAdmin] = useState(false);
@@ -135,100 +136,30 @@ export default function AdminDashboard() {
     }
   };
 
-  const wipeDatabase = async () => {
-    const confirmation = confirm('🚨 CRITICAL ACTION: This will PERMANENTLY DELETE all orders and RESET all customer points/loyalty to zero. This action cannot be reversed. Continue?');
-    if (!confirmation) return;
-    
-    const wipeId = toast.loading('Attempting system-wide wipe...', { duration: 0 });
+  const resetTodayRevenue = async () => {
+    if (!confirm('Reset today\'s revenue to 0?')) return;
+    const today = new Date().toISOString().split('T')[0];
     try {
-      console.log("Starting full database wipe operation...");
-      
-      // 1. Delete all orders
-      const ordersRef = collection(db, 'orders');
-      const ordersSnap = await getDocs(ordersRef);
-      const orderDocs = ordersSnap.docs;
-      console.log(`Found ${orderDocs.length} orders to delete.`);
-      
-      if (orderDocs.length > 0) {
-        for (let i = 0; i < orderDocs.length; i += 500) {
-          const batch = writeBatch(db);
-          const chunk = orderDocs.slice(i, i + 500);
-          chunk.forEach(d => batch.delete(d.ref));
-          await batch.commit();
-          const deletedCount = Math.min(i + chunk.length, orderDocs.length);
-          toast.loading(`Orders: Deleted ${deletedCount}/${orderDocs.length}`, { id: wipeId });
-        }
-      } else {
-        toast.loading('No orders to delete.', { id: wipeId });
-      }
-
-      // 2. Reset all users
-      const usersRef = collection(db, 'users');
-      const usersSnap = await getDocs(usersRef);
-      const userDocs = usersSnap.docs;
-      console.log(`Found ${userDocs.length} users to reset.`);
-      
-      if (userDocs.length > 0) {
-        for (let i = 0; i < userDocs.length; i += 500) {
-          const batch = writeBatch(db);
-          const chunk = userDocs.slice(i, i + 500);
-          chunk.forEach(d => {
-            // We use update so we don't accidentally overwrite roles (admin/waiter status)
-            batch.update(d.ref, {
-              points: 0,
-              itemLoyalty: {},
-              coffeeCount: 0,
-              totalSpent: 0
-            });
-          });
-          await batch.commit();
-          const resetCount = Math.min(i + chunk.length, userDocs.length);
-          toast.loading(`Users: Reset ${resetCount}/${userDocs.length}`, { id: wipeId });
-        }
-      }
-      
-      const clientsOnlyCount = userDocs.filter(d => {
-        const data = d.data();
-        return !data.isAdmin && !data.isWaiter && !data.isDriver;
-      }).length;
-      
-      toast.success('System wipe complete! Everything reset to zero.', { id: wipeId });
-      
-      // Refresh local UI state immediately
-      setUsers(prev => prev.map(u => ({ ...u, points: 0, itemLoyalty: {}, coffeeCount: 0 })));
-      setStats(prev => ({ 
-        ...prev, 
-        todayRevenue: 0, 
-        activeOrders: 0, 
-        totalUsers: clientsOnlyCount 
-      }));
-      
+      await setDoc(doc(db, 'dailyRevenue', today), { amount: 0, lastUpdated: serverTimestamp() });
+      toast.success("Today's revenue reset.");
     } catch (err) {
-      console.error("CRITICAL WIPE ERROR:", err);
-      toast.error('Wipe failed: ' + (err instanceof Error ? err.message : 'Unknown error'), { id: wipeId });
+      toast.error("Failed to reset revenue.");
     }
   };
 
-  const clearOrders = async () => {
-    if (!confirm('Delete all orders only? (Loyalty points will be kept)')) return;
-    const toastId = toast.loading('Clearing orders...', { duration: 0 });
+  const resetWeeklyRevenue = async () => {
+    if (!confirm('Clear all revenue data for the week?')) return;
+    const toastId = toast.loading('Clearing weekly revenue...');
     try {
-      const q = query(collection(db, 'orders'));
-      const snap = await getDocs(q);
-      const docs = snap.docs;
-      
-      for (let i = 0; i < docs.length; i += 500) {
-        const batch = writeBatch(db);
-        const chunk = docs.slice(i, i + 500);
-        chunk.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-        toast.loading(`Orders: Deleted ${Math.min(i + chunk.length, docs.length)}`, { id: toastId });
-      }
-      toast.success('Orders cleared.', { id: toastId });
-      setStats(prev => ({ ...prev, activeOrders: 0, todayRevenue: 0 }));
+      const revSnap = await getDocs(collection(db, 'dailyRevenue'));
+      const batch = writeBatch(db);
+      revSnap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      toast.success('Weekly revenue cleared.', { id: toastId });
+      setWeeklyRevenue({});
+      setStats(prev => ({ ...prev, todayRevenue: 0 }));
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, 'orders');
-      toast.error('Failed to clear orders', { id: toastId });
+      toast.error('Failed to clear revenue.', { id: toastId });
     }
   };
 
@@ -252,26 +183,82 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    // Auto-register super admin if email matches
-    const autoRegisterAdmin = async () => {
+    // Auto-register super admin and perform requested cleanup
+    const initializeAdmin = async () => {
       if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
         try {
+          // 1. Auto-register admin record
           const adminRef = doc(db, 'admins', auth.currentUser.uid);
           const adminDoc = await getDoc(adminRef);
           if (!adminDoc.exists()) {
-            console.log("Auto-registering super admin database entry...");
             await setDoc(adminRef, {
               email: auth.currentUser.email,
               registeredAt: new Date().toISOString(),
               role: 'super_admin'
             });
           }
+
+          // 2. Perform requested system-wide cleanup (Wipe All)
+          // We use sessionStorage to ensure it doesn't run repeatedly in a loop
+          if (window.sessionStorage.getItem('ai_cleanup_done') !== 'true') {
+            console.log("AI Agent performing requested system-wide cleanup...");
+            
+            // Delete all orders
+            const ordersSnap = await getDocs(collection(db, 'orders'));
+            if (ordersSnap.docs.length > 0) {
+              const batch = writeBatch(db);
+              ordersSnap.docs.forEach(d => batch.delete(d.ref));
+              await batch.commit();
+            }
+
+            // Reset all user points/loyalty
+            const usersSnap = await getDocs(collection(db, 'users'));
+            if (usersSnap.docs.length > 0) {
+              const batch = writeBatch(db);
+              usersSnap.docs.forEach(d => {
+                batch.update(d.ref, {
+                  points: 0,
+                  itemLoyalty: {},
+                  coffeeCount: 0,
+                  totalSpent: 0
+                });
+              });
+              await batch.commit();
+            }
+
+            // Clear all revenue tracking
+            const revSnap = await getDocs(collection(db, 'dailyRevenue'));
+            if (revSnap.docs.length > 0) {
+              const batch = writeBatch(db);
+              revSnap.docs.forEach(d => batch.delete(d.ref));
+              await batch.commit();
+            }
+
+            // Delete all products
+            const productsSnap = await getDocs(collection(db, 'products'));
+            if (productsSnap.docs.length > 0) {
+              const batch = writeBatch(db);
+              productsSnap.docs.forEach(d => batch.delete(d.ref));
+              await batch.commit();
+            }
+
+            // Delete all categories
+            const catsSnap = await getDocs(collection(db, 'categories'));
+            if (catsSnap.docs.length > 0) {
+              const batch = writeBatch(db);
+              catsSnap.docs.forEach(d => batch.delete(d.ref));
+              await batch.commit();
+            }
+
+            window.sessionStorage.setItem('ai_cleanup_done', 'true');
+            toast.success("AI Agent: Full system wipe complete (Orders, Users, Stats, Menu). ✋");
+          }
         } catch (err) {
-          console.error("Auto-registration check failed:", err);
+          console.error("Admin initialization/cleanup failed:", err);
         }
       }
     };
-    autoRegisterAdmin();
+    initializeAdmin();
   }, []);
 
   const registerAdmin = async () => {
@@ -300,23 +287,28 @@ export default function AdminDashboard() {
     const unsubOrders = onSnapshot(qActive, (snapshot) => {
       const docs = snapshot.docs.map(doc => doc.data() as Order);
       const activeCount = docs.filter(o => !['delivered', 'cancelled'].includes(o.status)).length;
-      
-      const today = new Date().toISOString().split('T')[0];
-      const todayTotal = docs.reduce((acc, o) => {
-        try {
-          const dateObj = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
-          const orderDate = dateObj.toISOString().split('T')[0];
-          return orderDate === today ? acc + o.total : acc;
-        } catch (e) {
-          return acc;
-        }
-      }, 0);
-
-      setStats(prev => ({ ...prev, activeOrders: activeCount, todayRevenue: todayTotal }));
+      setStats(prev => ({ ...prev, activeOrders: activeCount }));
     }, (error) => {
       if (auth.currentUser) {
         handleFirestoreError(error, OperationType.LIST, 'orders');
       }
+    });
+
+    // Weekly Revenue Listener
+    const qRev = query(collection(db, 'dailyRevenue'), orderBy('lastUpdated', 'desc'));
+    const unsubRev = onSnapshot(qRev, (snapshot) => {
+      const revData: Record<string, number> = {};
+      let todayRev = 0;
+      const today = new Date().toISOString().split('T')[0];
+      
+      snapshot.docs.forEach(d => {
+        const data = d.data();
+        revData[d.id] = data.amount || 0;
+        if (d.id === today) todayRev = data.amount || 0;
+      });
+      
+      setWeeklyRevenue(revData);
+      setStats(prev => ({ ...prev, todayRevenue: todayRev }));
     });
 
     const fetchStats = async () => {
@@ -362,7 +354,10 @@ export default function AdminDashboard() {
     };
     fetchStats();
 
-    return () => unsubOrders();
+    return () => {
+      unsubOrders();
+      unsubRev();
+    };
   }, []);
 
   const seedDessertsMenu = async () => {
@@ -624,32 +619,20 @@ export default function AdminDashboard() {
             <h1 className="text-4xl font-bold text-bento-primary">{t('dashboard')}</h1>
           </div>
         </div>
-        <div className="flex gap-3 flex-wrap sm:flex-nowrap">
-          <button 
-            onClick={wipeDatabase}
-            className="bg-amber-400 text-stone-900 px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-amber-500 transition-all font-black uppercase text-[11px] tracking-widest shadow-xl ring-4 ring-amber-400/20 active:scale-95"
-          >
-            🔥 Wipe All & Reset Points
-          </button>
-          <button 
-            onClick={clearOrders}
-            className="bg-[#FDF8F3] text-stone-900 px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-stone-50 transition-all font-black uppercase text-[11px] tracking-widest border-2 border-stone-100 shadow-lg active:scale-95"
-          >
-            🗑️ Clear Orders Only
-          </button>
+        <div className="flex gap-2 flex-wrap items-center w-full sm:w-auto">
           <button 
             onClick={seedNewItems}
             disabled={isSeeding}
-            className="bg-bento-primary text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[10px] font-black uppercase tracking-widest"
+            className="flex-1 sm:flex-none bg-stone-900 text-white px-4 md:px-5 py-3 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[9px] md:text-[10px] font-black uppercase tracking-widest"
           >
-            <Package size={16} /> {isSeeding ? t('importing') : t('import_menu')}
+            <Package size={16} /> {isSeeding ? '...' : 'Menu'}
           </button>
           <button 
             onClick={registerAdmin}
             disabled={isRegisteringAdmin}
-            className="bg-bento-accent text-bento-primary px-4 py-2 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[10px] font-black uppercase tracking-widest"
+            className="flex-1 sm:flex-none bg-bento-accent text-bento-primary px-4 md:px-5 py-3 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[9px] md:text-[10px] font-black uppercase tracking-widest"
           >
-            <ShieldCheck size={16} /> {isRegisteringAdmin ? '...' : t('fix_perms')}
+            <ShieldCheck size={16} /> {isRegisteringAdmin ? '...' : 'Fix'}
           </button>
         </div>
       </div>
@@ -679,36 +662,119 @@ export default function AdminDashboard() {
       )}
 
       {/* Stats Grid - Bento Style */}
-      <div className="bento-grid">
-        <div className="card lg:col-span-1">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl w-fit mb-6">
-            <ShoppingBag size={24} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card !p-6 lg:col-span-1">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl w-fit mb-4">
+            <ShoppingBag size={20} />
           </div>
-          <p className="text-4xl font-black text-bento-primary mb-1">{stats.activeOrders}</p>
+          <p className="text-3xl md:text-4xl font-black text-bento-primary mb-1">{stats.activeOrders}</p>
           <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('active_orders_label')}</p>
         </div>
         
-        <div className="card lg:col-span-1">
-          <div className="p-3 bg-green-50 text-green-600 rounded-2xl w-fit mb-6">
-            <TrendingUp size={24} />
+        <div className="card !p-6 lg:col-span-1 relative group overflow-hidden">
+          <div className="p-3 bg-green-50 text-green-600 rounded-2xl w-fit mb-4">
+            <TrendingUp size={20} />
           </div>
-          <p className="text-4xl font-black text-bento-primary mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
+          <p className="text-3xl md:text-4xl font-black text-bento-primary mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
           <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_label')}</p>
+          
+          <button 
+            onClick={resetTodayRevenue}
+            className="absolute top-4 right-4 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
+            title="Reset Today's Revenue"
+          >
+            <X size={16} />
+          </button>
         </div>
 
-        <div className="card lg:col-span-2 accent-card !bg-bento-accent !text-bento-primary">
-          <div className="flex justify-between items-start mb-6">
+        <div className="card !p-6 lg:col-span-2 accent-card !bg-bento-accent !text-bento-primary">
+          <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-white/20 rounded-2xl">
-              <Users size={24} />
+              <Users size={20} />
             </div>
             <div className="text-right">
-              <p className="text-4xl font-black">{stats.totalUsers}</p>
+              <p className="text-3xl md:text-4xl font-black">{stats.totalUsers}</p>
               <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{t('registered_users')}</p>
             </div>
           </div>
-          <p className="text-sm font-medium opacity-80 mt-auto">
+          <p className="text-xs font-medium opacity-80 mt-auto">
             {t('community_growth_msg')}
           </p>
+        </div>
+      </div>
+
+      {/* Weekly Revenue Chart-like View */}
+      <div className="card !p-4 md:!p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h3 className="text-xl md:text-2xl font-black text-bento-primary uppercase italic tracking-tighter">Weekly Performance</h3>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mt-1">Revenue per day of the week</p>
+          </div>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button 
+              onClick={resetWeeklyRevenue}
+              className="flex-1 sm:flex-none px-3 py-2 bg-red-50 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all border border-red-100"
+            >
+              Reset Weekly
+            </button>
+            <button 
+              onClick={async () => {
+                if (!confirm('Clear ALL historic revenue data?')) return;
+                const toastId = toast.loading('Clearing all revenue...');
+                try {
+                  const revSnap = await getDocs(collection(db, 'dailyRevenue'));
+                  const batch = writeBatch(db);
+                  revSnap.docs.forEach(d => batch.delete(d.ref));
+                  await batch.commit();
+                  toast.success('All revenue data cleared.', { id: toastId });
+                  setWeeklyRevenue({});
+                  setStats(prev => ({ ...prev, todayRevenue: 0 }));
+                } catch (err) {
+                   toast.error('Failed to clear revenue', { id: toastId });
+                }
+              }}
+              className="flex-1 sm:flex-none px-3 py-2 bg-stone-900 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all"
+            >
+              Reset All Rev
+            </button>
+            <History className="hidden sm:block text-stone-200" size={32} />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1 md:gap-4 h-48 items-end">
+          {Array.from({ length: 7 }).map((_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - i));
+            const dateStr = date.toISOString().split('T')[0];
+            const amount = weeklyRevenue[dateStr] || 0;
+            const amounts = Object.values(weeklyRevenue) as number[];
+            const maxAmount = Math.max(...(amounts.length > 0 ? amounts : [0]), 100);
+            const heightPercent = Math.min((amount / maxAmount) * 100, 100);
+            const dayName = date.toLocaleDateString(undefined, { weekday: 'short' });
+            
+            return (
+              <div key={dateStr} className="flex flex-col items-center gap-3 group h-full justify-end">
+                <div className="relative w-full flex flex-col items-center justify-end h-full">
+                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-all bg-stone-900 text-white text-[8px] md:text-[10px] font-black px-2 py-1 rounded-lg z-10 whitespace-nowrap">
+                    {amount} MAD
+                  </div>
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: `${heightPercent}%` }}
+                    className={`w-full max-w-[40px] rounded-t-lg md:rounded-t-xl transition-all ${
+                      dateStr === new Date().toISOString().split('T')[0] 
+                        ? 'bg-bento-accent shadow-[0_0_15px_rgba(251,191,36,0.5)]' 
+                        : 'bg-stone-100 group-hover:bg-stone-200'
+                    }`}
+                  />
+                </div>
+                <div className="text-center overflow-hidden">
+                  <p className="text-[8px] md:text-[9px] font-black text-stone-400 uppercase tracking-tighter truncate">{dayName}</p>
+                  <p className="text-[7px] md:text-[8px] font-bold text-stone-300">{date.getDate()}/{date.getMonth() + 1}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -926,15 +992,8 @@ export default function AdminDashboard() {
                                        <Clock size={10} /> Placed: {orderTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                      </div>
                                      {deliveryTime && (
-                                       <div className="flex flex-col gap-1">
-                                         <div className="flex items-center gap-2 text-green-500">
-                                           <CheckCircle2 size={10} /> Delivered: {deliveryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                         </div>
-                                         {(order as any).readyInMinutes && (
-                                           <div className="flex items-center gap-2 text-amber-500">
-                                              <Timer size={10} /> Prepared in: {(order as any).readyInMinutes} mins
-                                           </div>
-                                         )}
+                                       <div className="flex items-center gap-2 text-green-500">
+                                         <CheckCircle2 size={10} /> Delivered: {deliveryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                        </div>
                                      )}
                                    </div>

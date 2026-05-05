@@ -107,6 +107,16 @@
         }
       },
       "description": "Menu products"
+    },
+    "/dailyRevenue/{date}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "number" },
+          "lastUpdated": { "type": "string", "format": "date-time" }
+        }
+      },
+      "description": "Daily revenue tracking"
     }
   }
 }

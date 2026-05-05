@@ -213,7 +213,15 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         createdAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'orders'), orderData);
+      const orderRef = await addDoc(collection(db, 'orders'), orderData);
+      
+      // Update Daily Revenue on confirmation
+      const today = new Date().toISOString().split('T')[0];
+      const revRef = doc(db, 'dailyRevenue', today);
+      await setDoc(revRef, {
+        amount: increment(total),
+        lastUpdated: serverTimestamp()
+      }, { merge: true });
       
       // Update User Profile with new point system
       if (!isGuest) {
@@ -229,8 +237,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
           loyaltyUpdates[`itemLoyalty.${item.productId}`] = increment(item.quantity);
         });
         
-        // Use setDoc with merge: true instead of updateDoc to ensure document exists
-        await setDoc(userRef, loyaltyUpdates, { merge: true });
+        await updateDoc(userRef, loyaltyUpdates);
       }
 
       localStorage.removeItem('cart');

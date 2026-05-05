@@ -121,5 +121,13 @@ service cloud.firestore {
                     
       allow delete: if isAdmin();
     }
+
+    // --- Daily Revenue ---
+    match /dailyRevenue/{date} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() || (isWaiter() && incoming().keys().hasAll(['amount', 'lastUpdated']));
+      allow update: if isAdmin() || (isWaiter() && incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'lastUpdated']));
+      allow delete: if isAdmin();
+    }
   }
 }
