@@ -4,7 +4,7 @@ import { collection, query, orderBy, onSnapshot, getDocs, getDoc, doc, setDoc, w
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, Timer } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -139,45 +139,52 @@ export default function AdminDashboard() {
     const confirmation = confirm('🚨 CRITICAL ACTION: This will PERMANENTLY DELETE all orders and RESET all customer points/loyalty to zero. This action cannot be reversed. Continue?');
     if (!confirmation) return;
     
-    const wipeId = toast.loading('Starting system-wide wipe...', { duration: 0 });
+    const wipeId = toast.loading('Attempting system-wide wipe...', { duration: 0 });
     try {
-      console.log("Starting full database wipe...");
+      console.log("Starting full database wipe operation...");
       
       // 1. Delete all orders
-      const ordersSnap = await getDocs(collection(db, 'orders'));
+      const ordersRef = collection(db, 'orders');
+      const ordersSnap = await getDocs(ordersRef);
       const orderDocs = ordersSnap.docs;
       console.log(`Found ${orderDocs.length} orders to delete.`);
       
-      for (let i = 0; i < orderDocs.length; i += 500) {
-        const batch = writeBatch(db);
-        const chunk = orderDocs.slice(i, i + 500);
-        chunk.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-        const deletedCount = Math.min(i + chunk.length, orderDocs.length);
-        toast.loading(`Orders: Deleted ${deletedCount}/${orderDocs.length}`, { id: wipeId });
-        console.log(`Deleted chunk ${i/500 + 1}. Total deleted: ${deletedCount}`);
+      if (orderDocs.length > 0) {
+        for (let i = 0; i < orderDocs.length; i += 500) {
+          const batch = writeBatch(db);
+          const chunk = orderDocs.slice(i, i + 500);
+          chunk.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+          const deletedCount = Math.min(i + chunk.length, orderDocs.length);
+          toast.loading(`Orders: Deleted ${deletedCount}/${orderDocs.length}`, { id: wipeId });
+        }
+      } else {
+        toast.loading('No orders to delete.', { id: wipeId });
       }
 
       // 2. Reset all users
-      const usersSnap = await getDocs(collection(db, 'users'));
+      const usersRef = collection(db, 'users');
+      const usersSnap = await getDocs(usersRef);
       const userDocs = usersSnap.docs;
       console.log(`Found ${userDocs.length} users to reset.`);
       
-      for (let i = 0; i < userDocs.length; i += 500) {
-        const batch = writeBatch(db);
-        const chunk = userDocs.slice(i, i + 500);
-        chunk.forEach(d => {
-          batch.update(d.ref, {
-            points: 0,
-            itemLoyalty: {},
-            coffeeCount: 0,
-            totalSpent: 0 // Adding this just in case
+      if (userDocs.length > 0) {
+        for (let i = 0; i < userDocs.length; i += 500) {
+          const batch = writeBatch(db);
+          const chunk = userDocs.slice(i, i + 500);
+          chunk.forEach(d => {
+            // We use update so we don't accidentally overwrite roles (admin/waiter status)
+            batch.update(d.ref, {
+              points: 0,
+              itemLoyalty: {},
+              coffeeCount: 0,
+              totalSpent: 0
+            });
           });
-        });
-        await batch.commit();
-        const resetCount = Math.min(i + chunk.length, userDocs.length);
-        toast.loading(`Users: Reset ${resetCount}/${userDocs.length}`, { id: wipeId });
-        console.log(`Reset chunk ${i/500 + 1}. Total reset: ${resetCount}`);
+          await batch.commit();
+          const resetCount = Math.min(i + chunk.length, userDocs.length);
+          toast.loading(`Users: Reset ${resetCount}/${userDocs.length}`, { id: wipeId });
+        }
       }
       
       const clientsOnlyCount = userDocs.filter(d => {
@@ -185,17 +192,20 @@ export default function AdminDashboard() {
         return !data.isAdmin && !data.isWaiter && !data.isDriver;
       }).length;
       
-      toast.success('System reset complete! All orders deleted and points zeroed out.', { id: wipeId });
+      toast.success('System wipe complete! Everything reset to zero.', { id: wipeId });
       
-      // Refresh local UI
+      // Refresh local UI state immediately
       setUsers(prev => prev.map(u => ({ ...u, points: 0, itemLoyalty: {}, coffeeCount: 0 })));
-      setStats(prev => ({ ...prev, todayRevenue: 0, activeOrders: 0, totalUsers: clientsOnlyCount }));
-      setIsEmpty(false); // Make sure it doesn't think it's empty of categories
+      setStats(prev => ({ 
+        ...prev, 
+        todayRevenue: 0, 
+        activeOrders: 0, 
+        totalUsers: clientsOnlyCount 
+      }));
       
     } catch (err) {
       console.error("CRITICAL WIPE ERROR:", err);
-      handleFirestoreError(err, OperationType.WRITE, 'global_wipe');
-      toast.error('Wipe failed! Check internet and admin permissions.', { id: wipeId });
+      toast.error('Wipe failed: ' + (err instanceof Error ? err.message : 'Unknown error'), { id: wipeId });
     }
   };
 
@@ -916,8 +926,15 @@ export default function AdminDashboard() {
                                        <Clock size={10} /> Placed: {orderTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                      </div>
                                      {deliveryTime && (
-                                       <div className="flex items-center gap-2 text-green-500">
-                                         <CheckCircle2 size={10} /> Delivered: {deliveryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                       <div className="flex flex-col gap-1">
+                                         <div className="flex items-center gap-2 text-green-500">
+                                           <CheckCircle2 size={10} /> Delivered: {deliveryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                         </div>
+                                         {(order as any).readyInMinutes && (
+                                           <div className="flex items-center gap-2 text-amber-500">
+                                              <Timer size={10} /> Prepared in: {(order as any).readyInMinutes} mins
+                                           </div>
+                                         )}
                                        </div>
                                      )}
                                    </div>

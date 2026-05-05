@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { OrderItem, OrderStatus, UserProfile } from '../types';
 import { Minus, Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle, Coffee } from 'lucide-react';
@@ -229,7 +229,8 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
           loyaltyUpdates[`itemLoyalty.${item.productId}`] = increment(item.quantity);
         });
         
-        await updateDoc(userRef, loyaltyUpdates);
+        // Use setDoc with merge: true instead of updateDoc to ensure document exists
+        await setDoc(userRef, loyaltyUpdates, { merge: true });
       }
 
       localStorage.removeItem('cart');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
 import { awardOrderPoints } from '../../services/orderService';
@@ -56,12 +56,11 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
       const targetDate = new Date(startTime.getTime() + (prepTime || 30) * 60000);
       let diff = Math.floor((targetDate.getTime() - Date.now()) / 1000);
       
-      // SANITY CHECK: If diff is impossibly large (e.g. > 1 week or something crazy like 53K minutes)
-      // it means there is a massive clock drift. We cap it to the prepTime.
-      if (diff > (prepTime || 30) * 60) {
-        // Clock drift detected (likely user local time is in the past)
-        // We set it to the max prepTime to avoid scaring the waiter
-        diff = (prepTime || 30) * 60;
+      // SANITY CHECK: Only cap if the difference is ABSURD (e.g. > 2 hours for a 30 min prep)
+      // This prevents the timer from getting stuck due to minor clock drifts (1-2 minutes)
+      const maxAllowedDiff = (prepTime || 30) * 60 + 600; // prepTime + 10 mins buffer
+      if (diff > maxAllowedDiff) {
+        diff = maxAllowedDiff;
       }
       
       setTimeLeft(diff);
@@ -184,6 +183,15 @@ export default function WaiterDashboard() {
         updateData.preparingAt = serverTimestamp();
       } else if (newStatus === 'ready') {
         updateData.readyAt = serverTimestamp();
+        
+        // Calculate ready time for admin stats
+        const orderSnap = await getDoc(orderRef);
+        if (orderSnap.exists()) {
+          const orderData = orderSnap.data();
+          const createdAt = orderData.createdAt?.toDate ? orderData.createdAt.toDate() : new Date(orderData.createdAt);
+          const diffMs = Date.now() - createdAt.getTime();
+          updateData.readyInMinutes = Math.round(diffMs / 60000);
+        }
       }
 
       await updateDoc(orderRef, updateData);
