@@ -80,18 +80,19 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   if (isGuest) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
-      <div className="absolute inset-0 z-0">
         {brand.profileBgUrl && (
-          <OptimizedImage 
-            priority
-            src={brand.profileBgUrl} 
-            containerClassName="w-full h-full"
-            className="w-full h-full object-cover" 
-            alt=""
-          />
+          <div className="fixed inset-0 z-0">
+            <OptimizedImage 
+              priority
+              src={brand.profileBgUrl} 
+              containerClassName="w-full h-full"
+              className="w-full h-full object-cover" 
+              alt=""
+              showOverlay={true}
+              overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
+            />
+          </div>
         )}
-        <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
-      </div>
 
         <div className="relative z-10 flex flex-col items-center">
           <div className="p-8 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-6 ring-1 ring-white/20">
@@ -129,19 +130,19 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   return (
     <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative flex flex-col gap-10">
       {/* Immersive Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none bg-stone-900">
-        {brand.profileBgUrl && (
+      {brand.profileBgUrl && (
+        <div className="fixed inset-0 z-0">
           <OptimizedImage 
             priority
             src={brand.profileBgUrl} 
             containerClassName="w-full h-full"
-            className="w-full h-full object-cover fixed top-0 left-0" 
+            className="w-full h-full object-cover" 
             alt=""
+            showOverlay={true}
+            overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
           />
-        )}
-        <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-[1px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent" />
-      </div>
+        </div>
+      )}
 
       <div className="relative z-10 space-y-12 max-w-5xl mx-auto">
         <div className="flex justify-between items-start">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, ImageOff } from 'lucide-react';
+import { Loader2, Coffee } from 'lucide-react';
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src?: string;
@@ -11,6 +11,7 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   priority?: boolean;
   referrerPolicy?: React.HTMLAttributeReferrerPolicy;
   showOverlay?: boolean;
+  overlayClassName?: string;
 }
 
 export default function OptimizedImage({ 
@@ -21,6 +22,7 @@ export default function OptimizedImage({
   fallbackSrc,
   priority = false,
   showOverlay = true,
+  overlayClassName = 'bg-gradient-to-tr from-stone-950/10 via-transparent to-white/5',
   ...props 
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -85,8 +87,12 @@ export default function OptimizedImage({
             animate={{ opacity: 1 }}
             className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-stone-900/40 p-4 text-center z-10"
           >
-            <ImageOff className="w-8 h-8 text-stone-300 mb-2" />
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Image Failed</p>
+            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-2">
+              <Coffee className="w-5 h-5 text-stone-700 dark:text-stone-700" />
+            </div>
+            <p className="text-[8px] font-black text-stone-700 dark:text-stone-800 uppercase tracking-[0.2em] italic">
+              CAPPUCCINO 7
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -114,7 +120,7 @@ export default function OptimizedImage({
 
       {/* Decorative inner shadow for "sinking in" effect - only show if requested */}
       {showOverlay && (
-        <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/5 bg-gradient-to-tr from-stone-950/10 via-transparent to-white/5" />
+        <div className={`absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/5 ${overlayClassName}`} />
       )}
     </div>
   );

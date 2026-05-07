@@ -221,26 +221,52 @@ export default function AdminDashboard() {
     try {
       // 1. Define Structure
       const categories = [
-        { id: 'coffee', name: '☕ COFFEE / HOT DRINKS (Les boissons)', order: 1 },
-        { id: 'tea', name: '🍵 THÉ & INFUSIONS', order: 2 },
-        { id: 'special-hot', name: '🔥 SPECIAL HOT DRINKS', order: 3 },
-        { id: 'iced-latte', name: '🧊 ICED LATTE', order: 4 },
-        { id: 'ice-tea', name: '🧊 ICE TEA', order: 5 },
-        { id: 'juices', name: '🥤 JUS (JUICES)', order: 6 },
-        { id: 'frappuccino', name: '🧋 FRAPPUCCINOS COFFEE', order: 7 },
-        { id: 'milkshakes', name: '🥤 MILKSHAKES', order: 8 },
-        { id: 'smoothies', name: '🥤 SMOOTHIES', order: 9 },
-        { id: 'mojitos', name: '🍹 MOJITOS', order: 10 },
-        { id: 'salads', name: '🥗 SALADS', order: 11 },
-        { id: 'burgers', name: '🍔 Burgers', order: 12 },
-        { id: 'sandwiches', name: '🥪 Sandwiches', order: 13 },
-        { id: 'pizza', name: '🍕 PIZZA', order: 14 },
-        { id: 'plats-gourmands', name: '🥘 PLATS GOURMANDS', order: 15 },
-        { id: 'pates', name: '🍝 PÂTES', order: 16 },
-        { id: 'crepes-desserts', name: '🥞 Crêpes & Desserts', order: 17 }
+        { id: 'breakfast', name: '🥐 PETIT DÉJEUNER (Breakfast)', order: 0 },
+        { id: 'petites-faims', name: '🍳 PETITES FAIMS', order: 1 },
+        { id: 'coffee', name: '☕ COFFEE / HOT DRINKS (Les boissons)', order: 2 },
+        { id: 'tea', name: '🍵 THÉ & INFUSIONS', order: 3 },
+        { id: 'special-hot', name: '🔥 SPECIAL HOT DRINKS', order: 4 },
+        { id: 'iced-latte', name: '🧊 ICED LATTE', order: 5 },
+        { id: 'ice-tea', name: '🧊 ICE TEA', order: 6 },
+        { id: 'juices', name: '🥤 JUS (JUICES)', order: 7 },
+        { id: 'frappuccino', name: '🧋 FRAPPUCCINOS COFFEE', order: 8 },
+        { id: 'milkshakes', name: '🥤 MILKSHAKES', order: 9 },
+        { id: 'smoothies', name: '🥤 SMOOTHIES', order: 10 },
+        { id: 'mojitos', name: '🍹 MOJITOS', order: 11 },
+        { id: 'salads', name: '🥗 SALADS', order: 12 },
+        { id: 'burgers', name: '🍔 Burgers', order: 13 },
+        { id: 'sandwiches', name: '🥪 Sandwiches', order: 14 },
+        { id: 'pizza', name: '🍕 PIZZA', order: 15 },
+        { id: 'plats-gourmands', name: '🥘 PLATS GOURMANDS', order: 16 },
+        { id: 'pates', name: '🍝 PÂTES', order: 17 },
+        { id: 'crepes-desserts', name: '🥞 Crêpes & Desserts', order: 18 },
+        { id: 'healthy-food', name: '🥗 HEALTHY FOOD', order: 19 },
+        { id: 'extras', name: '➕ EXTRAS', order: 20 }
       ];
 
       const productsData: Record<string, any[]> = {
+        'breakfast': [
+          { name: 'Occidental', price: 38 },
+          { name: 'Amazigh', price: 45 },
+          { name: 'Gourmand', price: 48 },
+          { name: 'Ftour Fassi', price: 45 },
+          { name: 'Ftour Chamali', price: 58 },
+          { name: 'Omelette Spéciale', price: 48 },
+          { name: 'Cappuccino7 Breakfast', price: 68 },
+          { name: 'Healthy Breakfast', price: 60 },
+          { name: 'Turkie', price: 68 },
+          { name: 'Anglais', price: 85 },
+          { name: 'Brunch (1 personne)', price: 87, s: 'brunch' },
+          { name: 'Brunch (2 personnes)', price: 150, s: 'brunch' }
+        ],
+        'petites-faims': [
+          { name: 'Omlette nature', price: 20 },
+          { name: 'Omlette Fromage', price: 25 },
+          { name: 'Omlette Fromage Champignion', price: 28 },
+          { name: 'Beghrir Amlou', price: 30 },
+          { name: 'Croque Monsieur', price: 35 },
+          { name: 'Croque Madame', price: 35 }
+        ],
         'coffee': [
           { name: 'Lait chaude', price: 14 },
           { name: 'Espresso', price: 14 },
@@ -377,6 +403,20 @@ export default function AdminDashboard() {
           { name: 'Fromage Mozerella', price: 42, s: 'crepes_salees' },
           { name: 'Dinde fumée', price: 48, s: 'crepes_salees' },
           { name: 'Poulet Champignon', price: 54, s: 'crepes_salees' }
+        ],
+        'healthy-food': [
+          { name: 'Salade de Quinoa', price: 45 },
+          { name: 'Bowl Poulet Grillé', price: 55 },
+          { name: 'Smoothie Vert Détox', price: 35 }
+        ],
+        'extras': [
+          { name: 'Frite', price: 15 },
+          { name: 'Fromage', price: 5 },
+          { name: 'Oeuf', price: 5 },
+          { name: 'Dinde', price: 7 },
+          { name: 'Viande hachée', price: 10 },
+          { name: 'Poulet', price: 10 },
+          { name: 'Champignon', price: 7 }
         ]
       };
 
@@ -404,13 +444,21 @@ export default function AdminDashboard() {
         });
       }
 
+      // 3. Preserve brand settings - only set defaults if they don't exist
       const brandRef = doc(db, 'settings', 'brand');
-      batch.set(brandRef, {
-        logoUrl: 'https://images.unsplash.com/photo-1541167760496-162955ed8a4f?w=800&q=80',
-        heroImageUrl: 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=80&w=1600&auto=format&fit=crop',
-        loginBgUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600&auto=format&fit=crop',
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+      const brandSnap = await getDoc(brandRef);
+      
+      if (!brandSnap.exists()) {
+        batch.set(brandRef, {
+          logoUrl: 'https://images.unsplash.com/photo-1541167760496-162955ed8a4f?w=800&q=80',
+          heroImageUrl: 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=80&w=1600&auto=format&fit=crop',
+          loginBgUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600&auto=format&fit=crop',
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        // If it exists, only update updatedAt to show sync happened
+        batch.set(brandRef, { updatedAt: new Date().toISOString() }, { merge: true });
+      }
 
       await batch.commit();
       
@@ -428,11 +476,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
       const autoSync = async () => {
-        const hasSync = localStorage.getItem('menu_auto_sync_v24');
+        const hasSync = localStorage.getItem('menu_auto_sync_v29');
         if (!hasSync) {
           console.log("AI Studio: Automatically syncing your requested menu items...");
           await initializeDatabase(true);
-          localStorage.setItem('menu_auto_sync_v24', 'true');
+          localStorage.setItem('menu_auto_sync_v29', 'true');
         }
       };
       autoSync();
