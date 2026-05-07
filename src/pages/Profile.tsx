@@ -253,51 +253,76 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             </div>
           </motion.div>
 
-          {/* Global Coffee Loyalty */}
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-2 bg-stone-900/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-white/10 shadow-2xl overflow-hidden relative flex flex-col justify-between text-white group"
-          >
-            <div className="relative z-10">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="p-4 bg-white/5 rounded-2xl ring-1 ring-white/10">
-                  <Coffee size={28} className="text-amber-400" />
+            {/* Global Coffee Loyalty */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="lg:col-span-2 bg-stone-900/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-white/10 shadow-2xl overflow-hidden relative flex flex-col justify-between text-white group"
+            >
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-4 bg-white/5 rounded-2xl ring-1 ring-white/10">
+                    <Coffee size={28} className="text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight italic">Coffee Club</h3>
+                    <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Exclusive Membership Rewards</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black uppercase tracking-tight italic">Coffee Club</h3>
-                  <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Exclusive Membership Rewards</p>
-                </div>
-              </div>
-              <div className="flex items-end gap-8">
-                <motion.p 
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.4, type: "spring", bounce: 0.5 }}
-                  className="text-[10rem] font-black leading-none tracking-tighter tabular-nums drop-shadow-2xl"
-                >
-                  {userProfile.coffeeCount || 0}
-                </motion.p>
-                <div className="mb-6 space-y-4">
-                  <p className="text-sm font-bold opacity-60 leading-tight max-w-[120px] italic">{t('total_artisan')}</p>
-                  <div className="flex gap-2">
-                     {[...Array(5)].map((_, i) => (
-                       <motion.div 
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.6 + (i * 0.1) }}
-                        key={i} 
-                        className={`w-3 h-3 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)]' : 'bg-white/10 ring-1 ring-white/10'}`} 
-                       />
-                     ))}
+                <div className="flex items-end gap-8">
+                  <motion.p 
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.4, type: "spring", bounce: 0.5 }}
+                    className="text-[10rem] font-black leading-none tracking-tighter tabular-nums drop-shadow-2xl"
+                  >
+                    {userProfile.coffeeCount || 0}
+                  </motion.p>
+                  <div className="mb-6 space-y-4">
+                    <p className="text-sm font-bold opacity-60 leading-tight max-w-[120px] italic">{t('total_artisan')}</p>
+                    <div className="flex gap-2">
+                       {[...Array(5)].map((_, i) => (
+                         <motion.div 
+                          initial={{ opacity: 0, scale: 0 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.6 + (i * 0.1) }}
+                          key={i} 
+                          className={`w-3 h-3 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)]' : 'bg-white/10 ring-1 ring-white/10'}`} 
+                         />
+                       ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <Coffee size={240} className="absolute -right-20 -bottom-20 opacity-5 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
-          </motion.div>
-        </div>
+              <Coffee size={240} className="absolute -right-20 -bottom-20 opacity-5 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
+            </motion.div>
+
+            {/* Rate Us Card */}
+            {(brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida') && (
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                onClick={() => window.open(brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida', '_blank')}
+                className="lg:col-span-3 bg-amber-400 rounded-[3rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl group"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 bg-stone-900 rounded-[2rem] flex items-center justify-center text-amber-400 shadow-xl group-hover:rotate-12 transition-transform">
+                    <Star size={40} className="fill-amber-400" />
+                  </div>
+                  <div className="text-stone-900">
+                    <h3 className="text-3xl font-black uppercase tracking-tight italic leading-tight">Love the food?</h3>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] opacity-60">Rate us on Google Maps</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 bg-stone-900 text-white px-8 py-5 rounded-[1.5rem] font-black uppercase text-xs tracking-widest group-hover:px-10 transition-all">
+                  Rate Us Now
+                  <ChevronRight size={18} />
+                </div>
+              </motion.div>
+            )}
+          </div>
 
         {/* Item-Specific Loyalty Rewards */}
         <div className="space-y-8">

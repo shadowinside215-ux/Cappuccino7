@@ -10,6 +10,13 @@ export interface BrandSettings {
   profileBgUrl?: string;
   loginBgUrl?: string;
   updatedAt?: string;
+  // Review Popup Settings
+  reviewPopupEnabled?: boolean;
+  reviewPopupFrequencyDays?: number;
+  reviewPopupTitle?: string;
+  reviewPopupSubtitle?: string;
+  reviewPopupStatsClicks?: number;
+  googleMapsLink?: string;
 }
 
 const DEFAULT_LOGO = 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=200';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { ArrowLeft, Upload, Loader2, Image as ImageIcon, Save } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, Image as ImageIcon, Save, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import OptimizedImage from '../../components/ui/OptimizedImage';
@@ -13,6 +13,12 @@ export default function BrandSettings() {
   const [ordersBgUrl, setOrdersBgUrl] = useState('');
   const [profileBgUrl, setProfileBgUrl] = useState('');
   const [loginBgUrl, setLoginBgUrl] = useState('');
+  const [reviewPopupEnabled, setReviewPopupEnabled] = useState(true);
+  const [reviewPopupFrequencyDays, setReviewPopupFrequencyDays] = useState(7);
+  const [reviewPopupTitle, setReviewPopupTitle] = useState('Enjoying Cappuccino7?');
+  const [reviewPopupSubtitle, setReviewPopupSubtitle] = useState('Your support helps us grow. Leave us a quick 5-star review on Google Maps.');
+  const [googleMapsLink, setGoogleMapsLink] = useState('https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida');
+  const [reviewPopupStatsClicks, setReviewPopupStatsClicks] = useState(0);
   const [activeUpload, setActiveUpload] = useState<'logo' | 'hero' | 'cart' | 'orders' | 'profile' | 'login' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +42,12 @@ export default function BrandSettings() {
           setOrdersBgUrl(data.ordersBgUrl || '');
           setProfileBgUrl(data.profileBgUrl || '');
           setLoginBgUrl(data.loginBgUrl || '');
+          setReviewPopupEnabled(data.reviewPopupEnabled ?? true);
+          setReviewPopupFrequencyDays(data.reviewPopupFrequencyDays || 7);
+          setReviewPopupTitle(data.reviewPopupTitle || 'Enjoying Cappuccino7?');
+          setReviewPopupSubtitle(data.reviewPopupSubtitle || 'Your support helps us grow. Leave us a quick 5-star review on Google Maps.');
+          setGoogleMapsLink(data.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida');
+          setReviewPopupStatsClicks(data.reviewPopupStatsClicks || 0);
         }
       } catch (err) {
         console.error('Error fetching brand settings:', err);
@@ -116,8 +128,13 @@ export default function BrandSettings() {
         ordersBgUrl,
         profileBgUrl,
         loginBgUrl,
+        reviewPopupEnabled,
+        reviewPopupFrequencyDays: Number(reviewPopupFrequencyDays),
+        reviewPopupTitle,
+        reviewPopupSubtitle,
+        googleMapsLink,
         updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
       toast.success('Brand settings saved!');
     } catch (err) {
       console.error('Error saving brand settings:', err);
@@ -266,9 +283,7 @@ export default function BrandSettings() {
             </div>
           </div>
 
-          {/* Page Backgrounds */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
-            {/* Cart Bg */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="card space-y-4">
               <h3 className="font-bold text-sm flex items-center gap-2">
                 <ImageIcon size={16} className="text-stone-400" />
@@ -290,7 +305,6 @@ export default function BrandSettings() {
               <input type="text" value={cartBgUrl} onChange={e => setCartBgUrl(e.target.value)} placeholder="Cart Image URL" className="w-full bg-stone-50 border border-stone-100 rounded-xl p-2 text-[10px] outline-none" />
             </div>
 
-            {/* Orders Bg */}
             <div className="card space-y-4">
               <h3 className="font-bold text-sm flex items-center gap-2">
                 <ImageIcon size={16} className="text-stone-400" />
@@ -312,7 +326,6 @@ export default function BrandSettings() {
               <input type="text" value={ordersBgUrl} onChange={e => setOrdersBgUrl(e.target.value)} placeholder="Orders Image URL" className="w-full bg-stone-50 border border-stone-100 rounded-xl p-2 text-[10px] outline-none" />
             </div>
 
-            {/* Profile Bg */}
             <div className="card space-y-4">
               <h3 className="font-bold text-sm flex items-center gap-2">
                 <ImageIcon size={16} className="text-stone-400" />
@@ -334,7 +347,6 @@ export default function BrandSettings() {
               <input type="text" value={profileBgUrl} onChange={e => setProfileBgUrl(e.target.value)} placeholder="Profile Image URL" className="w-full bg-stone-50 border border-stone-100 rounded-xl p-2 text-[10px] outline-none" />
             </div>
 
-            {/* Login Bg */}
             <div className="card space-y-4">
               <h3 className="font-bold text-sm flex items-center gap-2">
                 <ImageIcon size={16} className="text-stone-400" />
@@ -357,7 +369,7 @@ export default function BrandSettings() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 py-4">
             <button 
               onClick={handleSave}
               disabled={isSaving || !!activeUpload}
@@ -366,6 +378,75 @@ export default function BrandSettings() {
               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
               Save Changes
             </button>
+          </div>
+
+          <div className="card space-y-8 bg-amber-50/30 dark:bg-amber-900/5 border-amber-100/50 dark:border-amber-900/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <Star size={20} className="text-amber-600 fill-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-tight">Review Popup</h2>
+                  <p className="text-[10px] font-bold text-amber-800/60 dark:text-amber-400/60 uppercase tracking-widest">Google Maps Integration</p>
+                </div>
+              </div>
+              <div 
+                onClick={() => setReviewPopupEnabled(!reviewPopupEnabled)}
+                className={`w-14 h-8 rounded-full transition-all cursor-pointer relative ${reviewPopupEnabled ? 'bg-amber-600' : 'bg-stone-200'}`}
+              >
+                <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-all ${reviewPopupEnabled ? 'left-7' : 'left-1'}`} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Popup Title</label>
+                  <input 
+                    type="text" 
+                    value={reviewPopupTitle} 
+                    onChange={e => setReviewPopupTitle(e.target.value)}
+                    className="w-full bg-white dark:bg-stone-800 border border-stone-100 dark:border-white/5 rounded-xl p-4 text-sm font-bold shadow-sm" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Popup Subtitle</label>
+                  <textarea 
+                    value={reviewPopupSubtitle} 
+                    onChange={e => setReviewPopupSubtitle(e.target.value)}
+                    rows={3}
+                    className="w-full bg-white dark:bg-stone-800 border border-stone-100 dark:border-white/5 rounded-xl p-4 text-sm font-medium shadow-sm" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Google Maps Review Link</label>
+                  <input 
+                    type="text" 
+                    value={googleMapsLink} 
+                    onChange={e => setGoogleMapsLink(e.target.value)}
+                    className="w-full bg-white dark:bg-stone-800 border border-stone-100 dark:border-white/5 rounded-xl p-4 text-xs font-mono shadow-sm" 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Frequency (Show every X days)</label>
+                  <input 
+                    type="number" 
+                    value={reviewPopupFrequencyDays} 
+                    onChange={e => setReviewPopupFrequencyDays(parseInt(e.target.value))}
+                    className="w-full bg-white dark:bg-stone-800 border border-stone-100 dark:border-white/5 rounded-xl p-4 text-sm font-bold shadow-sm" 
+                  />
+                </div>
+
+                <div className="p-6 bg-amber-100/50 dark:bg-amber-900/20 rounded-[2rem] border border-amber-200 dark:border-amber-900/30 flex flex-col items-center text-center">
+                  <p className="text-[10px] font-black text-amber-800 dark:text-amber-400 uppercase tracking-widest mb-1">Total Review Clicks</p>
+                  <p className="text-4xl font-black text-amber-950 dark:text-amber-100">{reviewPopupStatsClicks}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -384,7 +465,7 @@ export default function BrandSettings() {
                     showOverlay={false}
                   />
                 </div>
-                <span className="font-black italic uppercase tracking-tighter text-sm text-bento-primary">Cappuccino7</span>
+                <span className="font-black italic uppercase tracking-tighter text-sm">Cappuccino7</span>
               </div>
 
               <div className="p-8 bg-white rounded-3xl shadow-lg flex flex-col items-center gap-4">

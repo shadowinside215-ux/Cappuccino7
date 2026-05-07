@@ -205,10 +205,12 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         estimatedReadyAt: estimatedReadyAt,
         address: address || (deliveryType === 'dine-in' ? 'Palace Taha (Eat-in)' : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
         deliveryNotes,
-        location: finalLocation ? {
-          lat: finalLocation.lat,
-          lng: finalLocation.lng
-        } : undefined,
+        ...(finalLocation ? {
+          location: {
+            lat: finalLocation.lat,
+            lng: finalLocation.lng
+          }
+        } : {}),
         pointsEarned: pointsEarned,
         createdAt: serverTimestamp()
       };
@@ -247,6 +249,8 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       }
 
       localStorage.removeItem('cart');
+      localStorage.setItem('review_trigger_order_completed', Date.now().toString());
+      window.dispatchEvent(new Event('order_completed'));
       setItems([]);
       
       if (isGuest) {

@@ -30,6 +30,7 @@ import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
+import ReviewPopup from './components/ReviewPopup';
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
   const [isAdminDocument, setIsAdminDocument] = useState<boolean | null>(null);
@@ -438,6 +439,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
+      <ReviewPopup />
       <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 ${isWaiter || isLoginPage ? '!max-w-none !p-0 !pt-0' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
