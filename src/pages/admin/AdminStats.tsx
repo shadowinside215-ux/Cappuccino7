@@ -239,52 +239,51 @@ export default function AdminStats() {
               <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Last 14 days performance</p>
             </div>
           </div>
-          <div className="h-80 min-h-[320px] w-full min-w-0 overflow-hidden relative">
-            {mounted && (
-              <ResponsiveContainer width="100%" height={320}>
-                <AreaChart data={chartData}>
-                  {/* ... AreaChart contents ... */}
-                  <defs>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#fbbf24" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 700, fill: '#A8A29E' }} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 700, fill: '#A8A29E' }} 
-                  />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#fbbf24" 
-                    strokeWidth={4} 
-                    fillOpacity={1} 
-                    fill="url(#colorRev)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+            <div className="h-80 w-full min-w-0" style={{ position: 'relative', minHeight: '320px' }}>
+              {mounted && (
+                <ResponsiveContainer width="99.9%" height={320}>
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#fbbf24" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#A8A29E' }} 
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#A8A29E' }} 
+                    />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#fbbf24" 
+                      strokeWidth={4} 
+                      fillOpacity={1} 
+                      fill="url(#colorRev)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
         </div>
 
         <div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] shadow-sm border border-stone-100">
            <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tighter mb-6">Activity Peak</h3>
-           <div className="h-80 min-h-[320px] w-full min-w-0 flex items-center justify-center overflow-hidden relative">
+           <div className="h-80 w-full min-w-0" style={{ position: 'relative', minHeight: '320px' }}>
              {mounted && (
-               <ResponsiveContainer width="100%" height={320}>
+               <ResponsiveContainer width="99.9%" height={320}>
                  <BarChart data={chartData}>
                     <XAxis dataKey="name" hide />
                     <Tooltip 

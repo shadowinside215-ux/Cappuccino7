@@ -17,7 +17,7 @@ export default function BrandSettings() {
   const [reviewPopupFrequencyDays, setReviewPopupFrequencyDays] = useState(7);
   const [reviewPopupTitle, setReviewPopupTitle] = useState('Enjoying Cappuccino7?');
   const [reviewPopupSubtitle, setReviewPopupSubtitle] = useState('Your support helps us grow. Leave us a quick 5-star review on Google Maps.');
-  const [googleMapsLink, setGoogleMapsLink] = useState('https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida');
+  const [googleMapsLink, setGoogleMapsLink] = useState('https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida');
   const [reviewPopupStatsClicks, setReviewPopupStatsClicks] = useState(0);
   const [activeUpload, setActiveUpload] = useState<'logo' | 'hero' | 'cart' | 'orders' | 'profile' | 'login' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -46,7 +46,7 @@ export default function BrandSettings() {
           setReviewPopupFrequencyDays(data.reviewPopupFrequencyDays || 7);
           setReviewPopupTitle(data.reviewPopupTitle || 'Enjoying Cappuccino7?');
           setReviewPopupSubtitle(data.reviewPopupSubtitle || 'Your support helps us grow. Leave us a quick 5-star review on Google Maps.');
-          setGoogleMapsLink(data.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida');
+          setGoogleMapsLink(data.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida');
           setReviewPopupStatsClicks(data.reviewPopupStatsClicks || 0);
         }
       } catch (err) {

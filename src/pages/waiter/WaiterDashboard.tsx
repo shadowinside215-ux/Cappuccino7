@@ -16,7 +16,8 @@ import {
   Plus,
   Users,
   ShoppingBag,
-  Search
+  Search,
+  Gift
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 
 // Dedicated Order Timer Component
 function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
+  const { t } = useTranslation();
   const [elapsed, setElapsed] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
@@ -49,33 +51,17 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
         setElapsed(Math.floor((now - createdDate.getTime()) / 1000));
       }
 
-      // 2. Calculate Time Left if preparing
-      if (status === 'preparing') {
-        let startTime: Date | null = null;
-        if (preparingAt) {
-          if (typeof preparingAt.toDate === 'function') {
-            startTime = preparingAt.toDate();
-          } else if (preparingAt instanceof Date) {
-            startTime = preparingAt;
-          } else if (typeof preparingAt === 'object' && preparingAt.seconds) {
-            startTime = new Date(preparingAt.seconds * 1000);
-          } else {
-            startTime = new Date(preparingAt);
-          }
-        }
-        
-        if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
-          // Fallback if timestamp hasn't synced yet
-          setTimeLeft(30 * 60);
-        } else {
-          const targetDate = new Date(startTime.getTime() + 30 * 60000); // Forced 30 minutes for consistency
-          let diff = Math.floor((targetDate.getTime() - now) / 1000);
-          
-          // Cap reasonable drift and fix 91 min bug
-          if (diff > 1800 || diff < -3600 || Math.abs(diff) > 86400) diff = 30 * 60;
-          
-          setTimeLeft(diff);
-        }
+      // 2. Calculate Countdown Time
+      // We start countdown from createdAt or preparingAt?
+      // User says "timer starts", usually implies it starts when order is placed or accepted.
+      // Let's make it start from createdAt for the total service goal.
+      const startTime = createdDate;
+      const durationMins = prepTime || 30;
+      
+      if (startTime && !isNaN(startTime.getTime()) && status !== 'delivered' && status !== 'cancelled') {
+        const targetDate = new Date(startTime.getTime() + durationMins * 60000);
+        let diff = Math.floor((targetDate.getTime() - now) / 1000);
+        setTimeLeft(diff);
       } else {
         setTimeLeft(null);
       }
@@ -93,22 +79,24 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const isPreparing = status === 'preparing';
+  const isActive = status !== 'delivered' && status !== 'cancelled';
   
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center px-1">
         <div className="flex flex-col">
           <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">
-            {isPreparing ? 'Time Remaining' : 'Wait Time'}
+            {isActive ? t('time_remaining') : t('final_duration')}
           </span>
           <div className="flex items-center gap-2 text-stone-900">
             <Clock size={12} className="text-amber-500" />
-            <span className="text-sm font-black tabular-nums">{isPreparing ? (timeLeft !== null ? formatSecs(timeLeft) : '--:--') : formatSecs(elapsed)}</span>
+            <span className="text-sm font-black tabular-nums">
+              {isActive ? (timeLeft !== null ? formatSecs(timeLeft) : '--:--') : formatSecs(elapsed)}
+            </span>
           </div>
         </div>
         
-        {isPreparing && timeLeft !== null && (
+        {isActive && timeLeft !== null && (
           <div className="text-right">
              <span className={`text-lg font-black tabular-nums ${timeLeft < 0 ? 'text-red-500 animate-pulse' : 'text-stone-900'}`}>
                {timeLeft < 0 ? '-' : ''}{formatSecs(timeLeft)}
@@ -117,7 +105,7 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
         )}
       </div>
 
-      {isPreparing && (
+      {isActive && (
         <div className="h-2 bg-stone-100 rounded-full overflow-hidden border border-stone-200">
           <motion.div 
             initial={{ width: 0 }}
@@ -347,9 +335,31 @@ export default function WaiterDashboard() {
                     }`}
                   >
                     <div className="mb-6">
-                      <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest mb-1">Customer</p>
+                      <div className="flex justify-between items-start mb-1">
+                        <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">Customer</p>
+                        {(() => {
+                          const client = clients.find(c => c.uid === order.userId);
+                          const hasReward = client?.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11);
+                          if (hasReward) {
+                            return (
+                              <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-3 py-1 rounded-full animate-bounce shadow-lg">
+                                <Gift size={12} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Reward Ready</span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
                       <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
-                      <p className="text-[10px] font-bold text-stone-400 mt-1">Ordered at: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                          order.deliveryType === 'pickup' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'
+                        }`}>
+                          {order.deliveryType === 'pickup' ? t('takeaway') : t('in_place')}
+                        </span>
+                        <p className="text-[10px] font-bold text-stone-300">Ordered at: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}</p>
+                      </div>
                     </div>
 
                     <div className="bg-stone-50 rounded-[2rem] p-6 space-y-4 mb-6">
@@ -467,7 +477,17 @@ export default function WaiterDashboard() {
                               return <span className="text-xs text-stone-400">No active orders</span>;
                             })()}
                          </td>
-                         <td className="px-8 py-6 text-sm font-black text-stone-900">{client.points} pts</td>
+                         <td className="px-8 py-6">
+                            <div className="flex flex-col gap-1">
+                               <div className="text-sm font-black text-stone-900">{client.points} pts</div>
+                               {client.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11) && (
+                                 <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-2 py-0.5 rounded-lg w-fit">
+                                   <Gift size={10} />
+                                   <span className="text-[8px] font-black uppercase tracking-tight">Reward Ready</span>
+                                 </div>
+                               )}
+                            </div>
+                         </td>
                          <td className="px-8 py-6 text-sm font-bold text-stone-500">{client.email}</td>
                          <td className="px-8 py-6">
                             <div className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${

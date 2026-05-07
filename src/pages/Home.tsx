@@ -261,12 +261,12 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/5 p-4 rounded-3xl border border-white/5 space-y-1">
-                    <p className="text-[9px] font-black uppercase text-white/30 tracking-widest italic">Rating</p>
-                    <p className="text-sm font-bold text-white flex items-center gap-2">★ 4.9 <span className="text-[10px] text-white/20 font-medium">Excellent</span></p>
+                    <p className="text-[9px] font-black uppercase text-white/30 tracking-widest italic">{t('rating', 'Rating')}</p>
+                    <p className="text-sm font-bold text-white flex items-center gap-2">★ 4.9 <span className="text-[10px] text-white/20 font-medium">{t('excellent')}</span></p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-3xl border border-white/5 space-y-1">
-                    <p className="text-[9px] font-black uppercase text-white/30 tracking-widest italic">Wait Time</p>
-                    <p className="text-sm font-bold text-white">~12 Mins <span className="text-[10px] text-white/20 font-medium">Avg</span></p>
+                    <p className="text-[9px] font-black uppercase text-white/30 tracking-widest italic">{t('wait_time')}</p>
+                    <p className="text-sm font-bold text-white">~12 Mins <span className="text-[10px] text-white/20 font-medium">{t('avg')}</span></p>
                   </div>
                 </div>
 
@@ -277,7 +277,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   }}
                   className="w-full bg-white text-stone-900 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
-                  Confirm & Add <Plus size={20} />
+                  {loading ? '...' : t('confirm_and_add')} <Plus size={20} />
                 </button>
               </div>
             </motion.div>
@@ -292,7 +292,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             <div className="p-3 bg-white rounded-2xl shadow-sm italic font-black text-xl">!</div>
             <div>
               <p className="font-bold">{t('setup_required')}</p>
-              <p className="text-xs opacity-70">The database is currently empty. Initialize the official Cappuccino7 menu.</p>
+              <p className="text-xs opacity-70">{t('empty_db_msg')}</p>
             </div>
           </div>
           <button 
@@ -339,7 +339,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               </div>
               <div className="flex items-center gap-2 text-white bg-white/10 backdrop-blur-2xl w-fit px-4 md:px-5 py-2 md:py-2.5 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest ring-1 ring-white/20">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span>Open Now</span>
+                <span>{t('open_now')}</span>
               </div>
             </div>
           </motion.div>
@@ -691,7 +691,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         {userProfile && (userProfile.itemLoyalty?.[product.id] || 0) > 0 && (
                           <div className="absolute bottom-4 left-4 bg-amber-400 text-stone-900 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-2xl flex items-center gap-1.5 ring-2 ring-white/10">
                             <Award size={10} strokeWidth={3} />
-                            <span>{userProfile.itemLoyalty?.[product.id]} Pts</span>
+                            <span>{userProfile.itemLoyalty?.[product.id]} {t('pts_short')}</span>
                           </div>
                         )}
                       </div>
@@ -781,7 +781,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               </div>
               
               <div className="mt-8 pt-8 border-t border-stone-50">
-                 <p className="text-[8px] font-bold text-stone-300 uppercase tracking-widest">Secure • One-time • Precision</p>
+                 <p className="text-[8px] font-bold text-stone-300 uppercase tracking-widest">{t('secure_precision')}</p>
               </div>
             </motion.div>
           </div>

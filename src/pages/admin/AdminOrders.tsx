@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getD
 import { db } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
 import { awardOrderPoints } from '../../services/orderService';
-import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag, Award } from 'lucide-react';
+import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag, Award, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +11,7 @@ const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'd
 
 // Import the OrderTimer logic (we'll define it locally since it's used in WaiterDashboard but they aren't in a common folder yet)
 function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
+  const { t } = useTranslation();
   const [elapsed, setElapsed] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
@@ -33,29 +34,12 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
         setElapsed(Math.floor((now - createdDate.getTime()) / 1000));
       }
 
-      if (status === 'preparing') {
-        let startTime: Date | null = null;
-        if (preparingAt) {
-          if (typeof preparingAt.toDate === 'function') {
-            startTime = preparingAt.toDate();
-          } else if (preparingAt instanceof Date) {
-            startTime = preparingAt;
-          } else if (typeof preparingAt === 'object' && preparingAt.seconds) {
-            startTime = new Date(preparingAt.seconds * 1000);
-          } else {
-            startTime = new Date(preparingAt);
-          }
-        }
-        if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
-          setTimeLeft(30 * 60);
-        } else {
-          const targetDate = new Date(startTime.getTime() + 30 * 60000);
-          let diff = Math.floor((targetDate.getTime() - now) / 1000);
-          
-          if (diff > 1800 || diff < -3600 || Math.abs(diff) > 86400) diff = 30 * 60;
-          
-          setTimeLeft(diff);
-        }
+      const isActive = status !== 'delivered' && status !== 'cancelled';
+      if (isActive && createdDate && !isNaN(createdDate.getTime())) {
+        const durationMins = prepTime || 30;
+        const targetDate = new Date(createdDate.getTime() + durationMins * 60000);
+        let diff = Math.floor((targetDate.getTime() - now) / 1000);
+        setTimeLeft(diff);
       } else {
         setTimeLeft(null);
       }
@@ -63,7 +47,7 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
     calculateTimes();
     const interval = setInterval(calculateTimes, 1000);
     return () => clearInterval(interval);
-  }, [createdAt, preparingAt, prepTime, status]);
+  }, [createdAt, status, prepTime]);
 
   const formatSecs = (totalSecs: number) => {
     const absSecs = Math.abs(totalSecs);
@@ -72,11 +56,13 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const isPreparing = status === 'preparing';
+  const isActive = status !== 'delivered' && status !== 'cancelled';
+  const isOverdue = timeLeft !== null && timeLeft < 0;
+
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${isPreparing ? (timeLeft !== null && timeLeft < 0 ? 'bg-red-500 text-white' : 'bg-stone-900 text-white') : 'bg-amber-100 text-amber-700'}`}>
-       <Clock size={12} className={isPreparing && timeLeft !== null && timeLeft < 0 ? 'animate-pulse' : 'text-amber-400'} />
-       <span>{isPreparing ? (timeLeft !== null ? `${timeLeft < 0 ? '-' : ''}${formatSecs(timeLeft)} LEFT` : '--:--') : `${formatSecs(elapsed)} WAITING`}</span>
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${isActive ? (isOverdue ? 'bg-red-500 text-white' : 'bg-stone-900 text-white') : 'bg-amber-100 text-amber-700'}`}>
+       <Clock size={12} className={isActive && isOverdue ? 'animate-pulse' : 'text-amber-400'} />
+       <span>{isActive ? (timeLeft !== null ? `${isOverdue ? '-' : ''}${formatSecs(timeLeft)} ${t('waiting').toUpperCase()}` : '--:--') : `${formatSecs(elapsed)} ${t('total_duration').toUpperCase()}`}</span>
     </div>
   );
 }
@@ -84,6 +70,7 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
 export default function AdminOrders() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [clients, setClients] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -95,7 +82,16 @@ export default function AdminOrders() {
       console.error("Admin orders listener error:", error);
       setLoading(false);
     });
-    return unsubscribe;
+
+    const qUsers = query(collection(db, 'users'));
+    const unsubUsers = onSnapshot(qUsers, (snapshot) => {
+      setClients(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile)));
+    });
+
+    return () => {
+      unsubscribe();
+      unsubUsers();
+    };
   }, []);
 
   const updateStatus = async (order: Order, newStatus: OrderStatus) => {
@@ -165,14 +161,29 @@ export default function AdminOrders() {
             <div key={order.id} className="bg-[#FDF8F3] rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-8 shadow-sm border-2 border-stone-100/50 hover:border-brown-100 transition-all">
               <div className="flex flex-col md:flex-row justify-between gap-4 md:gap-6 mb-6">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-4 mb-2">
                     <h3 className="text-2xl font-bold text-brown-950">{order.customerName}</h3>
-                    <span className="text-xs text-gray-400 font-mono">#{order.id.slice(-6).toUpperCase()}</span>
+                    {(() => {
+                      const client = clients.find(c => c.uid === order.userId);
+                      const hasReward = client?.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11);
+                      if (hasReward) {
+                        return (
+                          <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-3 py-1 rounded-full animate-bounce shadow-lg">
+                            <Gift size={12} strokeWidth={3} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Reward Ready</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    <span className="text-xs text-gray-400 font-mono ml-auto">#{order.id.slice(-6).toUpperCase()}</span>
                   </div>
                   <div className="flex flex-wrap gap-4 mb-4">
-                    <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
+                    <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 italic">
                       <ShoppingBag size={14} className="text-brown-600" />
-                      <span className="font-bold uppercase text-[10px] tracking-wider">Dine-in Only</span>
+                      <span className="font-black uppercase text-[10px] tracking-wider">
+                        {order.deliveryType === 'pickup' ? t('takeaway') : t('in_place')}
+                      </span>
                     </p>
                     <OrderTimer 
                       createdAt={order.createdAt} 

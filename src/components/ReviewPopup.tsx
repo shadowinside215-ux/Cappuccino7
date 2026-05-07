@@ -45,8 +45,13 @@ export default function ReviewPopup() {
   }, []);
 
   // Check conditions to show
-  const checkConditions = () => {
+  const checkConditions = (force = false) => {
     if (!brand.reviewPopupEnabled || state.neverShow) return;
+
+    if (force) {
+      setIsVisible(true);
+      return;
+    }
 
     const daysSinceLastShown = (Date.now() - state.lastShownAt) / (1000 * 60 * 60 * 24);
     const frequency = brand.reviewPopupFrequencyDays || 7;
@@ -72,23 +77,21 @@ export default function ReviewPopup() {
 
   useEffect(() => {
     // Check on mount (delay a bit to avoid layout shift)
-    const timeout = setTimeout(checkConditions, 2000);
+    const timeout = setTimeout(() => checkConditions(false), 2000);
     
     // Listen for custom order event
     const handleOrderCompleted = () => {
       console.log("ReviewPopup: Order completed event received");
       // Set visibility immediately for order confirmation
-      setIsVisible(true);
-      // Also force a check of conditions immediately
-      checkConditions();
+      checkConditions(true);
     };
     
     window.addEventListener('order_completed', handleOrderCompleted);
-    window.addEventListener('popstate', checkConditions); // Check on navigation too
+    window.addEventListener('popstate', () => checkConditions(false)); // Check on navigation too
     
     return () => {
       window.removeEventListener('order_completed', handleOrderCompleted);
-      window.removeEventListener('popstate', checkConditions);
+      window.removeEventListener('popstate', () => checkConditions(false));
       clearTimeout(timeout);
     };
   }, [brand, state]);
@@ -110,7 +113,7 @@ export default function ReviewPopup() {
     }
 
     // Open Google Maps
-    const mapsLink = brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida';
+    const mapsLink = brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida';
     window.open(mapsLink, '_blank');
   };
 

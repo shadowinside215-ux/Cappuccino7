@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { OrderItem, OrderStatus, UserProfile } from '../types';
-import { Minus, Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle, Coffee } from 'lucide-react';
+import { Minus, Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle, Coffee, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -17,12 +17,22 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState(userProfile?.phone || '');
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dine-in'>('dine-in');
+  const [deliveryType, setDeliveryType] = useState<'pickup' | 'dine-in'>('dine-in');
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
-  // Defaulting to dine-in and hiding others for now
-  useEffect(() => {
-    setDeliveryType('dine-in');
-  }, []);
+
+  const calculatePrepTime = () => {
+    // Check if any item in cart is a meal/food
+    // We'll look for keywords in category or description if category isn't explicit
+    const hasFood = items.some(item => 
+      item.category?.toLowerCase().includes('meal') || 
+      item.category?.toLowerCase().includes('food') ||
+      item.category?.toLowerCase().includes('burger') ||
+      item.category?.toLowerCase().includes('pizza') ||
+      item.category?.toLowerCase().includes('pasta') ||
+      item.name.toLowerCase().includes('meal')
+    );
+    return hasFood ? 30 : 10;
+  };
   const [isLocating, setIsLocating] = useState(false);
   const [locatingError, setLocatingError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -178,22 +188,26 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       // Calculate preparation time based on item categories
       // 10 mins for: drinks, juices, ice_cream, coffee, etc.
       // 30 mins for: everything else (dishes, breakfast, brunch, crepes)
-      const fastTimedCategories = [
-        'drinks', 'juices', 'juice', 'ice_cream', 'ice cream', 'coffee', 'infusions', 'iced_latte', 
-        'jus', 'café', 'glaces', 'the', 'thé', 'tea', 'infusion', 'boisson', 'jus d\'orange'
+      const fastKeywords = [
+        'drink', 'juice', 'ice_cream', 'ice cream', 'coffee', 'infusion', 'iced_latte', 
+        'jus', 'café', 'glace', 'the', 'thé', 'tea', 'infusion', 'boisson', 'orange'
       ];
       
-      const hasSlowItem = itemsWithMetadata.some(item => {
+      const hasMeal = itemsWithMetadata.some(item => {
         const cat = (item.categoryName || '').toLowerCase();
         const itemName = (item.name || '').toLowerCase();
-        // Check both category and name for "juice"
-        const isFast = fastTimedCategories.some(fastCat => 
-          cat.includes(fastCat) || itemName.includes(fastCat)
-        );
-        return !isFast;
+        
+        // Items that definitely take longer (Meals/Food)
+        const slowKeywords = ['meal', 'food', 'burger', 'pizza', 'pasta', 'tacos', 'sandwich', 'plat', 'repas', 'crepe', 'brunch', 'breakfast'];
+        
+        const matchesSlow = slowKeywords.some(slow => cat.includes(slow) || itemName.includes(slow));
+        const matchesFast = fastKeywords.some(fast => cat.includes(fast) || itemName.includes(fast));
+        
+        // If it matches slow categories OR doesn't match fast categories, consider it a meal
+        return matchesSlow || !matchesFast;
       });
 
-      const prepTimeMinutes = 30; // Standard 30 minutes as requested
+      const prepTimeMinutes = hasMeal ? 30 : 10;
       const now = new Date();
       const estimatedReadyAt = new Date(now.getTime() + prepTimeMinutes * 60000);
 
@@ -456,59 +470,40 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               </motion.div>
             </motion.div>
 
+            {/* Delivery/Pickup Select */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white/5 backdrop-blur-3xl rounded-[2.5rem] p-4 border border-white/10 mb-8"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => setDeliveryType('dine-in')}
+                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <Coffee size={16} />
+                    {t('in_place')}
+                  </div>
+                </button>
+                <button 
+                  onClick={() => setDeliveryType('pickup')}
+                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'pickup' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <Package size={16} />
+                    {t('takeaway')}
+                  </div>
+                </button>
+              </div>
+            </motion.div>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="space-y-6 hidden"
+              className="space-y-6"
             >
-              <div>
-                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4 mb-4">
-                  {t('delivery_options')}
-                </label>
-                <div className="flex flex-wrap sm:flex-nowrap gap-4 p-2 bg-white/5 rounded-[2.5rem] ring-1 ring-white/10">
-                  <button
-                    onClick={() => setDeliveryType('dine-in')}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[2rem] font-black uppercase text-xs tracking-widest transition-all ${
-                      deliveryType === 'dine-in' 
-                        ? 'bg-amber-400 text-stone-900 shadow-xl' 
-                        : 'text-white/40 hover:text-white'
-                    }`}
-                  >
-                    <Coffee size={18} />
-                    {t('dine_in', { defaultValue: 'Dine-in' })}
-                  </button>
-                  <button
-                    onClick={() => setDeliveryType('pickup')}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[2rem] font-black uppercase text-xs tracking-widest transition-all ${
-                      deliveryType === 'pickup' 
-                        ? 'bg-white text-stone-900 shadow-xl' 
-                        : 'text-white/40 hover:text-white'
-                    }`}
-                  >
-                    <ShoppingBag size={18} />
-                    {t('pickup')}
-                  </button>
-                  <button
-                    onClick={() => setDeliveryType('delivery')}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[2rem] font-black uppercase text-xs tracking-widest transition-all ${
-                      deliveryType === 'delivery' 
-                        ? 'bg-white text-stone-900 shadow-xl' 
-                        : 'text-white/40 hover:text-white'
-                    }`}
-                  >
-                    <Truck size={18} />
-                    {t('delivery')}
-                  </button>
-                </div>
-              </div>
-
-              {deliveryType === 'delivery' && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="space-y-6 overflow-hidden"
-                >
                   <div className="space-y-3">
                     <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
                       {t('phone_number')} ({t('optional')})
@@ -522,87 +517,18 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
-                      {t('delivery_point')}
-                    </label>
-                    <div className="flex gap-4">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          placeholder={t('search_placeholder')}
-                          className="w-full bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none"
-                        />
-                        {location && (
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-green-500/20 text-green-400 px-3 py-1.5 rounded-xl border border-green-500/30">
-                            <Navigation2 size={12} className="fill-green-400" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">GPS Live</span>
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => captureGPS()}
-                        disabled={isLocating}
-                        className={`p-5 rounded-3xl shadow-2xl transition-all active:scale-95 ${
-                          isLocating ? 'bg-amber-400 animate-pulse' : 'bg-white'
-                        } text-stone-900 group relative`}
-                      >
-                        <MapPin size={24} className={isLocating ? 'animate-bounce' : ''} />
-                      </button>
-                    </div>
-
-                    <AnimatePresence>
-                      {locatingError === 'denied' && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mx-4"
-                        >
-                          <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-[10px] font-bold text-red-100/80 leading-relaxed uppercase tracking-wide">
-                            {t('location_required')}
-                          </p>
-                        </motion.div>
-                      )}
-                      {locatingError === 'failed' && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl mx-4"
-                        >
-                          <div className="flex items-center gap-3">
-                            <AlertCircle size={16} className="text-amber-400 flex-shrink-0" />
-                            <p className="text-[10px] font-bold text-amber-100/80 uppercase tracking-wide">
-                              {t('gps_error')}
-                            </p>
-                          </div>
-                          <button 
-                            onClick={() => captureGPS()}
-                            className="text-[10px] font-black text-amber-400 underline uppercase tracking-widest"
-                          >
-                            {t('retry_location')}
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
-                      {t('delivery_notes')}
-                    </label>
-                    <textarea
-                      value={deliveryNotes}
-                      onChange={(e) => setDeliveryNotes(e.target.value)}
-                      placeholder={t('delivery_notes_placeholder')}
-                      rows={3}
-                      className="w-full bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none resize-none"
-                    />
-                  </div>
-                </motion.div>
-              )}
+              <div className="space-y-3">
+                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
+                  {t('additional_notes')}
+                </label>
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  placeholder={deliveryType === 'dine-in' ? t('table_note_placeholder') : t('allergy_note_placeholder')}
+                  rows={3}
+                  className="w-full bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none resize-none"
+                />
+              </div>
             </motion.div>
           </div>
 
@@ -624,7 +550,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-shimmer" />
               </button>
               <p className="text-center text-white/30 text-[10px] font-black uppercase tracking-widest px-8 leading-relaxed">
-                Premium artisan selection <br /> verified by <span className="text-bento-primary font-bold">Cappuccino7</span>
+                {t('premium_selection')} <br /> {t('verified_by')} <span className="text-bento-primary font-bold">Cappuccino7</span>
               </p>
             </motion.div>
           </div>

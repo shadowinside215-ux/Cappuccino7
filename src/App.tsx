@@ -27,7 +27,6 @@ import WaiterDashboard from './pages/waiter/WaiterDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import Settings from './pages/Settings';
 import DriverLogin from './pages/driver/DriverLogin';
-import DriverDashboard from './pages/driver/DriverDashboard';
 import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
@@ -470,14 +469,10 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
               <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />
 
-              {/* Waiter Routes */}
-              <Route path="/waiter/login" element={<WaiterLogin />} />
-              <Route path="/waiter/dashboard" element={<WaiterGuard userProfile={userProfile}><WaiterDashboard /></WaiterGuard>} />
-
-              {/* Driver Routes */}
-              <Route path="/driver/login" element={<DriverLogin />} />
-              <Route path="/driver/dashboard" element={<DriverDashboard />} />
-            </Routes>
+      {/* Waiter Routes */}
+      <Route path="/waiter/login" element={<WaiterLogin />} />
+      <Route path="/waiter/dashboard" element={<WaiterGuard userProfile={userProfile}><WaiterDashboard /></WaiterGuard>} />
+    </Routes>
           </motion.div>
         </AnimatePresence>
       </main>
@@ -497,12 +492,6 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-amber-500"
             >
               {t('waiter_access')}
-            </Link>
-            <Link 
-              to="/driver/login" 
-              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-amber-500"
-            >
-              {t('driver_login')}
             </Link>
           </div>
         </footer>

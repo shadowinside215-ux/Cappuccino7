@@ -299,12 +299,12 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             </motion.div>
 
             {/* Rate Us Card */}
-            {(brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida') && (
+            {(brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida') && (
               <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                onClick={() => window.open(brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Salé+El+Jadida', '_blank')}
+                onClick={() => window.open(brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida', '_blank')}
                 className="lg:col-span-3 bg-amber-400 rounded-[3rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl group"
               >
                 <div className="flex items-center gap-6">
@@ -350,6 +350,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                 {loyaltyProducts.map((product, idx) => {
                   const count = userProfile.itemLoyalty?.[product.id] || 0;
                   const rewardReady = count >= 11;
+                  const isGoldState = count === 11;
 
                   return (
                     <motion.div 
@@ -358,10 +359,10 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: idx * 0.1 }}
-                      className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-8 flex flex-col gap-6 group hover:bg-white/10 transition-all border border-white/5 relative overflow-hidden shadow-xl"
+                      className={`${isGoldState ? 'bg-amber-400' : 'bg-white/5 group hover:bg-white/10'} backdrop-blur-xl rounded-[2.5rem] p-8 flex flex-col gap-6 transition-all border ${isGoldState ? 'border-amber-500' : 'border-white/5'} relative overflow-hidden shadow-xl`}
                     >
                       <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 ring-4 ring-white/10 shadow-2xl">
+                        <div className={`w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 ring-4 ${isGoldState ? 'ring-stone-900/10' : 'ring-white/10'} shadow-2xl`}>
                           <OptimizedImage 
                             src={product.image} 
                             alt="" 
@@ -370,11 +371,11 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-black text-xl text-white truncate uppercase tracking-tight italic">
+                          <h4 className={`font-black text-xl truncate uppercase tracking-tight italic ${isGoldState ? 'text-stone-900' : 'text-white'}`}>
                             {t(`products.${product.name}`, product.name)}
                           </h4>
-                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${rewardReady ? 'text-amber-400' : 'text-white/40'}`}>
-                            {rewardReady ? t('ready_to_redeem') : t('goal_lvl', { count })}
+                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isGoldState ? 'text-stone-950' : (rewardReady ? 'text-amber-400' : 'text-white/40')}`}>
+                            {isGoldState ? t('get_free_order') : (rewardReady ? t('ready_to_redeem') : t('goal_lvl', { count }))}
                           </p>
                         </div>
                       </div>
@@ -389,20 +390,23 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                               key={i} 
                               className={`flex-1 rounded-full transition-all duration-500 ${
                                 i < (rewardReady ? 11 : count % 11) 
-                                ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]' 
-                                : 'bg-white/5'
+                                ? (isGoldState ? 'bg-stone-900 shadow-[0_0_10px_rgba(0,0,0,0.2)]' : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]') 
+                                : (isGoldState ? 'bg-stone-900/10' : 'bg-white/5')
                               }`} 
                             />
                           ))}
                         </div>
-                        <p className="text-right text-[9px] font-black text-white/20 uppercase tracking-widest italic font-mono">Artisan Stamp Card</p>
+                        <div className="flex justify-between items-center">
+                          <p className={`text-[9px] font-black uppercase tracking-widest italic font-mono ${isGoldState ? 'text-stone-900' : 'text-white/20'}`}>Artisan Stamp Card</p>
+                          {isGoldState && <span className="text-xl font-black text-stone-950">12</span>}
+                        </div>
                       </div>
 
                       {rewardReady && (
                         <motion.div 
                           animate={{ y: [0, -10, 0] }}
                           transition={{ repeat: Infinity, duration: 2 }}
-                          className="absolute top-4 right-4 bg-amber-400 text-stone-900 p-3 rounded-2xl shadow-2xl"
+                          className={`absolute top-4 right-4 p-3 rounded-2xl shadow-2xl ${isGoldState ? 'bg-stone-900 text-amber-400' : 'bg-amber-400 text-stone-900'}`}
                         >
                           <Gift size={20} />
                         </motion.div>
