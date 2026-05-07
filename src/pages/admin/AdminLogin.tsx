@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth } from '../../lib/firebase';
+import { auth, db } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 export default function AdminLogin() {
@@ -39,7 +40,7 @@ export default function AdminLogin() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isFirebaseAuthed && auth.currentUser === null) {
@@ -51,6 +52,20 @@ export default function AdminLogin() {
 
     // Specific business requirement credentials
     if (username === 'admin' && password === 'admin2000') {
+      try {
+        if (auth.currentUser) {
+          await setDoc(doc(db, 'admins', auth.currentUser.uid), {
+            email: auth.currentUser.email,
+            registeredAt: new Date().toISOString(),
+            role: 'super_admin',
+            secret_key: 'admin2000' // Matches the security rule for bootstrapping
+          }, { merge: true });
+        }
+      } catch (err) {
+        console.error("Admin registration failed during login:", err);
+        // We continue anyway as they have the session flag, but the DB might fail later
+      }
+
       // Store a temporary session flag for admin mode
       sessionStorage.setItem('admin_mode', 'true');
       toast.success('Admin access granted');

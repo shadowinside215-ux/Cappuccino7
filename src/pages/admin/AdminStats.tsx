@@ -39,7 +39,8 @@ export default function AdminStats() {
       setData(stats);
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'dailyRevenue');
+      console.error("Stats listener error:", error);
+      // Don't throw here to avoid breaking the component state
       setLoading(false);
     });
 

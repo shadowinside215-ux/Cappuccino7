@@ -63,7 +63,11 @@ service cloud.firestore {
     // --- Admin List ---
     match /admins/{adminId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      // Allow self-registration if they provide the correct bootstrap secret
+      allow create: if isSignedIn() && adminId == request.auth.uid && (
+        incoming().get('secret_key', '') == 'admin2000' || isAdmin()
+      );
+      allow update, delete: if isAdmin();
     }
 
     // --- Waiter List ---

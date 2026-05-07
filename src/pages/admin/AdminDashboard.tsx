@@ -22,6 +22,8 @@ export default function AdminDashboard() {
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isRegisteringAdmin, setIsRegisteringAdmin] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [revError, setRevError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [productsMap, setProductsMap] = useState<Record<string, string>>({});
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -169,8 +171,12 @@ export default function AdminDashboard() {
       
       setWeeklyRevenue(revData);
       setStats(prev => ({ ...prev, todayRevenue: todayRev, totalOrders: todayOrders }));
+      setLoading(false);
+      setRevError(null);
     }, (error) => {
       console.warn("Revenue listener error:", error.message);
+      setRevError(error.message);
+      setLoading(false);
     });
 
     // Total Users Listener
@@ -546,8 +552,22 @@ export default function AdminDashboard() {
           <div className="p-3 bg-green-50 text-green-600 rounded-2xl w-fit mb-4">
             <TrendingUp size={20} />
           </div>
-          <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Today's Revenue (MAD)</p>
+          {revError ? (
+            <div className="flex flex-col gap-1">
+              <p className="text-red-500 text-[10px] font-black uppercase tracking-widest">Access Denied</p>
+              <button 
+                onClick={() => navigate('/admin/login')}
+                className="text-stone-900 text-[10px] font-black underline decoration-amber-400 underline-offset-4 text-left"
+              >
+                Re-Authenticate
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
+              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Today's Revenue (MAD)</p>
+            </>
+          )}
           
           <button 
             onClick={resetTodayRevenue}
