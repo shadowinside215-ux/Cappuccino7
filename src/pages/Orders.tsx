@@ -208,7 +208,7 @@ export default function Orders() {
                         ? 'bg-green-500/20 text-green-400 ring-green-500/20' 
                         : 'bg-amber-500/20 text-amber-400 ring-amber-500/20 animate-pulse'
                       }`}>
-                        {order.status}
+                        {order.status === 'delivered' ? 'Completed' : order.status}
                       </span>
                       <ClientOrderTimer 
                         createdAt={order.createdAt} 
@@ -228,7 +228,7 @@ export default function Orders() {
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 text-white">
-                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 hover:bg-white/10 transition-all">
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 hidden">
                     <div className="flex items-center gap-3 mb-3">
                       {order.deliveryType === 'delivery' ? <Truck size={18} className="text-amber-400" /> : <Package size={18} className="text-amber-400" />}
                       <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
@@ -266,7 +266,7 @@ export default function Orders() {
                       )}
                     </div>
                   </div>
-                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 flex flex-col justify-center hover:bg-white/10 transition-all">
+                  <div className="col-span-full bg-white/5 p-6 rounded-[2rem] border border-white/10 flex flex-col justify-center hover:bg-white/10 transition-all">
                     <div className="flex items-center gap-3 text-amber-400 font-black text-xl mb-1">
                       <Award size={20} />
                       <span>+{order.pointsEarned || Math.floor(order.total / 10)} PTS</span>

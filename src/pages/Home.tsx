@@ -40,12 +40,14 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we should show GPS prompt
+    // Geolocation prompt disabled for now
+    /*
     const hasPrompted = localStorage.getItem('geo_prompted');
     if (!hasPrompted) {
       const timer = setTimeout(() => setShowGeoPrompt(true), 2500);
       return () => clearTimeout(timer);
     }
+    */
   }, []);
 
   const handleAutoLocate = () => {
@@ -348,10 +350,6 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             transition={{ delay: 0.4, duration: 1 }}
             className="space-y-2"
           >
-            <p className="text-white/80 uppercase tracking-[0.3em] md:tracking-[0.4em] text-[10px] md:text-xs font-black pl-1 flex items-center gap-3 italic">
-              <MapPin size={16} className="text-amber-400" />
-              {t('hero_location')}
-            </p>
             <p className="text-white/50 text-[11px] md:text-sm font-medium italic pl-1 max-w-sm md:max-w-md leading-relaxed">
               {t('hero_description')}
             </p>
@@ -734,9 +732,9 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       })}
     </div>
 
-      {/* GPS Onboarding Modal */}
+      {/* GPS Onboarding Modal Hidden */}
       <AnimatePresence>
-        {showGeoPrompt && (
+        {false && showGeoPrompt && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-4 bg-stone-900/60 backdrop-blur-xl">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 30 }}

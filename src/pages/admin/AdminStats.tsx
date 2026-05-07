@@ -241,7 +241,7 @@ export default function AdminStats() {
           </div>
           <div className="h-80 min-h-[320px] w-full min-w-0 overflow-hidden relative">
             {mounted && (
-              <ResponsiveContainer width="100%" height="100%" debounce={50}>
+              <ResponsiveContainer width="100%" height={320}>
                 <AreaChart data={chartData}>
                   {/* ... AreaChart contents ... */}
                   <defs>
@@ -284,7 +284,7 @@ export default function AdminStats() {
            <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tighter mb-6">Activity Peak</h3>
            <div className="h-80 min-h-[320px] w-full min-w-0 flex items-center justify-center overflow-hidden relative">
              {mounted && (
-               <ResponsiveContainer width="100%" height="100%" debounce={50}>
+               <ResponsiveContainer width="100%" height={320}>
                  <BarChart data={chartData}>
                     <XAxis dataKey="name" hide />
                     <Tooltip 

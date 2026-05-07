@@ -346,12 +346,6 @@ export default function WaiterDashboard() {
                       order.status === 'ready' ? 'ring-4 ring-green-400 border-green-400' : 'border-stone-100'
                     }`}
                   >
-                    <div className={`absolute top-10 right-[-40px] rotate-45 w-40 text-center py-1.5 text-[9px] font-black uppercase tracking-widest ${
-                      order.deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900' : 'bg-stone-900 text-white'
-                    }`}>
-                      {order.deliveryType}
-                    </div>
-
                     <div className="mb-6">
                       <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest mb-1">Customer</p>
                       <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>

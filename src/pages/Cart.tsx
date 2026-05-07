@@ -19,6 +19,10 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dine-in'>('dine-in');
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+  // Defaulting to dine-in and hiding others for now
+  useEffect(() => {
+    setDeliveryType('dine-in');
+  }, []);
   const [isLocating, setIsLocating] = useState(false);
   const [locatingError, setLocatingError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -262,7 +266,10 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         toast.success('Order placed successfully!');
       }
       
-      navigate('/orders');
+      // Small delay to allow ReviewPopup to trigger before navigation
+      setTimeout(() => {
+        navigate('/orders');
+      }, 500);
     } catch (error) {
       console.error(error);
       toast.error('Failed to place order');
@@ -453,7 +460,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="space-y-6"
+              className="space-y-6 hidden"
             >
               <div>
                 <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4 mb-4">

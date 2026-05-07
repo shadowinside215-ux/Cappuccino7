@@ -79,11 +79,16 @@ export default function ReviewPopup() {
       console.log("ReviewPopup: Order completed event received");
       // Set visibility immediately for order confirmation
       setIsVisible(true);
+      // Also force a check of conditions immediately
+      checkConditions();
     };
     
     window.addEventListener('order_completed', handleOrderCompleted);
+    window.addEventListener('popstate', checkConditions); // Check on navigation too
+    
     return () => {
       window.removeEventListener('order_completed', handleOrderCompleted);
+      window.removeEventListener('popstate', checkConditions);
       clearTimeout(timeout);
     };
   }, [brand, state]);

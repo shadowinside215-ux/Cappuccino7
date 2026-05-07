@@ -7,7 +7,7 @@ import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink,
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
-const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivering', 'delivered'];
+const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivered'];
 
 // Import the OrderTimer logic (we'll define it locally since it's used in WaiterDashboard but they aren't in a common folder yet)
 function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
@@ -171,11 +171,8 @@ export default function AdminOrders() {
                   </div>
                   <div className="flex flex-wrap gap-4 mb-4">
                     <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
-                      {order.deliveryType === 'delivery' ? <Truck size={14} className="text-amber-600" /> : <ShoppingBag size={14} className="text-brown-600" />}
-                      <span className="font-bold uppercase text-[10px] tracking-wider">{order.deliveryType || 'Standard'}</span>
-                    </p>
-                    <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
-                      <MapPin size={14} className="text-gray-400" /> {order.address}
+                      <ShoppingBag size={14} className="text-brown-600" />
+                      <span className="font-bold uppercase text-[10px] tracking-wider">Dine-in Only</span>
                     </p>
                     <OrderTimer 
                       createdAt={order.createdAt} 
@@ -183,17 +180,6 @@ export default function AdminOrders() {
                       prepTime={order.prepTime} 
                       status={order.status} 
                     />
-                    {order.location && (
-                      <a 
-                        href={`https://www.google.com/maps?q=${order.location.lat},${order.location.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors"
-                      >
-                        <ExternalLink size={12} />
-                        Maps
-                      </a>
-                    )}
                   </div>
 
                   {order.deliveryNotes && (
