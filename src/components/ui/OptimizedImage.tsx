@@ -18,25 +18,37 @@ export default function OptimizedImage({
   alt, 
   className, 
   containerClassName = '', 
-  fallbackSrc = '',
+  fallbackSrc,
   priority = false,
   showOverlay = true,
   ...props 
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState<string | undefined>(src);
 
+  const imgRef = React.useRef<HTMLImageElement>(null);
+
+  // Robustly handle empty strings to prevent React warnings and unnecessary network requests
+  const safeSrc = (src === "" || src === undefined || src === null) ? (fallbackSrc || null) : src;
+
+  // Reset state when src changes
   useEffect(() => {
-    if (!src) return;
-
-    if (priority) {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => setIsLoaded(true);
-      img.onerror = () => setError(true);
+    if (!safeSrc) {
+      setIsLoaded(false);
+      setError(false);
+      return;
     }
-  }, [src, priority]);
+    
+    // Check if already complete (from cache)
+    if (imgRef.current?.complete) {
+      setIsLoaded(true);
+      setError(false);
+      return;
+    }
+
+    setIsLoaded(false);
+    setError(false);
+  }, [src, safeSrc]);
 
   const handleLoad = () => {
     setIsLoaded(true);
@@ -47,27 +59,31 @@ export default function OptimizedImage({
     setIsLoaded(false);
   };
 
+  // Determine if we should show the loading state
+  // If we have priority, we might want to hide the loader if it's already cached
+  const showLoader = !isLoaded && !error && safeSrc;
+
   return (
     <div className={`relative overflow-hidden ${containerClassName}`}>
       <AnimatePresence mode="wait">
-        {!isLoaded && !error && (
+        {showLoader && (
           <motion.div
             key="loader"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center bg-stone-100 dark:bg-stone-900/50"
+            className="absolute inset-0 flex items-center justify-center bg-stone-100 dark:bg-stone-900/50 z-20"
           >
             <Loader2 className="w-6 h-6 text-stone-300 animate-spin" />
           </motion.div>
         )}
 
-        {error && (
+        {(error || !safeSrc) && !showLoader && (
           <motion.div
             key="error"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-stone-900/40 p-4 text-center"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-stone-900/40 p-4 text-center z-10"
           >
             <ImageOff className="w-8 h-8 text-stone-300 mb-2" />
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Image Failed</p>
@@ -75,23 +91,26 @@ export default function OptimizedImage({
         )}
       </AnimatePresence>
 
-      <motion.img
-        {...props}
-        src={error ? fallbackSrc : src}
-        alt={alt}
-        onLoad={handleLoad}
-        onError={handleError}
-        initial={{ opacity: 0, scale: 1.05 }}
-        animate={{ 
-          opacity: isLoaded ? 1 : 0,
-          scale: isLoaded ? 1 : 1.05
-        }}
-        transition={{ 
-          duration: 0.6,
-          ease: [0.23, 1, 0.32, 1]
-        }}
-        className={`${className} ${isLoaded ? 'visible' : 'invisible md:visible'}`}
-      />
+      {safeSrc && (
+        <motion.img
+          {...props}
+          ref={imgRef}
+          src={safeSrc}
+          alt={alt}
+          onLoad={handleLoad}
+          onError={handleError}
+          initial={priority ? { opacity: 1 } : { opacity: 0, scale: 1.05 }}
+          animate={{ 
+            opacity: isLoaded ? 1 : (priority ? 1 : 0),
+            scale: isLoaded ? 1 : (priority ? 1 : 1.05)
+          }}
+          transition={{ 
+            duration: 0.4,
+            ease: "easeOut"
+          }}
+          className={`${className} relative z-0`}
+        />
+      )}
 
       {/* Decorative inner shadow for "sinking in" effect - only show if requested */}
       {showOverlay && (

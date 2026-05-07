@@ -84,7 +84,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const isEmpty = !loading && categories.length === 0;
 
   const starterMenu: Product[] = [
-    { id: 'start-1', name: 'Occidental Breakfast', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: '', categoryId: 'breakfast', isAvailable: true },
+    { id: 'start-1', name: 'Occidental Breakfast', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800', categoryId: 'breakfast', isAvailable: true },
     { id: 'start-2', name: 'Amazigh Breakfast', price: 48, description: 'Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d\'orange, Balboula, Boisson chaude...', image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?q=80&w=800', categoryId: 'breakfast', isAvailable: true },
     { id: 'start-3', name: 'Brunch (1 Personne)', price: 87, description: 'Omelette, saucisses, Beghrir, Harcha, Meloui, Miel, Amlou, Fromage, Jus orange, Pancakes Nutella, Boisson chaude...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=80&w=800', categoryId: 'brunch', isAvailable: true }
   ];
@@ -159,6 +159,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         productId: product.id,
         name: product.name,
         price: product.price,
+        image: product.image,
         quantity: 1
       });
     }
@@ -703,7 +704,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                             {t(`products.${product.name}`, product.name)}
                           </h3>
                           <p className="text-white/40 text-xs font-medium leading-relaxed line-clamp-2 md:line-clamp-3 italic">
-                            {t(`descriptions.${product.name}`, product.description)}
+                            {t(`descriptions.${product.name}`, product.description || '')}
                           </p>
                         </div>
                         

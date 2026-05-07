@@ -31,16 +31,16 @@ function ClientOrderTimer({ createdAt, preparingAt, prepTime, status }: { create
       }
       
       if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
-        setTimeLeft((prepTime || 30) * 60);
+        setTimeLeft(30 * 60);
         return;
       }
 
-      const targetDate = new Date(startTime.getTime() + (Number(prepTime) || 30) * 60000);
+      const targetDate = new Date(startTime.getTime() + 30 * 60000); // Forced 30 minutes for consistency
       let diff = Math.floor((targetDate.getTime() - Date.now()) / 1000);
       
-      // Handle massive clock drift
-      if (Math.abs(diff) > 86400) { 
-        diff = (Number(prepTime) || 30) * 60;
+      // Handle massive clock drift or 91 min bug
+      if (diff > 1800 || diff < -3600 || Math.abs(diff) > 86400) { 
+        diff = 30 * 60;
       }
       
       setTimeLeft(diff);

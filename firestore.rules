@@ -46,16 +46,16 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin() || isWaiter();
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin() || isWaiter());
       allow list: if isAdmin() || isWaiter(); 
       
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isAdmin() || (
+        isSignedIn() && isOwner(userId) && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'address'])
+      ) || (
         isWaiter() && 
         incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty'])
-      ) || (
-        isOwner(userId) && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'address'])
       );
       allow delete: if isAdmin();
     }
@@ -91,7 +91,7 @@ service cloud.firestore {
 
     // --- Orders ---
     function isValidOrder(data) {
-      return data.userId == request.auth.uid &&
+      return (data.userId == request.auth.uid || isAdmin()) &&
              data.total is number &&
              data.items is list &&
              data.status == 'pending';
@@ -99,22 +99,23 @@ service cloud.firestore {
 
     match /orders/{orderId} {
       // List permission:
-      allow list: if isAdmin();
-      allow list: if isWaiter();
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      // Allow drivers to see orders intended for delivery
-      allow list: if isSignedIn() && resource.data.deliveryType == 'delivery';
+      allow list: if isAdmin() || isWaiter();
+      allow list: if isSignedIn() && (
+        (resource == null) || // For count queries and list pre-valuation
+        (resource.data.userId == request.auth.uid) ||
+        (resource.data.deliveryType == 'delivery')
+      );
       
       // Get permission:
-      allow get: if isAdmin();
-      allow get: if isWaiter();
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isSignedIn() && resource.data.deliveryType == 'delivery';
+      allow get: if isAdmin() || isWaiter();
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.deliveryType == 'delivery'
+      );
       
       allow create: if isSignedIn() && (isValidOrder(incoming()) || isAdmin());
       
-      allow update: if isAdmin();
-      allow update: if isWaiter();
+      allow update: if isAdmin() || isWaiter();
       // Allow drivers to update delivery status
       allow update: if isSignedIn() && existing().deliveryType == 'delivery' && 
                     incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
@@ -125,8 +126,17 @@ service cloud.firestore {
     // --- Daily Revenue ---
     match /dailyRevenue/{date} {
       allow read: if isAdmin();
-      allow create: if isAdmin() || (isWaiter() && incoming().keys().hasAll(['amount', 'lastUpdated']));
-      allow update: if isAdmin() || (isWaiter() && incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'lastUpdated']));
+      allow create: if isSignedIn() && (
+        isAdmin() || 
+        isWaiter() ||
+        (incoming().keys().hasAll(['amount', 'lastUpdated']) && incoming().amount >= 0)
+      );
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        isWaiter() ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'lastUpdated', 'orderCount']) && 
+         incoming().amount >= existing().amount)
+      );
       allow delete: if isAdmin();
     }
   }

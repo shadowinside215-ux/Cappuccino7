@@ -4,6 +4,7 @@ import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ArrowRight, Loader2 
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
+import OptimizedImage from '../../components/ui/OptimizedImage';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import toast from 'react-hot-toast';
 
@@ -61,11 +62,26 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center -mt-20 p-6 relative overflow-hidden bg-stone-50">
-      <div className="absolute inset-0 z-0 opacity-10">
-         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-bento-primary rounded-full blur-[120px]" />
-         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-400 rounded-full blur-[120px]" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-stone-900">
+      {/* Full Screen Background Image */}
+      {brand.loginBgUrl && (
+        <div className="fixed inset-0 z-0">
+          <OptimizedImage 
+            src={brand.loginBgUrl} 
+            alt="Login Background" 
+            className="w-full h-full object-cover"
+            showOverlay={true}
+            overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
+          />
+        </div>
+      )}
+
+      {!brand.loginBgUrl && (
+        <div className="fixed inset-0 z-0 opacity-20">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-bento-primary rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-400 rounded-full blur-[120px]" />
+        </div>
+      )}
 
       <motion.div 
         initial={{ opacity: 0, y: 40 }}
@@ -80,11 +96,14 @@ export default function AdminLogin() {
               whileHover={{ rotate: 5, scale: 1.05 }}
               className="w-32 h-32 bg-white rounded-[2.5rem] overflow-hidden shadow-2xl p-2 mx-auto border-2 border-stone-50 relative group"
             >
-               <img 
-                 src={brand.logoUrl} 
-                 alt="Management Logo" 
-                 className="w-full h-full object-contain rounded-[2rem]"
-               />
+               {brand.logoUrl && (
+                 <OptimizedImage 
+                   src={brand.logoUrl} 
+                   alt="Management Logo" 
+                   className="w-full h-full object-contain rounded-[2rem]"
+                   showOverlay={false}
+                 />
+               )}
                <div className="absolute inset-0 bg-bento-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.div>
             <div>

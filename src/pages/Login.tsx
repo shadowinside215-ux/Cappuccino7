@@ -182,21 +182,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 group/login relative flex items-center justify-center p-6">
+    <div className="min-h-screen group/login relative flex items-center justify-center p-6 bg-stone-900 overflow-hidden">
       {/* Immersive Background */}
-      <div className="absolute inset-0 z-0 bg-stone-900">
+      <div className="fixed inset-0 z-0">
         {brand.loginBgUrl && (
           <OptimizedImage 
             priority
             src={brand.loginBgUrl} 
             containerClassName="w-full h-full"
-            className="w-full h-full object-cover fixed top-0 left-0" 
-            alt=""
+            className="w-full h-full object-cover" 
+            alt="Background"
             referrerPolicy="no-referrer"
           />
         )}
         <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-900/40 to-transparent" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
@@ -209,12 +209,12 @@ export default function Login() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full space-y-10 flex flex-col items-center"
             >
-              <div className="w-40 h-40 bg-white rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-white/10 group-hover/login:scale-110 transition-transform duration-700">
+              <div className="w-40 h-40 bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-white/10 group-hover/login:scale-110 transition-transform duration-700">
                 <OptimizedImage 
                   src={brand.logoUrl} 
                   alt="Logo" 
                   containerClassName="w-full h-full"
-                  className="w-full h-full object-contain rounded-full"
+                  className="w-full h-full object-contain rounded-2xl"
                 />
               </div>
               

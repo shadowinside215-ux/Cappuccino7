@@ -34,7 +34,15 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
       // 1. Calculate Elapsed Time since creation
       let createdDate: Date | null = null;
       if (createdAt) {
-        createdDate = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+        if (typeof createdAt.toDate === 'function') {
+          createdDate = createdAt.toDate();
+        } else if (createdAt instanceof Date) {
+          createdDate = createdAt;
+        } else if (typeof createdAt === 'object' && createdAt.seconds) {
+          createdDate = new Date(createdAt.seconds * 1000);
+        } else {
+          createdDate = new Date(createdAt);
+        }
       }
       
       if (createdDate && !isNaN(createdDate.getTime())) {
@@ -45,18 +53,27 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
       if (status === 'preparing') {
         let startTime: Date | null = null;
         if (preparingAt) {
-          startTime = preparingAt.toDate ? preparingAt.toDate() : new Date(preparingAt);
+          if (typeof preparingAt.toDate === 'function') {
+            startTime = preparingAt.toDate();
+          } else if (preparingAt instanceof Date) {
+            startTime = preparingAt;
+          } else if (typeof preparingAt === 'object' && preparingAt.seconds) {
+            startTime = new Date(preparingAt.seconds * 1000);
+          } else {
+            startTime = new Date(preparingAt);
+          }
         }
         
         if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
           // Fallback if timestamp hasn't synced yet
-          setTimeLeft((prepTime || 30) * 60);
+          setTimeLeft(30 * 60);
         } else {
-          const targetDate = new Date(startTime.getTime() + (Number(prepTime) || 30) * 60000);
+          const targetDate = new Date(startTime.getTime() + 30 * 60000); // Forced 30 minutes for consistency
           let diff = Math.floor((targetDate.getTime() - now) / 1000);
           
-          // Cap reasonable drift
-          if (Math.abs(diff) > 86400) diff = (Number(prepTime) || 30) * 60;
+          // Cap reasonable drift and fix 91 min bug
+          if (diff > 1800 || diff < -3600 || Math.abs(diff) > 86400) diff = 30 * 60;
+          
           setTimeLeft(diff);
         }
       } else {
@@ -210,8 +227,16 @@ export default function WaiterDashboard() {
   const completeOrder = async (order: Order) => {
     try {
       const now = new Date();
-      const createdDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
-      const diffMs = now.getTime() - createdDate.getTime();
+      let createdDate: Date | null = null;
+      if (order.createdAt) {
+        if (typeof (order.createdAt as any).toDate === 'function') {
+          createdDate = (order.createdAt as any).toDate();
+        } else {
+          createdDate = new Date(order.createdAt as any);
+        }
+      }
+      
+      const diffMs = (createdDate && !isNaN(createdDate.getTime())) ? now.getTime() - createdDate.getTime() : 0;
       const diffMins = Math.round(diffMs / 60000);
 
       const orderRef = doc(db, 'orders', order.id);

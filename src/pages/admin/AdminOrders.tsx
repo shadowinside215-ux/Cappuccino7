@@ -19,7 +19,15 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
       const now = Date.now();
       let createdDate: Date | null = null;
       if (createdAt) {
-        createdDate = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+        if (typeof createdAt.toDate === 'function') {
+          createdDate = createdAt.toDate();
+        } else if (createdAt instanceof Date) {
+          createdDate = createdAt;
+        } else if (typeof createdAt === 'object' && createdAt.seconds) {
+          createdDate = new Date(createdAt.seconds * 1000);
+        } else {
+          createdDate = new Date(createdAt);
+        }
       }
       if (createdDate && !isNaN(createdDate.getTime())) {
         setElapsed(Math.floor((now - createdDate.getTime()) / 1000));
@@ -28,14 +36,24 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
       if (status === 'preparing') {
         let startTime: Date | null = null;
         if (preparingAt) {
-          startTime = preparingAt.toDate ? preparingAt.toDate() : new Date(preparingAt);
+          if (typeof preparingAt.toDate === 'function') {
+            startTime = preparingAt.toDate();
+          } else if (preparingAt instanceof Date) {
+            startTime = preparingAt;
+          } else if (typeof preparingAt === 'object' && preparingAt.seconds) {
+            startTime = new Date(preparingAt.seconds * 1000);
+          } else {
+            startTime = new Date(preparingAt);
+          }
         }
         if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
-          setTimeLeft((prepTime || 30) * 60);
+          setTimeLeft(30 * 60);
         } else {
-          const targetDate = new Date(startTime.getTime() + (Number(prepTime) || 30) * 60000);
+          const targetDate = new Date(startTime.getTime() + 30 * 60000);
           let diff = Math.floor((targetDate.getTime() - now) / 1000);
-          if (Math.abs(diff) > 86400) diff = (Number(prepTime) || 30) * 60;
+          
+          if (diff > 1800 || diff < -3600 || Math.abs(diff) > 86400) diff = 30 * 60;
+          
           setTimeLeft(diff);
         }
       } else {
@@ -96,9 +114,17 @@ export default function AdminOrders() {
         
         // Calculate delivery time
         if (order.createdAt) {
-          const start = order.createdAt.toDate();
-          const diffInMinutes = Math.round((new Date().getTime() - start.getTime()) / 60000);
-          updateData.deliveredInMinutes = diffInMinutes;
+          let start: Date | null = null;
+          if (typeof (order.createdAt as any).toDate === 'function') {
+            start = (order.createdAt as any).toDate();
+          } else {
+            start = new Date(order.createdAt as any);
+          }
+          
+          if (start && !isNaN(start.getTime())) {
+            const diffInMinutes = Math.round((new Date().getTime() - start.getTime()) / 60000);
+            updateData.deliveredInMinutes = diffInMinutes;
+          }
         }
       }
       
@@ -289,7 +315,7 @@ export default function AdminOrders() {
                          {order.items.reduce((acc, item) => acc + item.quantity, 0)} Items Loyalty
                        </span>
                     </div>
-                    <p className="text-[8px] font-black text-stone-300 uppercase tracking-widest">Target: {order.prepTime} min</p>
+                    <p className="text-[8px] font-black text-stone-300 uppercase tracking-widest">Target: 30 min</p>
                   </div>
                 </div>
               </div>

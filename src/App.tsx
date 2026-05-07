@@ -19,6 +19,7 @@ import Orders from './pages/Orders';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminMenu from './pages/admin/AdminMenu';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminStats from './pages/admin/AdminStats';
 import Login from './pages/Login';
 import AdminLogin from './pages/admin/AdminLogin';
 import WaiterLogin from './pages/waiter/WaiterLogin';
@@ -169,6 +170,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   }, [i18n.language]);
 
   const isWaiter = userProfile?.isWaiter || localStorage.getItem('waiter_session_active') === 'true';
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/waiter/login' || location.pathname === '/driver/login';
 
   useEffect(() => {
     if (!userProfile?.uid || isWaiter) return;
@@ -180,8 +182,12 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      // For anonymous users, we check if they just placed an order to avoid unnecessary noise
+      const docs = snapshot.docs;
+      if (docs.length === 0) return;
+
       snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added' || (change.type === 'modified' && change.doc.data().status === 'ready' && change.doc.data().updatedAt)) {
+        if (change.type === 'added' || (change.type === 'modified' && change.doc.data().status === 'ready')) {
           toast.success(`🎉 Your order is ready!`, {
             duration: 10000,
             icon: '☕',
@@ -194,7 +200,12 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
         }
       });
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'orders');
+      // Be silent for anonymous users unless it's a critical connectivity error
+      if (!auth.currentUser?.isAnonymous) {
+        handleFirestoreError(error, OperationType.LIST, 'orders');
+      } else {
+        console.warn("Client notification listener suppressed:", error.message);
+      }
     });
 
     return () => unsubscribe();
@@ -235,11 +246,11 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           )}
           
           {/* Universal Header - Responsive */}
-          {!isWaiter && (
+          {!isWaiter && !isLoginPage && (
             <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
           <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-950/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
             <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
                 <OptimizedImage 
                   priority
                   src={brand.logoUrl} 
@@ -350,7 +361,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           >
             <div className="flex justify-between items-center mb-12">
               <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
-                <div className="w-20 h-20 rounded-full overflow-hidden shadow-2xl bg-white flex items-center justify-center p-0">
+                <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl bg-white flex items-center justify-center p-0">
                   <OptimizedImage 
                     src={brand.logoUrl} 
                     alt="Logo" 
@@ -427,7 +438,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       </AnimatePresence>
 
       <Navbar userProfile={userProfile} />
-      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 ${isWaiter ? '!max-w-none !p-0 !pt-0' : ''}`}>
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 ${isWaiter || isLoginPage ? '!max-w-none !p-0 !pt-0' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -452,6 +463,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
+              <Route path="/admin/stats" element={<AdminGuard userProfile={userProfile}><AdminStats /></AdminGuard>} />
               <Route path="/admin/menu" element={<AdminGuard userProfile={userProfile}><AdminMenu /></AdminGuard>} />
               <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
               <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />

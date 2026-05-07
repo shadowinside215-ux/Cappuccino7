@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { collection, query, orderBy, onSnapshot, getDocs, getDoc, doc, setDoc, writeBatch, addDoc, where, serverTimestamp, increment } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -14,9 +14,10 @@ export default function AdminDashboard() {
     activeOrders: 0,
     totalUsers: 0,
     totalItems: 0,
-    todayRevenue: 0
+    todayRevenue: 0,
+    totalOrders: 0
   });
-  const [weeklyRevenue, setWeeklyRevenue] = useState<Record<string, number>>({});
+  const [weeklyRevenue, setWeeklyRevenue] = useState<Record<string, { amount: number, orderCount: number }>>({});
   const [isEmpty, setIsEmpty] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isRegisteringAdmin, setIsRegisteringAdmin] = useState(false);
@@ -43,98 +44,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchProductsForMapping();
   }, []);
-
-  const seedNewItems = async () => {
-    if (!auth.currentUser) {
-      toast.error('You must be signed in to seed items');
-      return;
-    }
-    setIsSeeding(true);
-    try {
-      const batch = writeBatch(db);
-      const catsSnap = await getDocs(collection(db, 'categories'));
-      const existingCats = catsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
-      
-      const categoryConfigs = [
-        { name: '🍔 Burgers', order: 100 },
-        { name: '🥪 Sandwiches', order: 110 },
-        { name: '🍕 Pizza', order: 120 },
-        { name: '🥘 Plats gourmands', order: 130 },
-        { name: '🍝 Pâtes', order: 140 }
-      ];
-
-      const catMap: Record<string, string> = {};
-
-      for (const config of categoryConfigs) {
-        let catId = existingCats.find(c => c.name === config.name)?.id;
-        if (!catId) {
-          const newCatRef = doc(collection(db, 'categories'));
-          batch.set(newCatRef, config);
-          catId = newCatRef.id;
-        }
-        catMap[config.name] = catId;
-      }
-
-      const productsSnap = await getDocs(collection(db, 'products'));
-      const existingProds = productsSnap.docs.map(doc => doc.data().name);
-
-      const products = [
-        // Burgers
-        { name: 'Burger Furri', price: 45, categoryId: catMap['🍔 Burgers'], description: 'Viande hachée, Jambon, Fromage, Tomate, Oignon, Laitue, Sauce blanche, Eau minérale included', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Burger Viande hachée', price: 45, categoryId: catMap['🍔 Burgers'], description: 'Viande hachée, Laitue, Fromage, Tomate, Oignon', image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Chicken Burger', price: 40, categoryId: catMap['🍔 Burgers'], description: 'Poulet haché, Fromage, Tomate, Oignon, Laitue, Soda ou Eau minérale included', image: 'https://images.unsplash.com/photo-1606755962773-b324e0a13086?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Chicken Kids Burger', price: 35, categoryId: catMap['🍔 Burgers'], description: 'Mini burger: Poulet haché, Fromage, Tomate, Oignon, Laitue', image: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Beef Kids Burger', price: 38, categoryId: catMap['🍔 Burgers'], description: 'Mini burger: Viande hachée, Fromage, Tomate, Laitue', image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        
-        // Sandwiches
-        { name: 'Sandwich Thon (froids)', price: 35, categoryId: catMap['🥪 Sandwiches'], description: 'Oignon, Laitue, Tomate, Fromage, Sauce fraîcheur', image: 'https://images.unsplash.com/photo-1553909489-cd47e0907d3f?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Sandwich Jambon (froids)', price: 35, categoryId: catMap['🥪 Sandwiches'], description: 'Laitue, Tomate, Fromage, Sauce mayonnaise, Moutarde', image: 'https://images.unsplash.com/photo-1521390188846-e2a3a97453aa?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Sandwich Viande hachée (chauds)', price: 45, categoryId: catMap['🥪 Sandwiches'], description: 'Viande hachée, Fromage, Tomate, Laitue, Sauce fromage crème', image: 'https://images.unsplash.com/photo-1539252554452-da00ad54da0b?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Sandwich Poulet (chauds)', price: 40, categoryId: catMap['🥪 Sandwiches'], description: 'Poulet, Tomate, Laitue, Oignon, Olives vertes, Sauce pistou', image: 'https://images.unsplash.com/photo-1481068131515-9c3027cb9595?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        
-        // Pizza
-        { name: 'Margherita', price: 30, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Olives noires, Poivrons, Oignon, Mozzarella', image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pizza Thon', price: 35, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Thon, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pizza Poulet', price: 40, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Poulet, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pizza Viande hachée', price: 45, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Viande hachée, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pizza Quatre Saisons', price: 50, categoryId: catMap['🍕 Pizza'], description: 'Sauce tomate, Fromage, Poulet, Viande hachée, Charcuterie, Hotdog, Thon, Oignon, Olives noires, Poivrons, Mozzarella', image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        
-        // Plats gourmands
-        { name: 'Émincé de Boeuf', price: 55, categoryId: catMap['🥘 Plats gourmands'], description: 'Boeuf avec sauce du chef et garniture légumes sautée', image: 'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Émincé de Poulet', price: 45, categoryId: catMap['🥘 Plats gourmands'], description: 'Poulet with crème champignons and garniture légumes sautée', image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pasticcio Poulet', price: 37, categoryId: catMap['🥘 Plats gourmands'], description: 'Pasticcio au poulet gratiné', image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Pasticcio Dinde Fumé', price: 32, categoryId: catMap['🥘 Plats gourmands'], description: 'Pasticcio à la dinde fumée gratiné', image: 'https://images.unsplash.com/photo-1544333346-6473919e2776?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        
-        // Pâtes
-        { name: 'Alfredo', price: 48, categoryId: catMap['🍝 Pâtes'], description: 'Poulet champignon fromage. Choix de Tagliatélle, Spaghetti ou Penné', image: 'https://images.unsplash.com/photo-1645112481338-331408a2a95c?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Napolitaine', price: 48, categoryId: catMap['🍝 Pâtes'], description: 'Sauce pistou. Choix de Tagliatélle, Spaghetti ou Penné', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Bolognaise', price: 42, categoryId: catMap['🍝 Pâtes'], description: 'Sauce bolognaise traditionnelle. Choix de Tagliatélle, Spaghetti ou Penné', image: 'https://images.unsplash.com/photo-1598866539627-9a6983001l5?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Carbonara', price: 52, categoryId: catMap['🍝 Pâtes'], description: 'Sauce carbonara crémeuse. Choix de Tagliatélle, Spaghetti ou Penné', image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=800&q=80', isAvailable: true },
-        { name: 'Lasagne Bolognaise', price: 68, categoryId: catMap['🍝 Pâtes'], description: 'Lasagne au four à la bolognaise', image: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?auto=format&fit=crop&w=800&q=80', isAvailable: true }
-      ];
-
-      let addedCount = 0;
-      for (const p of products) {
-        if (!existingProds.includes(p.name)) {
-          const prodRef = doc(collection(db, 'products'));
-          batch.set(prodRef, p);
-          addedCount++;
-        }
-      }
-      
-      await batch.commit();
-      if (addedCount > 0) {
-        toast.success(`${addedCount} new menu items added successfully!`);
-      } else {
-        toast.success('Menu is already up to date!');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to seed items. Check console for details.');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const resetTodayRevenue = async () => {
     if (!confirm('Reset today\'s revenue to 0?')) return;
@@ -183,7 +92,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    // Auto-register super admin and perform requested cleanup
+    // Auto-register super admin
     const initializeAdmin = async () => {
       if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
         try {
@@ -197,64 +106,8 @@ export default function AdminDashboard() {
               role: 'super_admin'
             });
           }
-
-          // 2. Perform requested system-wide cleanup (Wipe All)
-          // We use sessionStorage to ensure it doesn't run repeatedly in a loop
-          if (window.sessionStorage.getItem('ai_cleanup_done') !== 'true') {
-            console.log("AI Agent performing requested system-wide cleanup...");
-            
-            // Delete all orders
-            const ordersSnap = await getDocs(collection(db, 'orders'));
-            if (ordersSnap.docs.length > 0) {
-              const batch = writeBatch(db);
-              ordersSnap.docs.forEach(d => batch.delete(d.ref));
-              await batch.commit();
-            }
-
-            // Reset all user points/loyalty
-            const usersSnap = await getDocs(collection(db, 'users'));
-            if (usersSnap.docs.length > 0) {
-              const batch = writeBatch(db);
-              usersSnap.docs.forEach(d => {
-                batch.update(d.ref, {
-                  points: 0,
-                  itemLoyalty: {},
-                  coffeeCount: 0,
-                  totalSpent: 0
-                });
-              });
-              await batch.commit();
-            }
-
-            // Clear all revenue tracking
-            const revSnap = await getDocs(collection(db, 'dailyRevenue'));
-            if (revSnap.docs.length > 0) {
-              const batch = writeBatch(db);
-              revSnap.docs.forEach(d => batch.delete(d.ref));
-              await batch.commit();
-            }
-
-            // Delete all products
-            const productsSnap = await getDocs(collection(db, 'products'));
-            if (productsSnap.docs.length > 0) {
-              const batch = writeBatch(db);
-              productsSnap.docs.forEach(d => batch.delete(d.ref));
-              await batch.commit();
-            }
-
-            // Delete all categories
-            const catsSnap = await getDocs(collection(db, 'categories'));
-            if (catsSnap.docs.length > 0) {
-              const batch = writeBatch(db);
-              catsSnap.docs.forEach(d => batch.delete(d.ref));
-              await batch.commit();
-            }
-
-            window.sessionStorage.setItem('ai_cleanup_done', 'true');
-            toast.success("AI Agent: Full system wipe complete (Orders, Users, Stats, Menu). ✋");
-          }
         } catch (err) {
-          console.error("Admin initialization/cleanup failed:", err);
+          console.error("Admin initialization failed:", err);
         }
       }
     };
@@ -282,72 +135,61 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    // Active Orders listener
-    const qActive = query(collection(db, 'orders'));
+    // Active Orders count (using optimized query)
+    const qActive = query(collection(db, 'orders'), where('status', 'not-in', ['delivered', 'cancelled']));
     const unsubOrders = onSnapshot(qActive, (snapshot) => {
-      const docs = snapshot.docs.map(doc => doc.data() as Order);
-      const activeCount = docs.filter(o => !['delivered', 'cancelled'].includes(o.status)).length;
-      setStats(prev => ({ ...prev, activeOrders: activeCount }));
+      setStats(prev => ({ ...prev, activeOrders: snapshot.size }));
     }, (error) => {
-      if (auth.currentUser) {
-        handleFirestoreError(error, OperationType.LIST, 'orders');
-      }
+      // Just log, don't throw for count queries
+      console.warn("Active orders count error:", error.message);
     });
 
-    // Weekly Revenue Listener
-    const qRev = query(collection(db, 'dailyRevenue'), orderBy('lastUpdated', 'desc'));
+    // Weekly Revenue Listener (Limit to last 14 days to keep it light)
+    const qRev = query(
+      collection(db, 'dailyRevenue'), 
+      orderBy('lastUpdated', 'desc')
+    );
     const unsubRev = onSnapshot(qRev, (snapshot) => {
-      const revData: Record<string, number> = {};
+      const revData: Record<string, { amount: number, orderCount: number }> = {};
       let todayRev = 0;
+      let todayOrders = 0;
       const today = new Date().toISOString().split('T')[0];
       
       snapshot.docs.forEach(d => {
         const data = d.data();
-        revData[d.id] = data.amount || 0;
-        if (d.id === today) todayRev = data.amount || 0;
+        revData[d.id] = { 
+          amount: data.amount || 0, 
+          orderCount: data.orderCount || 0 
+        };
+        if (d.id === today) {
+          todayRev = data.amount || 0;
+          todayOrders = data.orderCount || 0;
+        }
       });
       
       setWeeklyRevenue(revData);
-      setStats(prev => ({ ...prev, todayRevenue: todayRev }));
+      setStats(prev => ({ ...prev, todayRevenue: todayRev, totalOrders: todayOrders }));
+    }, (error) => {
+      console.warn("Revenue listener error:", error.message);
+    });
+
+    // Total Users Listener
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const allUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+      const clientsOnly = allUsers.filter(u => !u.isAdmin && !u.isWaiter && !u.isDriver);
+      setUsers(clientsOnly);
+      setStats(prev => ({ ...prev, totalUsers: clientsOnly.length }));
+    });
+
+    // Total Items Listener
+    const unsubItems = onSnapshot(collection(db, 'products'), (snapshot) => {
+      setStats(prev => ({ ...prev, totalItems: snapshot.size }));
     });
 
     const fetchStats = async () => {
       try {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        const prodsSnap = await getDocs(collection(db, 'products'));
         const catsSnap = await getDocs(collection(db, 'categories'));
-        
-        const allUsers = usersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-        const clientsOnly = allUsers.filter(u => !u.isAdmin && !u.isWaiter && !u.isDriver);
-        setUsers(clientsOnly);
-
-        // Robust auto-seed check: Check if category exists AND has items
-        const hasDesserts = catsSnap.docs.some(d => d.id === 'crepes-desserts');
-        const dessProdSnap = await getDocs(query(collection(db, 'products'), where('categoryId', '==', 'crepes-desserts')));
-        const hasDessertsItems = dessProdSnap.size > 0;
-        
-        if ((!hasDesserts || !hasDessertsItems) && !isSettingUp) {
-          console.log("Auto-seeding Desserts menu items...");
-          seedDessertsMenu();
-        }
-
-        // Quick FIX: Unhide any hidden desserts
-        if (hasDessertsItems) {
-          const hiddenDesserts = dessProdSnap.docs.filter(d => !d.data().isAvailable);
-          if (hiddenDesserts.length > 0) {
-            const batch = writeBatch(db);
-            hiddenDesserts.forEach(d => batch.update(d.ref, { isAvailable: true }));
-            await batch.commit();
-            console.log(`Unhid ${hiddenDesserts.length} desserts.`);
-          }
-        }
-
         setIsEmpty(catsSnap.empty);
-        setStats(prev => ({ 
-          ...prev, 
-          totalUsers: clientsOnly.length,
-          totalItems: prodsSnap.size
-        }));
       } catch (error) {
         handleFirestoreError(error, OperationType.GET, 'multiple/stats');
       }
@@ -357,248 +199,245 @@ export default function AdminDashboard() {
     return () => {
       unsubOrders();
       unsubRev();
+      unsubUsers();
+      unsubItems();
     };
   }, []);
 
-  const seedDessertsMenu = async () => {
+  // Use initial setup link when DB is empty
+  const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+
+  const initializeDatabase = async (force = false) => {
     if (isSettingUp) return;
-    setIsSettingUp(true);
-    try {
-      const batch = writeBatch(db);
-      
-      // 1. Add Category
-      const catId = 'crepes-desserts';
-      const catRef = doc(db, 'categories', catId);
-      batch.set(catRef, {
-        name: 'crepes_desserts',
-        order: 2, // Second category, after Breakfast (1)
-        id: catId
-      });
-
-      // 2. Define Products
-      const productsToAdd = [
-        // CRÊPES SALÉES
-        { name: 'Fromage (Mozzarella et fromage rouge)', price: 42, subSection: 'crepes_salees' },
-        { name: 'Dinde fumée (Sauce blanche, dinde fumée, fromage)', price: 48, subSection: 'crepes_salees' },
-        { name: 'Poulet Champignon (Sauce champignon, poulet, fromage)', price: 54, subSection: 'crepes_salees' },
-        
-        // CRÊPES SUCRÉES
-        { name: 'Nature', price: 20, subSection: 'crepes_sucrees' },
-        { name: 'Confiture', price: 25, subSection: 'crepes_sucrees' },
-        { name: 'Nutella', price: 30, subSection: 'crepes_sucrees' },
-        { name: 'Nutella et Banane', price: 37, subSection: 'crepes_sucrees' },
-        { name: 'Miel & Noix', price: 35, subSection: 'crepes_sucrees' },
-        { name: 'Royal (Caramel & fruits secs & crème chantilly)', price: 40, subSection: 'crepes_sucrees' },
-        { name: 'Exotique', price: 48, subSection: 'crepes_sucrees' },
-        { name: 'Brésilienne', price: 48, subSection: 'crepes_sucrees' },
-        { name: 'Brésilienne Nutella Banane, Boule de glace vanille', price: 48, subSection: 'crepes_sucrees' },
-        { name: 'Cappuccino7 (Nutella, boule de glace au choix, Oréo, Kitkat, noix)', price: 52, subSection: 'crepes_sucrees' },
-        { name: 'Miel et fruit sec', price: 49, subSection: 'crepes_sucrees' },
-
-        // GAUFRES
-        { name: 'Caramel', price: 30, subSection: 'gaufres' },
-        { name: 'Miel & Noix', price: 30, subSection: 'gaufres' },
-        { name: 'Nutella', price: 35, subSection: 'gaufres' },
-        { name: 'Miel aux fruits secs', price: 49, subSection: 'gaufres' },
-
-        // PANCAKES
-        { name: 'Caramel', price: 30, subSection: 'pancakes' },
-        { name: 'Miel & Noix', price: 30, subSection: 'pancakes' },
-        { name: 'Nutella', price: 35, subSection: 'pancakes' },
-        { name: 'Miel aux fruits secs', price: 49, subSection: 'pancakes' },
-      ];
-
-      productsToAdd.forEach((p, idx) => {
-        const pId = `dessert-${idx}`;
-        const pRef = doc(db, 'products', pId);
-        batch.set(pRef, {
-          ...p,
-          categoryId: catId,
-          id: pId,
-          image: p.subSection === 'crepes_salees' 
-            ? 'https://images.unsplash.com/photo-1519676867240-f03562e64548?q=80&w=800'
-            : p.subSection === 'crepes_sucrees'
-            ? 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800'
-            : p.subSection === 'gaufres'
-            ? 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800'
-            : 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800', // pancakes
-          description: '',
-          isAvailable: true
-        });
-      });
-
-      await batch.commit();
-      toast.success('Desserts Menu Seeded Successfully!');
-      setIsSettingUp(false);
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to seed menu');
-      setIsSettingUp(false);
+    
+    if (!force) {
+      const confirmMessage = "⚠️ RESET DATABASE: This will re-add all default categories and menu items. Your custom items will be deleted, but EXISTING images will be kept. Proceed?";
+      if (!window.confirm(confirmMessage)) return;
     }
-  };
 
-  const initializeDatabase = async () => {
-    if (isSettingUp) return;
     setIsSettingUp(true);
+    const toastId = toast.loading('Initializing database components...');
+    
     try {
+      // 1. Define Structure
+      const categories = [
+        { id: 'coffee', name: '☕ COFFEE / HOT DRINKS (Les boissons)', order: 1 },
+        { id: 'tea', name: '🍵 THÉ & INFUSIONS', order: 2 },
+        { id: 'special-hot', name: '🔥 SPECIAL HOT DRINKS', order: 3 },
+        { id: 'iced-latte', name: '🧊 ICED LATTE', order: 4 },
+        { id: 'ice-tea', name: '🧊 ICE TEA', order: 5 },
+        { id: 'juices', name: '🥤 JUS (JUICES)', order: 6 },
+        { id: 'frappuccino', name: '🧋 FRAPPUCCINOS COFFEE', order: 7 },
+        { id: 'milkshakes', name: '🥤 MILKSHAKES', order: 8 },
+        { id: 'smoothies', name: '🥤 SMOOTHIES', order: 9 },
+        { id: 'mojitos', name: '🍹 MOJITOS', order: 10 },
+        { id: 'salads', name: '🥗 SALADS', order: 11 },
+        { id: 'burgers', name: '🍔 Burgers', order: 12 },
+        { id: 'sandwiches', name: '🥪 Sandwiches', order: 13 },
+        { id: 'pizza', name: '🍕 PIZZA', order: 14 },
+        { id: 'plats-gourmands', name: '🥘 PLATS GOURMANDS', order: 15 },
+        { id: 'pates', name: '🍝 PÂTES', order: 16 },
+        { id: 'crepes-desserts', name: '🥞 Crêpes & Desserts', order: 17 }
+      ];
+
+      const productsData: Record<string, any[]> = {
+        'coffee': [
+          { name: 'Lait chaude', price: 14 },
+          { name: 'Espresso', price: 14 },
+          { name: 'Café americain', price: 15 },
+          { name: 'Lait parfumé', price: 14 },
+          { name: 'Café crème', price: 15 },
+          { name: 'Nespresso', price: 15 },
+          { name: 'Latté Macchiato', price: 16 },
+          { name: 'Double Espresso', price: 18 },
+          { name: 'Cappuccino Italien', price: 18 },
+          { name: 'Chocolat chaud', price: 18 },
+          { name: 'Cappuccino viennois', price: 25 },
+          { name: 'Café au miel', price: 18 }
+        ],
+        'tea': [
+          { name: 'Thé à la menthe', price: 14 },
+          { name: 'Lipton', price: 14 },
+          { name: 'Verveine', price: 14 },
+          { name: 'Infusion thé bio', price: 16 }
+        ],
+        'special-hot': [
+          { name: 'Mocaccino', price: 20 },
+          { name: 'Noisette Macchiato', price: 20 },
+          { name: 'Caramel Macchiato', price: 22 },
+          { name: 'Chocolat viennois', price: 22 },
+          { name: 'Chocolat Fondue', price: 28 },
+          { name: 'Chocolat Bresilien', price: 30 }
+        ],
+        'iced-latte': [
+          { name: 'Caramel & cream', price: 25 },
+          { name: 'Noisette', price: 25 },
+          { name: 'Happy moka', price: 25 }
+        ],
+        'ice-tea': [
+          { name: 'Pêche', price: 30 },
+          { name: 'Citron', price: 30 },
+          { name: 'Framboise', price: 30 }
+        ],
+        'juices': [
+          { name: 'Orange', price: 25 },
+          { name: 'Citron', price: 25 },
+          { name: 'Carotte', price: 25 },
+          { name: 'Pomme', price: 25 },
+          { name: 'Banane', price: 25 },
+          { name: 'Mangue', price: 25 },
+          { name: 'Fraise', price: 25 },
+          { name: 'Ananas', price: 25 },
+          { name: 'Kiwi', price: 25 },
+          { name: 'Panaché', price: 35 },
+          { name: 'Avocat fruits secs', price: 30 },
+          { name: 'Zazaa', price: 48 }
+        ],
+        'frappuccino': [
+          { name: 'Caramel & Cream', price: 35 },
+          { name: 'Caramel Beurre salé', price: 35 },
+          { name: 'Moka Chocolate', price: 35 },
+          { name: 'Noisette', price: 35 },
+          { name: 'Amaretto', price: 35 }
+        ],
+        'milkshakes': [
+          { name: 'Caramel Shake', price: 40 },
+          { name: 'Orange shake', price: 40 },
+          { name: 'Mixed berries (fruits rouges)', price: 40 },
+          { name: 'Mango Alphonso', price: 40 },
+          { name: 'Chocolat Oreo', price: 40 },
+          { name: 'Fruit de la passion', price: 40 },
+          { name: 'Fraise', price: 40 }
+        ],
+        'smoothies': [
+          { name: 'Detox Maison', price: 35 },
+          { name: 'Berry Explosion', price: 35 },
+          { name: 'Mango Madness', price: 35 },
+          { name: 'Tropical paradise', price: 35 }
+        ],
+        'mojitos': [
+          { name: 'Classique', price: 25 },
+          { name: 'Mango mojito', price: 25 },
+          { name: 'Berries mojito', price: 25 },
+          { name: 'Passion mojito', price: 25 },
+          { name: 'Ananas mojito', price: 25 },
+          { name: 'Blue mojito', price: 25 },
+          { name: 'Concombre mojito', price: 25 },
+          { name: 'Strawberry mojito', price: 25 }
+        ],
+        'salads': [
+          { name: 'Salade Marocaine', price: 35 },
+          { name: 'Salade Thon', price: 40 },
+          { name: 'Salade Royale', price: 55 },
+          { name: 'Salade Niçoise', price: 42 },
+          { name: 'Salade du Chef', price: 65 }
+        ],
+        'burgers': [
+          { name: 'Burger Furri', price: 45, d: 'Viande hachée, Jambon, Fromage, Tomate, Oignon, Laitue, Sauce blanche, Eau minérale' },
+          { name: 'Burger Viande hachée', price: 45, d: 'Viande hachée, Laitue, Fromage, Tomate, Oignon' },
+          { name: 'Chicken Burger', price: 40, d: 'Poulet haché, Fromage, Tomate, Oignon, Laitue, Soda ou Eau minérale' },
+          { name: 'Chicken Kids Burger (mini burger)', price: 35, d: 'Poulet haché, Fromage, Tomate, Oignon, Laitue' },
+          { name: 'Beef Kids Burger (mini burger)', price: 38, d: 'Viande hachée, Fromage, Tomate, Laitue' }
+        ],
+        'sandwiches': [
+          { name: 'Sandwich Thon (froids)', price: 35, d: 'Oignon, Laitue, Tomate, Fromage, Sauce fraîcheur' },
+          { name: 'Sandwich Jambon (froids)', price: 35, d: 'Laitue, Tomate, Fromage, Sauce mayonnaise, Moutarde' },
+          { name: 'Sandwich Viande hachée (chauds)', price: 45, d: 'Viande hachée, Fromage, Tomate, Laitue, Sauce fromage crème' },
+          { name: 'Sandwich Poulet (chauds)', price: 40, d: 'Poulet, Tomate, Laitue, Oignon, Olives vertes, Sauce pistou' }
+        ],
+        'pizza': [
+          { name: 'Margarita', price: 35 },
+          { name: 'Vegeterienne', price: 45 },
+          { name: 'Thon', price: 50 },
+          { name: 'Quatre Fromages', price: 55 },
+          { name: 'Viande Hachée', price: 55 },
+          { name: 'Fruit de mer', price: 65 }
+        ],
+        'plats-gourmands': [
+          { name: 'Escaloppe de poulet à la crème', price: 75 },
+          { name: 'Emincé de boeuf', price: 85 },
+          { name: 'Cordon Bleu', price: 80 }
+        ],
+        'pates': [
+          { name: 'Bolognaise', price: 45 },
+          { name: 'Carbonara', price: 50 },
+          { name: 'Pesto', price: 45 },
+          { name: 'Fruits de mer', price: 60 }
+        ],
+        'crepes-desserts': [
+          { name: 'Nature', price: 20, s: 'crepes_sucrees' },
+          { name: 'Confiture', price: 25, s: 'crepes_sucrees' },
+          { name: 'Nutella', price: 30, s: 'crepes_sucrees' },
+          { name: 'Nutella et Banane', price: 37, s: 'crepes_sucrees' },
+          { name: 'Miel & Noix', price: 35, s: 'crepes_sucrees' },
+          { name: 'Royal', price: 40, s: 'crepes_sucrees' },
+          { name: 'Exotique', price: 48, s: 'crepes_sucrees' },
+          { name: 'Brésilienne', price: 48, s: 'crepes_sucrees' },
+          { name: 'Cappuccino7 Special', price: 52, s: 'crepes_sucrees' },
+          { name: 'Fromage Mozerella', price: 42, s: 'crepes_salees' },
+          { name: 'Dinde fumée', price: 48, s: 'crepes_salees' },
+          { name: 'Poulet Champignon', price: 54, s: 'crepes_salees' }
+        ]
+      };
+
+      // 2. Clear & Add in sequence
       const batch = writeBatch(db);
       
-      // Default categories with priorities
-      const categories = [
-        { name: 'breakfast', order: 1 },
-        { name: 'crepes_desserts', order: 2, id: 'crepes-desserts' },
-        { name: 'brunch', order: 3 },
-        { name: 'drinks', order: 4 },
-        { name: 'fast_food', order: 5 },
-        { name: 'healthy', order: 6 },
-        { name: 'desserts', order: 7 },
-        { name: 'ice_cream', order: 8 },
-        { name: 'signature', order: 9 },
-        { name: 'extras', order: 10 }
-      ];
-
-      // Supplements for add-on
-      const supplementItems = [
-        { name: '🥤 Eau minérale', price: 5 },
-        { name: '🍗 Dinde fumée', price: 15 },
-        { name: '🍯 Amlou', price: 10 },
-        { name: '🍫 Nutella', price: 12 },
-        { name: '🍓 Confiture', price: 10 },
-        { name: '🧀 Fromage', price: 10 },
-        { name: '🧀 Fromage (jaune / cheese slice)', price: 15 },
-        { name: '🫒 Huile d’olive', price: 10 }
-      ];
-
-      const dessertsItems = [
-        // CRÊPES SALÉES
-        { name: 'Fromage (Mozzarella et fromage rouge)', price: 42, subSection: 'crepes_salees', image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?q=80&w=800' },
-        { name: 'Dinde fumée (Sauce blanche, dinde fumée, fromage)', price: 48, subSection: 'crepes_salees', image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?q=80&w=800' },
-        { name: 'Poulet Champignon (Sauce champignon, poulet, fromage)', price: 54, subSection: 'crepes_salees', image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?q=80&w=800' },
-        
-        // CRÊPES SUCRÉES
-        { name: 'Nature', price: 20, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Confiture', price: 25, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Nutella', price: 30, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Nutella et Banane', price: 37, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Miel & Noix', price: 35, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Royal (Caramel & fruits secs & crème chantilly)', price: 40, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Exotique', price: 48, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Brésilienne', price: 48, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Brésilienne Nutella Banane, Boule de glace vanille', price: 48, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Cappuccino7 (Nutella, boule de glace au choix, Oréo, Kitkat, noix)', price: 52, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-        { name: 'Miel et fruit sec', price: 49, subSection: 'crepes_sucrees', image: 'https://images.unsplash.com/photo-1547985444-239619623e1c?q=80&w=800' },
-
-        // GAUFRES
-        { name: 'Caramel', price: 30, subSection: 'gaufres', image: 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800' },
-        { name: 'Miel & Noix', price: 30, subSection: 'gaufres', image: 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800' },
-        { name: 'Nutella', price: 35, subSection: 'gaufres', image: 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800' },
-        { name: 'Miel aux fruits secs', price: 49, subSection: 'gaufres', image: 'https://images.unsplash.com/photo-1573532026732-f1e967a57c5f?q=80&w=800' },
-
-        // PANCAKES
-        { name: 'Caramel', price: 30, subSection: 'pancakes', image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800' },
-        { name: 'Miel & Noix', price: 30, subSection: 'pancakes', image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800' },
-        { name: 'Nutella', price: 35, subSection: 'pancakes', image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800' },
-        { name: 'Miel aux fruits secs', price: 49, subSection: 'pancakes', image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=800' },
-      ];
-
-      // Mapping for specific required data
-      const breakfastItems = [
-        { name: 'Occidental', price: 38, description: "Deux viennoiseries, Jus d'orange, Balboula, Boisson chaude au choix, Eau minérale", image: '' },
-        { name: 'Amazigh', price: 48, description: 'Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?q=80&w=800' },
-        { name: 'Gourmand', price: 45, description: 'Œufs au plat ou brouillés, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=800' },
-        { name: 'Ftour Fassi', price: 48, description: 'Œufs au khlii, Huile d\'olive, olives noires, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?q=80&w=800' },
-        { name: 'Ftour Chamali', price: 48, description: 'Œufs brouillés avec charcuterie et fromage blanc, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1513442542250-854d436a73f2?q=80&w=800' },
-        { name: 'Omelette Spéciale', price: 48, description: 'Œufs brouillés, Tomate cerise, oignons, Dinde fumée, Panier de pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1494597564530-897f5a210287?q=80&w=800' },
-        { name: 'Cappuccino7 Breakfast', price: 68, description: 'Croque Monsieur, Hotdog, Fromage blanc, Salade verte, Crêpes Nutella, Salade de fruits, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' },
-        { name: 'Healthy Breakfast', price: 60, description: 'Toast avocat + œufs, Bol d’avoine (banane, chia, fruits secs), Fruits de saison, yaourt, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1490312278390-ab6414f8d2f5?q=80&w=800' },
-        { name: 'Turkie', price: 68, description: 'Œufs au plat ou brouillés, Hash browns, Tomate grillée, Boisson chaude, Jus d\'orange, Balboula, Eau minérale', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=800' },
-        { name: 'Anglais', price: 85, description: 'Œufs au plat, Fromages, Concombre, tomate, olives, Jambon, beurre, confiture, Pain, Jus d\'orange, Balboula, Boisson chaude au choix, Eau minérale', image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' }
-      ];
-
-      const brunchItems = [
-        { name: 'Brunch (1 Personne)', price: 87, description: 'Omelette, saucisses, Beghrir, Harcha, Meloui, Miel, Amlou, Fromage, Jus orange, Pancakes Nutella, Boisson chaude...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=80&w=800' },
-        { name: 'Brunch (2 Personnes)', price: 150, description: 'Double portion: Omelette, saucisses, plateau beldi complet, fromages, charcuterie, jus orange, pancakes, desserts...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=80&w=800' }
-      ];
-
-      const drinkItems = [
-        { name: 'Espresso Prestige', price: 15, description: 'Strong, aromatic artisan espresso roast.', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=800' },
-        { name: 'Signature Cappuccino', price: 25, description: 'Our namesake classic with velvety foam.', image: 'https://images.unsplash.com/photo-1534778101976-62847782c213?q=80&w=800' },
-        { name: 'Fresh Orange Juice', price: 20, description: '100% natural, freshly squeezed.', image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800' }
-      ];
-
-      const fastFoodItems = [
-        { name: 'Classic Beef Burger', price: 45, description: 'Premium beef, cheddar, fresh lettuce, and house sauce.', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800' },
-        { name: 'Chicken Club Sandwich', price: 40, description: 'Triple decker with grilled chicken, turkey, and eggs.', image: 'https://images.unsplash.com/photo-1567234665766-4740a7575db0?q=80&w=800' }
-      ];
-
-      const healthyItems = [
-        { name: 'Avocado Energy Toast', price: 55, description: 'Sourdough, smashed avocado, poached eggs, seeds.', image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=800' },
-        { name: 'Greek Quinoa Salad', price: 48, description: 'Fresh veggies, feta, olives, and citrus dressing.', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800' }
-      ];
-
-      const dessertItems = [
-        { name: 'Nutella Pancakes', price: 35, description: 'Stack of 3 fluffy pancakes with chocolate and fruits.', image: 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?q=80&w=800' },
-        { name: 'Moroccan Pastry Plate', price: 30, description: 'Assortment of artisan traditional cookies.', image: 'https://images.unsplash.com/photo-1533035353720-f1c6a75cd8ab?q=80&w=800' }
-      ];
-
-      const iceCreamItems = [
-        { name: 'Artisan Vanilla Bean', price: 25, description: 'Double scoop of premium vanilla with honey drizzle.', image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9391?q=80&w=800' },
-        { name: 'Pistachio Delight', price: 30, description: 'Traditional roasted pistachio with chopped nuts.', image: 'https://images.unsplash.com/photo-1505394033323-4241bb21750b?q=80&w=800' }
-      ];
-
       for (const cat of categories) {
-        const catRef = doc(db, 'categories', cat.id || `gen-${Math.random()}`);
-        if (cat.id) {
-          batch.set(catRef, { name: cat.name, order: cat.order, id: cat.id });
-        } else {
-          batch.set(catRef, cat);
-        }
+        const catRef = doc(db, 'categories', cat.id);
+        batch.set(catRef, { name: cat.name, order: cat.order, id: cat.id }, { merge: true });
         
-        let items: any[] = [];
-        if (cat.name === 'breakfast') items = breakfastItems;
-        else if (cat.name === 'crepes_desserts') items = dessertsItems;
-        else if (cat.name === 'brunch') items = brunchItems;
-        else if (cat.name === 'drinks') items = drinkItems;
-        else if (cat.name === 'fast_food') items = fastFoodItems;
-        else if (cat.name === 'healthy') items = healthyItems;
-        else if (cat.name === 'desserts') items = dessertItems;
-        else if (cat.name === 'ice_cream') items = iceCreamItems;
-        else if (cat.name === 'signature') items = [breakfastItems[6]];
-        else if (cat.name === 'extras') items = supplementItems;
-
+        const items = productsData[cat.id] || [];
         items.forEach(item => {
-          const prodRef = doc(collection(db, 'products'));
+          const safeId = item.name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
+          const prodRef = doc(db, 'products', `${cat.id}-${safeId}`);
+          
           batch.set(prodRef, { 
-            ...item, 
+            name: item.name,
+            price: Number(item.price),
+            description: item.description || item.d || '',
+            subSection: item.s || '',
             categoryId: catRef.id, 
             isAvailable: true,
-            id: prodRef.id // Ensure ID is consistent
-          });
+            id: prodRef.id
+          }, { merge: true });
         });
       }
 
-      // Default settings
-      batch.set(doc(db, 'settings', 'global'), {
-        pointsRate: 1,
-        rewardThreshold: 100
-      });
+      const brandRef = doc(db, 'settings', 'brand');
+      batch.set(brandRef, {
+        logoUrl: 'https://images.unsplash.com/photo-1541167760496-162955ed8a4f?w=800&q=80',
+        heroImageUrl: 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=80&w=1600&auto=format&fit=crop',
+        loginBgUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600&auto=format&fit=crop',
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       await batch.commit();
+      
       setIsEmpty(false);
-      toast.success('Database initialized with default categories!');
-      // Give a tiny delay for Firestore to propogate then redirect
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 800);
+      toast.success('Your menu is now LIVE!', { id: toastId });
+      
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to initialize database');
+      console.error("Setup error:", err);
+      toast.error('Setup failed: ' + (err instanceof Error ? err.message : 'Unknown error'), { id: toastId });
     } finally {
       setIsSettingUp(false);
     }
   };
 
-  const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+  useEffect(() => {
+    if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
+      const autoSync = async () => {
+        const hasSync = localStorage.getItem('menu_auto_sync_v24');
+        if (!hasSync) {
+          console.log("AI Studio: Automatically syncing your requested menu items...");
+          await initializeDatabase(true);
+          localStorage.setItem('menu_auto_sync_v24', 'true');
+        }
+      };
+      autoSync();
+    }
+  }, [auth.currentUser?.email]);
 
   return (
     <div className="space-y-8">
@@ -618,22 +457,6 @@ export default function AdminDashboard() {
             </div>
             <h1 className="text-4xl font-bold text-bento-primary">{t('dashboard')}</h1>
           </div>
-        </div>
-        <div className="flex gap-2 flex-wrap items-center w-full sm:w-auto">
-          <button 
-            onClick={seedNewItems}
-            disabled={isSeeding}
-            className="flex-1 sm:flex-none bg-stone-900 text-white px-4 md:px-5 py-3 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[9px] md:text-[10px] font-black uppercase tracking-widest"
-          >
-            <Package size={16} /> {isSeeding ? '...' : 'Menu'}
-          </button>
-          <button 
-            onClick={registerAdmin}
-            disabled={isRegisteringAdmin}
-            className="flex-1 sm:flex-none bg-bento-accent text-bento-primary px-4 md:px-5 py-3 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-95 disabled:opacity-50 text-[9px] md:text-[10px] font-black uppercase tracking-widest"
-          >
-            <ShieldCheck size={16} /> {isRegisteringAdmin ? '...' : 'Fix'}
-          </button>
         </div>
       </div>
 
@@ -663,20 +486,20 @@ export default function AdminDashboard() {
 
       {/* Stats Grid - Bento Style */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card !p-6 lg:col-span-1">
+        <div className="card !p-6 lg:col-span-1 border-t-4 border-amber-400">
           <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl w-fit mb-4">
             <ShoppingBag size={20} />
           </div>
-          <p className="text-3xl md:text-4xl font-black text-bento-primary mb-1">{stats.activeOrders}</p>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('active_orders_label')}</p>
+          <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.totalOrders}</p>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Orders Today</p>
         </div>
-        
-        <div className="card !p-6 lg:col-span-1 relative group overflow-hidden">
+
+        <div className="card !p-6 lg:col-span-1 relative group overflow-hidden border-t-4 border-green-400">
           <div className="p-3 bg-green-50 text-green-600 rounded-2xl w-fit mb-4">
             <TrendingUp size={20} />
           </div>
-          <p className="text-3xl md:text-4xl font-black text-bento-primary mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_label')}</p>
+          <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Today's Revenue (MAD)</p>
           
           <button 
             onClick={resetTodayRevenue}
@@ -740,14 +563,42 @@ export default function AdminDashboard() {
             <History className="hidden sm:block text-stone-200" size={32} />
           </div>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+           <button 
+             onClick={() => navigate('/admin/stats')}
+             className="bg-stone-900 text-white p-8 rounded-3xl flex items-center justify-between group hover:bg-stone-800 transition-all shadow-xl"
+           >
+             <div className="text-left">
+               <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Deep Analytics</span>
+               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">View All Statistics</h4>
+               <p className="text-xs opacity-60 mt-2">Revenue, Orders & Monthly reports</p>
+             </div>
+             <div className="p-4 bg-white/10 rounded-2xl group-hover:bg-amber-400 group-hover:text-stone-900 transition-all">
+               <TrendingUp size={28} />
+             </div>
+           </button>
+
+           <div className="bg-amber-400 p-8 rounded-3xl flex items-center justify-between text-stone-900">
+             <div className="text-left">
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Community</span>
+               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">Users List</h4>
+               <p className="text-xs opacity-60 mt-2">Manage customer profiles</p>
+             </div>
+             <div className="p-4 bg-stone-900/10 rounded-2xl">
+               <Users size={28} />
+             </div>
+           </div>
+        </div>
         
-        <div className="grid grid-cols-7 gap-1 md:gap-4 h-48 items-end">
+        <div className="grid grid-cols-7 gap-1 md:gap-4 h-48 items-end opacity-40 pointer-events-none blur-[1px]">
           {Array.from({ length: 7 }).map((_, i) => {
             const date = new Date();
             date.setDate(date.getDate() - (6 - i));
             const dateStr = date.toISOString().split('T')[0];
-            const amount = weeklyRevenue[dateStr] || 0;
-            const amounts = Object.values(weeklyRevenue) as number[];
+            const revItem = weeklyRevenue[dateStr] || { amount: 0, orderCount: 0 };
+            const amount = revItem.amount;
+            const amounts = Object.values(weeklyRevenue).map((v: any) => v.amount);
             const maxAmount = Math.max(...(amounts.length > 0 ? amounts : [0]), 100);
             const heightPercent = Math.min((amount / maxAmount) * 100, 100);
             const dayName = date.toLocaleDateString(undefined, { weekday: 'short' });
@@ -1029,6 +880,7 @@ export default function AdminDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+
     </div>
   );
 }

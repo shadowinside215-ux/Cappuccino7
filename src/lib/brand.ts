@@ -12,7 +12,7 @@ export interface BrandSettings {
   updatedAt?: string;
 }
 
-const DEFAULT_LOGO = 'https://raw.githubusercontent.com/Lucide-Icons/lucide/main/icons/coffee.svg';
+const DEFAULT_LOGO = 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=200';
 const DEFAULT_HERO = 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=80&w=1600';
 
 export function useBrandSettings() {

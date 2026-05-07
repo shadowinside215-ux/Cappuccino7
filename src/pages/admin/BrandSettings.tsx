@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { ArrowLeft, Upload, Loader2, Image as ImageIcon, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import OptimizedImage from '../../components/ui/OptimizedImage';
 
 export default function BrandSettings() {
   const [logoUrl, setLogoUrl] = useState('https://raw.githubusercontent.com/Lucide-Icons/lucide/main/icons/coffee.svg');
@@ -170,8 +171,13 @@ export default function BrandSettings() {
                   </div>
                 ) : logoUrl ? (
                   <>
-                    <div className="w-40 h-40 rounded-full overflow-hidden border border-stone-100 shadow-sm p-2 bg-[#FDF8F3]">
-                      <img src={logoUrl} className="w-full h-full object-contain" alt="Logo preview" />
+                    <div className="w-40 h-40 rounded-2xl overflow-hidden border border-stone-100 shadow-sm p-4 bg-[#FDF8F3]">
+                      <OptimizedImage 
+                        src={logoUrl} 
+                        className="w-full h-full object-contain" 
+                        alt="Logo preview" 
+                        showOverlay={false}
+                      />
                     </div>
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="flex flex-col items-center gap-2">
@@ -220,7 +226,11 @@ export default function BrandSettings() {
                   </div>
                 ) : heroImageUrl ? (
                   <>
-                    <img src={heroImageUrl} className="w-full h-full object-cover" alt="Hero preview" />
+                    <OptimizedImage 
+                      src={heroImageUrl} 
+                      className="w-full h-full object-cover" 
+                      alt="Hero preview" 
+                    />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="flex flex-col items-center gap-2">
                         <Upload className="text-white" size={32} />
@@ -269,7 +279,11 @@ export default function BrandSettings() {
                 className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex items-center justify-center cursor-pointer hover:border-bento-primary overflow-hidden relative group"
               >
                 {activeUpload === 'cart' ? <Loader2 className="animate-spin text-bento-primary" /> : cartBgUrl ? (
-                  <img src={cartBgUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <OptimizedImage 
+                    src={cartBgUrl} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                    alt="Cart Background"
+                  />
                 ) : <Upload className="text-stone-300" />}
                 <input type="file" ref={cartFileInputRef} className="hidden" onChange={e => handleFileUpload(e, 'cart')} accept="image/*" />
               </div>
@@ -287,7 +301,11 @@ export default function BrandSettings() {
                 className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex items-center justify-center cursor-pointer hover:border-bento-primary overflow-hidden relative group"
               >
                 {activeUpload === 'orders' ? <Loader2 className="animate-spin text-bento-primary" /> : ordersBgUrl ? (
-                  <img src={ordersBgUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <OptimizedImage 
+                    src={ordersBgUrl} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                    alt="Orders Background"
+                  />
                 ) : <Upload className="text-stone-300" />}
                 <input type="file" ref={ordersFileInputRef} className="hidden" onChange={e => handleFileUpload(e, 'orders')} accept="image/*" />
               </div>
@@ -305,7 +323,11 @@ export default function BrandSettings() {
                 className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex items-center justify-center cursor-pointer hover:border-bento-primary overflow-hidden relative group"
               >
                 {activeUpload === 'profile' ? <Loader2 className="animate-spin text-bento-primary" /> : profileBgUrl ? (
-                  <img src={profileBgUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <OptimizedImage 
+                    src={profileBgUrl} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                    alt="Profile Background"
+                  />
                 ) : <Upload className="text-stone-300" />}
                 <input type="file" ref={profileFileInputRef} className="hidden" onChange={e => handleFileUpload(e, 'profile')} accept="image/*" />
               </div>
@@ -323,7 +345,11 @@ export default function BrandSettings() {
                 className="w-full aspect-video bg-stone-50 border-2 border-dashed border-stone-200 rounded-2xl flex items-center justify-center cursor-pointer hover:border-bento-primary overflow-hidden relative group"
               >
                 {activeUpload === 'login' ? <Loader2 className="animate-spin text-bento-primary" /> : loginBgUrl ? (
-                  <img src={loginBgUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <OptimizedImage 
+                    src={loginBgUrl} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                    alt="Login Background"
+                  />
                 ) : <Upload className="text-stone-300" />}
                 <input type="file" ref={loginFileInputRef} className="hidden" onChange={e => handleFileUpload(e, 'login')} accept="image/*" />
               </div>
@@ -350,15 +376,25 @@ export default function BrandSettings() {
             
             <div className="space-y-8">
               <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-white p-0.5">
-                  <img src={logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                <div className="w-10 h-10 rounded-lg overflow-hidden bg-white p-0.5">
+                  <OptimizedImage 
+                    src={logoUrl} 
+                    alt="Preview" 
+                    className="w-full h-full object-contain" 
+                    showOverlay={false}
+                  />
                 </div>
                 <span className="font-black italic uppercase tracking-tighter text-sm text-bento-primary">Cappuccino7</span>
               </div>
 
               <div className="p-8 bg-white rounded-3xl shadow-lg flex flex-col items-center gap-4">
-                <div className="w-20 h-20 rounded-full overflow-hidden shadow-md p-1 bg-white border border-stone-100">
-                  <img src={logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-md p-2 bg-white border border-stone-100">
+                  <OptimizedImage 
+                    src={logoUrl} 
+                    alt="Preview" 
+                    className="w-full h-full object-contain" 
+                    showOverlay={false}
+                  />
                 </div>
                 <div className="h-2 w-24 bg-stone-100 rounded-full" />
                 <div className="h-10 w-full bg-bento-primary rounded-xl" />

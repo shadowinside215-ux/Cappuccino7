@@ -6,6 +6,7 @@ import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, Arr
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import OptimizedImage from '../../components/ui/OptimizedImage';
 
 enum OperationType {
   CREATE = 'create',
@@ -405,7 +406,13 @@ export default function AdminMenu() {
                   </div>
                 ) : newItem.image ? (
                   <>
-                    <img src={newItem.image} className="w-full h-full object-cover" />
+                    {newItem.image && (
+                      <OptimizedImage 
+                        src={newItem.image} 
+                        className="w-full h-full object-cover" 
+                        alt="Product preview"
+                      />
+                    )}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Upload className="text-white" size={32} />
                     </div>
@@ -540,10 +547,13 @@ export default function AdminMenu() {
                       <div key={product.id} className="flex flex-col gap-4">
                         <div className="card group !p-4 flex items-center gap-5 hover:border-bento-accent/20 !bg-[#FDF8F3]">
                           <div className="relative w-20 h-20 flex-shrink-0">
-                            <img 
+                            <OptimizedImage 
                               src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
                               className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
                               referrerPolicy="no-referrer"
+                              alt={product.name}
+                              showOverlay={false}
+                              containerClassName="w-full h-full"
                             />
                             {!product.isAvailable && (
                               <div className="absolute inset-0 flex items-center justify-center">
@@ -668,7 +678,13 @@ export default function AdminMenu() {
                                     <Loader2 className="text-bento-accent animate-spin" size={24} />
                                   ) : (
                                     <>
-                                      <img src={editItem.image} className="w-full h-full object-cover opacity-60" />
+                                      {editItem.image && (
+                                        <OptimizedImage 
+                                          src={editItem.image} 
+                                          className="w-full h-full object-cover opacity-60" 
+                                          alt="Edit preview"
+                                        />
+                                      )}
                                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                         <div className="p-3 bg-white rounded-xl shadow-lg ring-1 ring-black/5">
                                           <Upload className="text-bento-primary" size={20} />

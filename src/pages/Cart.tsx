@@ -189,7 +189,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         return !isFast;
       });
 
-      const prepTimeMinutes = hasSlowItem ? 30 : 10;
+      const prepTimeMinutes = 30; // Standard 30 minutes as requested
       const now = new Date();
       const estimatedReadyAt = new Date(now.getTime() + prepTimeMinutes * 60000);
 
@@ -215,13 +215,19 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
       
-      // Update Daily Revenue on confirmation
+      // Update Daily Revenue on confirmation (MAD Today Revenue)
       const today = new Date().toISOString().split('T')[0];
       const revRef = doc(db, 'dailyRevenue', today);
-      await setDoc(revRef, {
-        amount: increment(total),
-        lastUpdated: serverTimestamp()
-      }, { merge: true });
+      try {
+        await setDoc(revRef, {
+          amount: increment(total),
+          orderCount: increment(1),
+          lastUpdated: serverTimestamp()
+        }, { merge: true });
+      } catch (revErr) {
+        console.warn("Daily revenue update failed:", revErr);
+        // We don't fail the whole order if revenue update fails
+      }
       
       // Update User Profile with new point system
       if (!isGuest) {
@@ -356,19 +362,28 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ delay: idx * 0.1, type: "spring", bounce: 0.3 }}
                       key={item.productId} 
-                      className="flex items-center gap-6 group"
+                      className="flex items-center gap-4 sm:gap-6 group"
                     >
-                      <div className="w-16 h-16 bg-white/10 rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-black text-xl border border-white/10 group-hover:bg-white/20 transition-all">
-                        {item.quantity}x
+                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                        <OptimizedImage 
+                          src={item.image} 
+                          fallbackSrc="https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=200"
+                          className="w-full h-full object-cover rounded-2xl border border-white/10 group-hover:scale-105 transition-transform"
+                          alt={item.name}
+                          showOverlay={false}
+                        />
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 text-stone-900 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg ring-2 ring-stone-900">
+                          {item.quantity}
+                        </div>
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-black text-xl text-white leading-tight uppercase tracking-tight">
+                        <h3 className="font-black text-lg sm:text-xl text-white leading-tight uppercase tracking-tight">
                           {t(`products.${item.name}`, item.name)}
                         </h3>
                         <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">Premium Selection</span>
+                          <span className="text-white/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Premium Selection</span>
                           {userProfile && !userProfile.isAnonymous && (
-                            <span className="text-[10px] font-black bg-white/10 text-amber-400 px-2 py-0.5 rounded-lg uppercase tracking-tighter ring-1 ring-white/10">
+                            <span className="text-[9px] sm:text-[10px] font-black bg-white/10 text-amber-400 px-2 py-0.5 rounded-lg uppercase tracking-tighter ring-1 ring-white/10">
                               Lvl {userProfile.itemLoyalty?.[item.productId] || 0}
                             </span>
                           )}
