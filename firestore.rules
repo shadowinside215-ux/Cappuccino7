@@ -28,6 +28,14 @@ service cloud.firestore {
       );
     }
     
+    function isDriver() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/drivers/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isDriver', false) == true)
+      );
+    }
+    
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
@@ -46,8 +54,8 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (isOwner(userId) || isAdmin() || isWaiter());
-      allow list: if isAdmin() || isWaiter(); 
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin() || isWaiter() || isDriver());
+      allow list: if isSignedIn() && (isAdmin() || isWaiter() || isDriver()); 
       
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isAdmin() || (

@@ -1,17 +1,20 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { Moon, Sun, Languages, ArrowLeft, LogOut, Shield, Bell } from 'lucide-react';
+import { Moon, Sun, Languages, ArrowLeft, LogOut, Shield, Bell, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 import toast from 'react-hot-toast';
 
+import { UserProfile } from '../types';
+
 interface SettingsProps {
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
+  userProfile: UserProfile | null;
 }
 
-export default function Settings({ theme, setTheme }: SettingsProps) {
+export default function Settings({ theme, setTheme, userProfile }: SettingsProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
@@ -142,6 +145,18 @@ export default function Settings({ theme, setTheme }: SettingsProps) {
           </div>
 
           <div className="space-y-3">
+             {(userProfile?.isAdmin || auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com' || sessionStorage.getItem('admin_mode') === 'true') && (
+               <button
+                onClick={() => navigate('/admin')}
+                className="w-full flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 rounded-2xl border border-amber-100 dark:border-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Shield size={20} />
+                  <span className="font-bold">{t('admin_dashboard')}</span>
+                </div>
+                <ChevronRight size={18} />
+              </button>
+             )}
              <button
               onClick={handleLogout}
               className="w-full flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-2xl border border-red-100 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"

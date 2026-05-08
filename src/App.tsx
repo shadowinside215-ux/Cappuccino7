@@ -26,7 +26,6 @@ import WaiterLogin from './pages/waiter/WaiterLogin';
 import WaiterDashboard from './pages/waiter/WaiterDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import Settings from './pages/Settings';
-import DriverLogin from './pages/driver/DriverLogin';
 import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
@@ -169,10 +168,12 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const isWaiter = userProfile?.isWaiter || localStorage.getItem('waiter_session_active') === 'true';
-  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/waiter/login' || location.pathname === '/driver/login';
+  const isWaiterInStorage = localStorage.getItem('waiter_session_active') === 'true';
+  const isWaiter = userProfile?.isWaiter || isWaiterInStorage;
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/waiter/login';
 
   useEffect(() => {
+    // If not logged in, or is a waiter, or profile is still loading, don't listen
     if (!userProfile?.uid || isWaiter) return;
 
     const q = query(
@@ -459,7 +460,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               <Route path="/cart" element={<Cart userProfile={userProfile} />} />
               <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
               <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
-              <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} />} />
+              <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} userProfile={userProfile} />} />
               
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
@@ -478,7 +479,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       </main>
 
       {/* Persistent Access Footers */}
-      {!location.pathname.startsWith('/admin') && !location.pathname.startsWith('/waiter') && !location.pathname.startsWith('/driver') && (
+      {!location.pathname.startsWith('/admin') && !location.pathname.startsWith('/waiter') && (
         <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-12 text-center opacity-30 hover:opacity-100 transition-opacity space-y-4">
           <div className="flex justify-center gap-8 flex-wrap">
             <Link 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { TrendingUp, ShoppingBag, Calendar, ArrowUpRight, ArrowDownRight, LayoutDashboard, History, Download, RefreshCcw } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
@@ -24,8 +24,26 @@ export default function AdminStats() {
   const [data, setData] = useState<DailyStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    const checkRole = async () => {
+      if (!auth.currentUser) {
+        setLoading(false);
+        return;
+      }
+      const email = auth.currentUser.email?.toLowerCase();
+      const creatorEmail = 'dragonballsam86@gmail.com';
+      const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
+      const hasRole = adminDoc.exists() || email === creatorEmail || sessionStorage.getItem('admin_mode') === 'true';
+      setIsAdmin(hasRole);
+      if (!hasRole) setLoading(false);
+    };
+    checkRole();
+  }, [auth.currentUser]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
     const timer = setTimeout(() => setMounted(true), 100);
     // Listen to dailyRevenue collection
     const q = query(collection(db, 'dailyRevenue'), orderBy('lastUpdated', 'desc'));
@@ -48,7 +66,7 @@ export default function AdminStats() {
       clearTimeout(timer);
       unsubscribe();
     };
-  }, []);
+  }, [isAdmin]);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -148,8 +166,26 @@ export default function AdminStats() {
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="flex flex-col items-center gap-4">
           <RefreshCcw className="animate-spin text-amber-500" size={32} />
-          <p className="font-black text-stone-400 uppercase tracking-widest text-xs">Analyzing Data...</p>
+          <p className="font-black text-stone-400 uppercase tracking-widest text-xs">{t('analyzing_data')}</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-stone-50 p-6 text-center">
+        <div className="w-20 h-20 bg-red-100 rounded-[2rem] flex items-center justify-center text-red-600 mb-6">
+          <LayoutDashboard size={40} />
+        </div>
+        <h2 className="text-2xl font-black text-stone-900 uppercase italic mb-2">{t('access_denied')}</h2>
+        <p className="text-stone-500 max-w-xs mb-8">You don't have permission to view statistics. Please contact the administrator.</p>
+        <button 
+          onClick={() => navigate('/')}
+          className="px-8 py-3 bg-stone-900 text-white rounded-2xl font-bold text-sm"
+        >
+          Go Back Home
+        </button>
       </div>
     );
   }
@@ -165,11 +201,11 @@ export default function AdminStats() {
              </button>
              <span className="text-[10px] font-black uppercase text-stone-400 tracking-[0.2em]">Live Analytics</span>
            </div>
-           <h1 className="text-4xl font-black text-stone-900 italic tracking-tighter uppercase">Revenue Statistics</h1>
+           <h1 className="text-4xl font-black text-stone-900 italic tracking-tighter uppercase">{t('revenue_statistics')}</h1>
         </div>
         <div className="flex gap-2">
           <button className="flex items-center gap-2 px-5 py-3 bg-stone-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95">
-             <Download size={14} /> Export CSV
+             <Download size={14} /> {t('export_csv')}
           </button>
         </div>
       </div>
@@ -187,7 +223,7 @@ export default function AdminStats() {
           </div>
           <div>
             <p className="text-3xl font-black text-stone-900 tabular-nums">{stats.today.rev.toFixed(0)} MAD</p>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">Today's Revenue</p>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">{t('today_revenue')}</p>
           </div>
         </motion.div>
 
@@ -202,7 +238,7 @@ export default function AdminStats() {
           </div>
           <div>
             <p className="text-3xl font-black text-stone-900 tabular-nums">{stats.week.rev.toFixed(0)} MAD</p>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">Weekly Revenue</p>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">{t('weekly_revenue')}</p>
           </div>
         </motion.div>
 
@@ -214,7 +250,7 @@ export default function AdminStats() {
           </div>
           <div>
             <p className="text-3xl font-black tabular-nums">{stats.month.rev.toFixed(0)} MAD</p>
-            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">Monthly (Current)</p>
+            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">{t('monthly_current')}</p>
           </div>
         </motion.div>
 
@@ -226,7 +262,7 @@ export default function AdminStats() {
           </div>
           <div>
             <p className="text-4xl font-black tabular-nums">{stats.today.orders}</p>
-            <p className="text-[10px] font-bold text-stone-900/40 uppercase tracking-widest mt-1">Total Orders Today</p>
+            <p className="text-[10px] font-bold text-stone-900/40 uppercase tracking-widest mt-1">{t('total_orders_today')}</p>
           </div>
         </motion.div>
       </div>

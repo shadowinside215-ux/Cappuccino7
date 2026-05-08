@@ -24,16 +24,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
 // Dedicated Order Timer Component
-function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
+function OrderTimer({ createdAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
   const { t } = useTranslation();
   const [elapsed, setElapsed] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const driftRef = React.useRef<number | null>(null);
 
   useEffect(() => {
     const calculateTimes = () => {
       const now = Date.now();
       
-      // 1. Calculate Elapsed Time since creation
+      // 1. Parse Created Date
       let createdDate: Date | null = null;
       if (createdAt) {
         if (typeof createdAt.toDate === 'function') {
@@ -47,20 +48,24 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
         }
       }
       
-      if (createdDate && !isNaN(createdDate.getTime())) {
-        setElapsed(Math.floor((now - createdDate.getTime()) / 1000));
+      if (!createdDate || isNaN(createdDate.getTime())) return;
+
+      // 2. Handle Clock Drift
+      // If server time is significantly different from client now, determine offset once
+      if (driftRef.current === null) {
+        driftRef.current = createdDate.getTime() - now;
       }
 
-      // 2. Calculate Countdown Time
-      // We start countdown from createdAt or preparingAt?
-      // User says "timer starts", usually implies it starts when order is placed or accepted.
-      // Let's make it start from createdAt for the total service goal.
-      const startTime = createdDate;
+      const adjustedNow = now + driftRef.current;
+      setElapsed(Math.floor((adjustedNow - createdDate.getTime()) / 1000));
+
+      // 3. Calculate Countdown Time
       const durationMins = prepTime || 30;
+      const isActive = status !== 'delivered' && status !== 'cancelled';
       
-      if (startTime && !isNaN(startTime.getTime()) && status !== 'delivered' && status !== 'cancelled') {
-        const targetDate = new Date(startTime.getTime() + durationMins * 60000);
-        let diff = Math.floor((targetDate.getTime() - now) / 1000);
+      if (isActive) {
+        const targetDate = new Date(createdDate.getTime() + durationMins * 60000);
+        let diff = Math.floor((targetDate.getTime() - adjustedNow) / 1000);
         setTimeLeft(diff);
       } else {
         setTimeLeft(null);
@@ -70,7 +75,7 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
     calculateTimes();
     const interval = setInterval(calculateTimes, 1000);
     return () => clearInterval(interval);
-  }, [createdAt, preparingAt, prepTime, status]);
+  }, [createdAt, prepTime, status]);
 
   const formatSecs = (totalSecs: number) => {
     const absSecs = Math.abs(totalSecs);
@@ -80,6 +85,25 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
   };
 
   const isActive = status !== 'delivered' && status !== 'cancelled';
+  const durationSecs = (prepTime || 30) * 60;
+  
+  // Status Colors Logic
+  // Green: > 20% time left
+  // Orange: < 20% time left
+  // Red: Overdue
+  const getStatusColor = () => {
+    if (!timeLeft) return 'bg-green-500';
+    if (timeLeft <= 0) return 'bg-red-500';
+    if (timeLeft <= durationSecs * 0.2) return 'bg-amber-500';
+    return 'bg-green-500';
+  };
+
+  const getTextColor = () => {
+    if (!timeLeft) return 'text-stone-900';
+    if (timeLeft <= 0) return 'text-red-500';
+    if (timeLeft <= durationSecs * 0.2) return 'text-amber-500';
+    return 'text-stone-900';
+  };
   
   return (
     <div className="space-y-3">
@@ -89,7 +113,7 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
             {isActive ? t('time_remaining') : t('final_duration')}
           </span>
           <div className="flex items-center gap-2 text-stone-900">
-            <Clock size={12} className="text-amber-500" />
+            <Clock size={12} className={timeLeft && timeLeft <= 0 ? 'text-red-500' : 'text-amber-500'} />
             <span className="text-sm font-black tabular-nums">
               {isActive ? (timeLeft !== null ? formatSecs(timeLeft) : '--:--') : formatSecs(elapsed)}
             </span>
@@ -98,7 +122,7 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
         
         {isActive && timeLeft !== null && (
           <div className="text-right">
-             <span className={`text-lg font-black tabular-nums ${timeLeft < 0 ? 'text-red-500 animate-pulse' : 'text-stone-900'}`}>
+             <span className={`text-lg font-black tabular-nums transition-colors duration-300 ${getTextColor()} ${timeLeft < 0 ? 'animate-pulse' : ''}`}>
                {timeLeft < 0 ? '-' : ''}{formatSecs(timeLeft)}
              </span>
           </div>
@@ -109,8 +133,8 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
         <div className="h-2 bg-stone-100 rounded-full overflow-hidden border border-stone-200">
           <motion.div 
             initial={{ width: 0 }}
-            animate={{ width: `${Math.max(0, Math.min(100, (1 - (timeLeft || 0) / ((prepTime || 30) * 60))) * 100)}%` }}
-            className={`h-full ${timeLeft && timeLeft < 0 ? 'bg-red-500' : 'bg-green-500'}`}
+            animate={{ width: `${Math.max(0, Math.min(100, (1 - (timeLeft || 0) / durationSecs) * 100))}%` }}
+            className={`h-full transition-colors duration-500 ${getStatusColor()}`}
           />
         </div>
       )}
@@ -186,29 +210,49 @@ export default function WaiterDashboard() {
     };
   }, []);
 
-  const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
+  const updateStatus = async (order: Order, newStatus: OrderStatus) => {
     try {
-      const orderRef = doc(db, 'orders', orderId);
+      const orderRef = doc(db, 'orders', order.id);
       const updateData: any = {
         status: newStatus,
         updatedAt: serverTimestamp()
       };
 
+      let elapsedMins = 0;
+      if (newStatus === 'ready' || newStatus === 'preparing') {
+        const now = new Date();
+        let createdDate: Date | null = null;
+        if (order.createdAt) {
+          if (typeof (order.createdAt as any).toDate === 'function') {
+            createdDate = (order.createdAt as any).toDate();
+          } else {
+            createdDate = new Date(order.createdAt as any);
+          }
+        }
+        
+        if (createdDate && !isNaN(createdDate.getTime())) {
+          const diffMs = now.getTime() - createdDate.getTime();
+          elapsedMins = Math.round(diffMs / 60000);
+          if (elapsedMins < 1 && diffMs > 0) elapsedMins = 1; // Minimum 1 min if just started
+        }
+      }
+
       if (newStatus === 'preparing') {
         updateData.preparingAt = serverTimestamp();
       } else if (newStatus === 'ready') {
         updateData.readyAt = serverTimestamp();
+        updateData.readyInMinutes = elapsedMins;
       }
 
       await updateDoc(orderRef, updateData);
-      toast.success(`Order status updated: ${newStatus}`);
       
       if (newStatus === 'ready') {
-        // This is where we notify the client (via status change)
         toast('Client notified: Order Ready!', { icon: '📢' });
+      } else {
+        toast.success(`Order status updated: ${newStatus}`);
       }
     } catch (err: any) {
-      handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
     }
   };
 
@@ -238,7 +282,7 @@ export default function WaiterDashboard() {
       // Award points
       await awardOrderPoints(order);
       
-      toast.success(`Order delivered in ${diffMins} minutes!`);
+      toast.success(t('order_completed_toast', 'Order completed and delivered!'));
     } catch (err: any) {
       handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
     }
@@ -267,10 +311,10 @@ export default function WaiterDashboard() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-stone-900 tracking-tighter uppercase italic">
-              Waiter Console
+              {t('waiter_console')}
             </h1>
             <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em]">
-              Palace Taha • Active Terminal
+              Palace Taha • {t('active_terminal')}
             </p>
           </div>
         </div>
@@ -285,7 +329,7 @@ export default function WaiterDashboard() {
                 }`}
               >
                 <ShoppingBag size={14} />
-                Orders ({orders.length})
+                {t('orders')} ({orders.length})
               </button>
               <button 
                 onClick={() => setActiveTab('clients')}
@@ -294,7 +338,7 @@ export default function WaiterDashboard() {
                 }`}
               >
                 <Users size={14} />
-                Clients ({clients.length})
+                {t('clients_list', 'Clients')} ({clients.length})
               </button>
            </div>
 
@@ -305,7 +349,7 @@ export default function WaiterDashboard() {
              }}
              className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100"
            >
-             Exit
+             {t('exit')}
            </button>
         </div>
       </div>
@@ -322,7 +366,7 @@ export default function WaiterDashboard() {
             {orders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
                 <Coffee size={64} className="mb-4 opacity-20" />
-                No active orders
+                {t('no_active_orders')}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
@@ -336,7 +380,7 @@ export default function WaiterDashboard() {
                   >
                     <div className="mb-6">
                       <div className="flex justify-between items-start mb-1">
-                        <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">Customer</p>
+                        <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer')}</p>
                         {(() => {
                           const client = clients.find(c => c.uid === order.userId);
                           const hasReward = client?.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11);
@@ -344,7 +388,7 @@ export default function WaiterDashboard() {
                             return (
                               <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-3 py-1 rounded-full animate-bounce shadow-lg">
                                 <Gift size={12} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Reward Ready</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">{t('reward_ready')}</span>
                               </div>
                             );
                           }
@@ -358,7 +402,7 @@ export default function WaiterDashboard() {
                         }`}>
                           {order.deliveryType === 'pickup' ? t('takeaway') : t('in_place')}
                         </span>
-                        <p className="text-[10px] font-bold text-stone-300">Ordered at: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}</p>
+                        <p className="text-[10px] font-bold text-stone-300">{t('ordered_at')}: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}</p>
                       </div>
                     </div>
 
@@ -366,18 +410,31 @@ export default function WaiterDashboard() {
                         {order.items.map((item, idx) => (
                           <div key={idx} className="flex justify-between items-start text-sm">
                             <div className="flex flex-col">
-                              <span className="font-bold text-stone-700">{item.quantity}x {item.name}</span>
+                              <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name)}</span>
+                              {item.customization && (
+                                <span className="text-[10px] font-black uppercase text-amber-500 italic">
+                                  {item.customization.includes('|') ? (
+                                    <>
+                                      {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim())}
+                                      {' • '}
+                                      {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_'))}
+                                    </>
+                                  ) : (
+                                    item.customization
+                                  )}
+                                </span>
+                              )}
                               {(item as any).categoryName && (
                                 <span className="text-[8px] font-black uppercase tracking-widest text-amber-600">
-                                  {(item as any).categoryName} {(item as any).subSection ? `• ${(item as any).subSection.replace('_', ' ')}` : ''}
+                                  {t(`categories.${(item as any).categoryName}`, (item as any).categoryName)} {(item as any).subSection ? `• ${(item as any).subSection.replace('_', ' ')}` : ''}
                                 </span>
                               )}
                             </div>
                             <span className="text-xs font-black text-stone-400">{item.price * item.quantity} MAD</span>
                           </div>
                         ))}
-                       <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Total</span>
+                        <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
+                          <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">{t('total', 'Total')}</span>
                           <span className="text-lg font-black text-stone-900">{order.total} MAD</span>
                        </div>
                     </div>
@@ -385,24 +442,23 @@ export default function WaiterDashboard() {
                     <div className="mb-6 px-2">
                       <OrderTimer 
                         createdAt={order.createdAt} 
-                        preparingAt={order.preparingAt}
                         prepTime={order.prepTime} 
                         status={order.status} 
                       />
                     </div>
 
                     <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-stone-50">
-                       <button onClick={() => updateStatus(order.id, 'preparing')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-50 hover:bg-amber-50 group transition-colors">
+                       <button onClick={() => updateStatus(order, 'preparing')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-50 hover:bg-amber-50 group transition-colors">
                          <Soup size={18} className="text-stone-400 group-hover:text-amber-500" />
-                         <span className="text-[8px] font-black uppercase tracking-tighter">Preparing</span>
+                         <span className="text-[8px] font-black uppercase tracking-tighter">{t('preparing')}</span>
                        </button>
-                       <button onClick={() => updateStatus(order.id, 'ready')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-50 hover:bg-green-50 group transition-colors">
+                       <button onClick={() => updateStatus(order, 'ready')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-50 hover:bg-green-50 group transition-colors">
                          <CheckCircle2 size={18} className="text-stone-400 group-hover:text-green-500" />
-                         <span className="text-[8px] font-black uppercase tracking-tighter">Ready</span>
+                         <span className="text-[8px] font-black uppercase tracking-tighter">{t('mark_ready', 'Ready')}</span>
                        </button>
                        <button onClick={() => completeOrder(order)} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-900 text-white hover:bg-black">
                          <CheckCheck size={18} className="text-amber-400" />
-                         <span className="text-[8px] font-black uppercase tracking-tighter">Complete</span>
+                         <span className="text-[8px] font-black uppercase tracking-tighter">{t('complete')}</span>
                        </button>
                     </div>
                   </motion.div>
@@ -422,7 +478,7 @@ export default function WaiterDashboard() {
                <Search className="text-stone-300 mr-3" />
                <input 
                  type="text" 
-                 placeholder="Search clients by name or email..."
+                 placeholder={t('search_clients_placeholder')}
                  className="flex-1 bg-transparent outline-none text-sm font-bold"
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
@@ -434,11 +490,11 @@ export default function WaiterDashboard() {
                  <table className="w-full text-left">
                    <thead>
                      <tr className="border-b border-stone-50">
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Client</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Status</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Points</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Contact</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">Type</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client')}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('status')}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('loyalty_points', 'Points')}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('contact')}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('type')}</th>
                      </tr>
                    </thead>
                    <tbody>
@@ -463,7 +519,7 @@ export default function WaiterDashboard() {
                                   <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2 text-amber-600 font-bold">
                                       <Timer size={14} className="animate-pulse" />
-                                      <span className="text-xs">Active Order</span>
+                                      <span className="text-xs">{t('active_order_label')}</span>
                                     </div>
                                     <OrderTimer 
                                       createdAt={activeOrder.createdAt} 
@@ -474,16 +530,16 @@ export default function WaiterDashboard() {
                                   </div>
                                 );
                               }
-                              return <span className="text-xs text-stone-400">No active orders</span>;
+                              return <span className="text-xs text-stone-400">{t('no_active_orders_label')}</span>;
                             })()}
                          </td>
                          <td className="px-8 py-6">
                             <div className="flex flex-col gap-1">
-                               <div className="text-sm font-black text-stone-900">{client.points} pts</div>
+                               <div className="text-sm font-black text-stone-900">{client.points} {t('pts_short')}</div>
                                {client.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11) && (
-                                 <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-2 py-0.5 rounded-lg w-fit">
+                                 <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-2 py-0.5 rounded-lg w-fit shadow-lg shadow-amber-400/20 ring-2 ring-white/20">
                                    <Gift size={10} />
-                                   <span className="text-[8px] font-black uppercase tracking-tight">Reward Ready</span>
+                                   <span className="text-[8px] font-black uppercase tracking-tight">12 - {t('get_free_order')}</span>
                                  </div>
                                )}
                             </div>
@@ -494,7 +550,7 @@ export default function WaiterDashboard() {
                               client.isAdmin ? 'bg-stone-900 text-white' : 
                               client.isWaiter ? 'bg-amber-400 text-stone-900' : 'bg-stone-100 text-stone-500'
                             }`}>
-                               {client.isAdmin ? 'Admin' : client.isWaiter ? 'Waiter' : 'Customer'}
+                               {client.isAdmin ? t('admin_role') : client.isWaiter ? t('waiter_role') : t('customer_role')}
                             </div>
                          </td>
                        </tr>

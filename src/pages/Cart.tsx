@@ -185,29 +185,17 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         return { ...item, categoryName: 'Menu', subSection: '' };
       }));
 
-      // Calculate preparation time based on item categories
-      // 10 mins for: drinks, juices, ice_cream, coffee, etc.
-      // 30 mins for: everything else (dishes, breakfast, brunch, crepes)
-      const fastKeywords = [
-        'drink', 'juice', 'ice_cream', 'ice cream', 'coffee', 'infusion', 'iced_latte', 
-        'jus', 'café', 'glace', 'the', 'thé', 'tea', 'infusion', 'boisson', 'orange'
-      ];
-      
-      const hasMeal = itemsWithMetadata.some(item => {
+      // Preparation time logic:
+      // 30 minutes for meals/dishes (default)
+      // 10 minutes for juices/drinks
+      const juiceKeywords = ['juice', 'jus', 'jus d\'orange', 'orange', 'fruit', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie'];
+      const isJuiceOnlyOrder = itemsWithMetadata.every(item => {
         const cat = (item.categoryName || '').toLowerCase();
         const itemName = (item.name || '').toLowerCase();
-        
-        // Items that definitely take longer (Meals/Food)
-        const slowKeywords = ['meal', 'food', 'burger', 'pizza', 'pasta', 'tacos', 'sandwich', 'plat', 'repas', 'crepe', 'brunch', 'breakfast'];
-        
-        const matchesSlow = slowKeywords.some(slow => cat.includes(slow) || itemName.includes(slow));
-        const matchesFast = fastKeywords.some(fast => cat.includes(fast) || itemName.includes(fast));
-        
-        // If it matches slow categories OR doesn't match fast categories, consider it a meal
-        return matchesSlow || !matchesFast;
+        return juiceKeywords.some(kw => cat.includes(kw) || itemName.includes(kw));
       });
 
-      const prepTimeMinutes = hasMeal ? 30 : 10;
+      const prepTimeMinutes = isJuiceOnlyOrder ? 10 : 30;
       const now = new Date();
       const estimatedReadyAt = new Date(now.getTime() + prepTimeMinutes * 60000);
 
@@ -406,6 +394,11 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         <h3 className="font-black text-lg sm:text-xl text-white leading-tight uppercase tracking-tight">
                           {t(`products.${item.name}`, item.name)}
                         </h3>
+                        {item.customization && (
+                          <p className="text-amber-400 text-[10px] font-black uppercase tracking-widest italic mt-1">
+                            {item.customization}
+                          </p>
+                        )}
                         <div className="flex items-center gap-3 mt-1.5">
                           <span className="text-white/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Premium Selection</span>
                           {userProfile && !userProfile.isAnonymous && (

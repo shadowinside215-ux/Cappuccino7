@@ -26,6 +26,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [productsMap, setProductsMap] = useState<Record<string, string>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const navigate = useNavigate();
@@ -135,9 +137,11 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !isAdmin) return;
 
-    // Active Orders count (using optimized query)
+    setLoading(true);
+
+    // Active Orders count
     const qActive = query(collection(db, 'orders'), where('status', 'not-in', ['delivered', 'cancelled']));
     const unsubOrders = onSnapshot(qActive, (snapshot) => {
       setStats(prev => ({ ...prev, activeOrders: snapshot.size }));
@@ -208,10 +212,28 @@ export default function AdminDashboard() {
       unsubUsers();
       unsubItems();
     };
-  }, []);
+  }, [isAdmin]);
+
+  useEffect(() => {
+    const checkRole = async () => {
+      if (!auth.currentUser) {
+        setLoading(false);
+        return;
+      }
+      
+      const email = auth.currentUser.email?.toLowerCase();
+      const creatorEmail = 'dragonballsam86@gmail.com';
+      setIsCreator(email === creatorEmail);
+      
+      const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
+      const hasRole = adminDoc.exists() || email === creatorEmail || sessionStorage.getItem('admin_mode') === 'true';
+      setIsAdmin(hasRole);
+      if (!hasRole) setLoading(false);
+    };
+    checkRole();
+  }, [auth.currentUser]);
 
   // Use initial setup link when DB is empty
-  const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
 
   const initializeDatabase = async (force = false) => {
     if (isSettingUp) return;
@@ -495,24 +517,24 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate('/')}
-            className="p-3 bg-stone-100 dark:bg-stone-800 rounded-2xl text-stone-500 hover:text-bento-primary transition-colors"
-            title="Exit Admin Console"
-          >
-            <LogOut size={24} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] pl-1">{t('admin_overview')}</p>
-              {isCreator && <span className="bg-amber-400 text-stone-900 text-[8px] font-black px-2 py-0.5 rounded-full uppercase italic">Super Admin</span>}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => navigate('/')}
+              className="p-3 bg-stone-100 dark:bg-stone-800 rounded-2xl text-stone-500 hover:text-bento-primary transition-colors"
+              title="Exit Admin Console"
+            >
+              <LogOut size={24} />
+            </button>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] pl-1">{t('admin_overview')}</p>
+                {isCreator && <span className="bg-amber-400 text-stone-900 text-[8px] font-black px-2 py-0.5 rounded-full uppercase italic">Super Admin</span>}
+              </div>
+              <h1 className="text-4xl font-bold text-bento-primary">{t('admin_dashboard')}</h1>
             </div>
-            <h1 className="text-4xl font-bold text-bento-primary">{t('dashboard')}</h1>
           </div>
         </div>
-      </div>
 
       {isEmpty && (
         <div className="card accent-card overflow-hidden relative">
@@ -540,43 +562,43 @@ export default function AdminDashboard() {
 
       {/* Stats Grid - Bento Style */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card !p-6 lg:col-span-1 border-t-4 border-amber-400">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl w-fit mb-4">
-            <ShoppingBag size={20} />
-          </div>
-          <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.totalOrders}</p>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Orders Today</p>
-        </div>
-
-        <div className="card !p-6 lg:col-span-1 relative group overflow-hidden border-t-4 border-green-400">
-          <div className="p-3 bg-green-50 text-green-600 rounded-2xl w-fit mb-4">
-            <TrendingUp size={20} />
-          </div>
-          {revError ? (
-            <div className="flex flex-col gap-1">
-              <p className="text-red-500 text-[10px] font-black uppercase tracking-widest">Access Denied</p>
-              <button 
-                onClick={() => navigate('/admin/login')}
-                className="text-stone-900 text-[10px] font-black underline decoration-amber-400 underline-offset-4 text-left"
-              >
-                Re-Authenticate
-              </button>
+          <div className="card !p-6 lg:col-span-1 border-t-4 border-amber-400">
+            <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl w-fit mb-4">
+              <ShoppingBag size={20} />
             </div>
-          ) : (
-            <>
-              <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
-              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Today's Revenue (MAD)</p>
-            </>
-          )}
-          
-          <button 
-            onClick={resetTodayRevenue}
-            className="absolute top-4 right-4 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
-            title="Reset Today's Revenue"
-          >
-            <X size={16} />
-          </button>
-        </div>
+            <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.totalOrders}</p>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('orders_today')}</p>
+          </div>
+
+          <div className="card !p-6 lg:col-span-1 relative group overflow-hidden border-t-4 border-green-400">
+            <div className="p-3 bg-green-50 text-green-600 rounded-2xl w-fit mb-4">
+              <TrendingUp size={20} />
+            </div>
+            {revError ? (
+              <div className="flex flex-col gap-1">
+                <p className="text-red-500 text-[10px] font-black uppercase tracking-widest">{t('access_denied')}</p>
+                <button 
+                  onClick={() => navigate('/admin/login')}
+                  className="text-stone-900 text-[10px] font-black underline decoration-amber-400 underline-offset-4 text-left"
+                >
+                  {t('re_authenticate')}
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_mad')}</p>
+              </>
+            )}
+            
+            <button 
+              onClick={resetTodayRevenue}
+              className="absolute top-4 right-4 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
+              title="Reset Today's Revenue"
+            >
+              <X size={16} />
+            </button>
+          </div>
 
         <div className="card !p-6 lg:col-span-2 accent-card !bg-bento-accent !text-bento-primary">
           <div className="flex justify-between items-start mb-4">
@@ -638,9 +660,9 @@ export default function AdminDashboard() {
              className="bg-stone-900 text-white p-8 rounded-3xl flex items-center justify-between group hover:bg-stone-800 transition-all shadow-xl"
            >
              <div className="text-left">
-               <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Deep Analytics</span>
-               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">View All Statistics</h4>
-               <p className="text-xs opacity-60 mt-2">Revenue, Orders & Monthly reports</p>
+               <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">{t('deep_analytics')}</span>
+               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">{t('view_all_stats')}</h4>
+               <p className="text-xs opacity-60 mt-2">{t('revenue_orders_monthly')}</p>
              </div>
              <div className="p-4 bg-white/10 rounded-2xl group-hover:bg-amber-400 group-hover:text-stone-900 transition-all">
                <TrendingUp size={28} />
@@ -649,9 +671,9 @@ export default function AdminDashboard() {
 
            <div className="bg-amber-400 p-8 rounded-3xl flex items-center justify-between text-stone-900">
              <div className="text-left">
-               <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Community</span>
-               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">Users List</h4>
-               <p className="text-xs opacity-60 mt-2">Manage customer profiles</p>
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">{t('community')}</span>
+               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">{t('users_list')}</h4>
+               <p className="text-xs opacity-60 mt-2">{t('manage_customers')}</p>
              </div>
              <div className="p-4 bg-stone-900/10 rounded-2xl">
                <Users size={28} />
@@ -941,7 +963,7 @@ export default function AdminDashboard() {
                   onClick={() => setSelectedUser(null)}
                   className="bg-stone-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all"
                 >
-                  Close Profile
+                  {t('close_profile')}
                 </button>
               </div>
             </motion.div>

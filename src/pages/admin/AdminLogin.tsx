@@ -6,7 +6,7 @@ import { auth, db } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 export default function AdminLogin() {
@@ -54,11 +54,18 @@ export default function AdminLogin() {
     if (username === 'admin' && password === 'admin2000') {
       try {
         if (auth.currentUser) {
+          // 1. Create admin document (bootstraps isAdmin() permission in rules)
           await setDoc(doc(db, 'admins', auth.currentUser.uid), {
             email: auth.currentUser.email,
             registeredAt: new Date().toISOString(),
             role: 'super_admin',
-            secret_key: 'admin2000' // Matches the security rule for bootstrapping
+            secret_key: 'admin2000'
+          }, { merge: true });
+
+          // 2. Sync isAdmin flag to user document for UI and persistent access
+          await setDoc(doc(db, 'users', auth.currentUser.uid), {
+            isAdmin: true,
+            updatedAt: serverTimestamp()
           }, { merge: true });
         }
       } catch (err) {

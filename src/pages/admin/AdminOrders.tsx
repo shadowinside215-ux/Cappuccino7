@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
@@ -10,10 +10,11 @@ import { useTranslation } from 'react-i18next';
 const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivered'];
 
 // Import the OrderTimer logic (we'll define it locally since it's used in WaiterDashboard but they aren't in a common folder yet)
-function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
+function OrderTimer({ createdAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
   const { t } = useTranslation();
   const [elapsed, setElapsed] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const driftRef = useRef<number | null>(null);
 
   useEffect(() => {
     const calculateTimes = () => {
@@ -30,15 +31,21 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
           createdDate = new Date(createdAt);
         }
       }
-      if (createdDate && !isNaN(createdDate.getTime())) {
-        setElapsed(Math.floor((now - createdDate.getTime()) / 1000));
+      
+      if (!createdDate || isNaN(createdDate.getTime())) return;
+
+      if (driftRef.current === null) {
+        driftRef.current = createdDate.getTime() - now;
       }
 
+      const adjustedNow = now + driftRef.current;
+      setElapsed(Math.floor((adjustedNow - createdDate.getTime()) / 1000));
+
       const isActive = status !== 'delivered' && status !== 'cancelled';
-      if (isActive && createdDate && !isNaN(createdDate.getTime())) {
+      if (isActive) {
         const durationMins = prepTime || 30;
         const targetDate = new Date(createdDate.getTime() + durationMins * 60000);
-        let diff = Math.floor((targetDate.getTime() - now) / 1000);
+        let diff = Math.floor((targetDate.getTime() - adjustedNow) / 1000);
         setTimeLeft(diff);
       } else {
         setTimeLeft(null);
@@ -57,12 +64,21 @@ function OrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: a
   };
 
   const isActive = status !== 'delivered' && status !== 'cancelled';
-  const isOverdue = timeLeft !== null && timeLeft < 0;
+  const durationSecs = (prepTime || 30) * 60;
+  const isOverdue = timeLeft !== null && timeLeft <= 0;
+  const isOrange = !isOverdue && timeLeft !== null && timeLeft <= durationSecs * 0.2;
+
+  const getTimerStyles = () => {
+    if (!isActive) return 'bg-amber-100 text-amber-700';
+    if (isOverdue) return 'bg-red-500 text-white shadow-lg shadow-red-500/20';
+    if (isOrange) return 'bg-amber-500 text-white shadow-lg shadow-amber-500/20';
+    return 'bg-stone-900 text-white shadow-lg shadow-stone-900/20';
+  };
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${isActive ? (isOverdue ? 'bg-red-500 text-white' : 'bg-stone-900 text-white') : 'bg-amber-100 text-amber-700'}`}>
-       <Clock size={12} className={isActive && isOverdue ? 'animate-pulse' : 'text-amber-400'} />
-       <span>{isActive ? (timeLeft !== null ? `${isOverdue ? '-' : ''}${formatSecs(timeLeft)} ${t('waiting').toUpperCase()}` : '--:--') : `${formatSecs(elapsed)} ${t('total_duration').toUpperCase()}`}</span>
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors duration-500 ${getTimerStyles()}`}>
+       <Clock size={12} className={isActive && isOverdue ? 'animate-pulse' : (isActive ? 'text-white' : 'text-amber-400')} />
+       <span className="tabular-nums">{isActive ? (timeLeft !== null ? `${isOverdue ? '-' : ''}${formatSecs(timeLeft)} ${t('waiting').toUpperCase()}` : '--:--') : `${formatSecs(elapsed)} ${t('total_duration').toUpperCase()}`}</span>
     </div>
   );
 }
@@ -105,6 +121,22 @@ export default function AdminOrders() {
         updateData.preparingAt = serverTimestamp();
       } else if (newStatus === 'ready' && !order.readyAt) {
         updateData.readyAt = serverTimestamp();
+        
+        // Calculate ready time from creation
+        if (order.createdAt) {
+          let start: Date | null = null;
+          if (typeof (order.createdAt as any).toDate === 'function') {
+            start = (order.createdAt as any).toDate();
+          } else {
+            start = new Date(order.createdAt as any);
+          }
+          
+          if (start && !isNaN(start.getTime())) {
+            const elapsedMins = Math.max(1, Math.round((new Date().getTime() - start.getTime()) / 60000));
+            updateData.readyInMinutes = elapsedMins;
+            toast.success(`Order was ready in ${elapsedMins} minutes!`);
+          }
+        }
       } else if (newStatus === 'delivered' && !order.deliveredAt) {
         updateData.deliveredAt = serverTimestamp();
         
@@ -131,13 +163,13 @@ export default function AdminOrders() {
         await awardOrderPoints(order);
       }
       
-      toast.success(`Order set to ${newStatus}`);
+      toast.success(`${t('order_set_to')} ${newStatus}`);
     } catch (err) {
-      toast.error('Failed to update status');
+      toast.error(t('failed_status_update'));
     }
   };
 
-  if (loading) return <div className="text-center py-20">Monitoring live orders...</div>;
+  if (loading) return <div className="text-center py-20 tracking-tighter uppercase font-black italic text-stone-400">{t('monitoring_orders')}</div>;
 
   const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
   const completedOrders = orders.filter(o => o.status === 'delivered').slice(0, 15);
@@ -145,16 +177,16 @@ export default function AdminOrders() {
   return (
     <div className="space-y-12 pb-20">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-brown-950">Live Orders</h1>
-        <div className="flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider">
-          <AlertCircle size={14} /> {activeOrders.length} Waiting
+        <h1 className="text-3xl font-bold text-brown-950 uppercase italic tracking-tighter">{t('live_orders')}</h1>
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+          <AlertCircle size={14} /> {activeOrders.length} {t('waiting_label')}
         </div>
       </div>
 
       <div className="space-y-6">
         {activeOrders.length === 0 ? (
           <div className="text-center py-20 bg-[#FDF8F3] rounded-3xl border-2 border-dashed border-stone-200">
-            <p className="text-gray-400 font-medium">No active orders right now.</p>
+            <p className="text-stone-400 font-bold uppercase italic tracking-tight">{t('no_active_orders_admin')}</p>
           </div>
         ) : (
           activeOrders.map((order) => (
@@ -170,7 +202,7 @@ export default function AdminOrders() {
                         return (
                           <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-3 py-1 rounded-full animate-bounce shadow-lg">
                             <Gift size={12} strokeWidth={3} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Reward Ready</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">{t('reward_ready')}</span>
                           </div>
                         );
                       }
@@ -197,21 +229,34 @@ export default function AdminOrders() {
                     <div className="mb-4 bg-amber-50 p-4 rounded-2xl border border-amber-100">
                       <div className="flex items-center gap-2 mb-1">
                         <MessageCircle size={14} className="text-amber-600" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Special Instructions</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">{t('special_instructions')}</span>
                       </div>
                       <p className="text-sm font-medium text-amber-900 italic">"{order.deliveryNotes}"</p>
                     </div>
                   )}
 
                   <div className="space-y-3 mt-6">
-                    <p className="text-[10px] font-black text-brown-300 uppercase tracking-widest pl-1">Order Details</p>
+                    <p className="text-[10px] font-black text-brown-300 uppercase tracking-widest pl-1">{t('order_details')}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {order.items.map((item, idx) => (
                         <div key={idx} className="bg-brown-50/50 px-4 py-3 rounded-2xl flex justify-between items-center border border-brown-100/50">
                           <div className="flex items-center gap-3">
                             <span className="w-6 h-6 rounded-lg bg-brown-600 text-white flex items-center justify-center text-[10px] font-black">{item.quantity}x</span>
                             <div>
-                              <span className="text-xs font-bold text-brown-900">{item.name}</span>
+                              <span className="text-xs font-bold text-brown-900">{t(`products.${item.name}`, item.name)}</span>
+                              {item.customization && (
+                                <p className="text-[9px] font-black uppercase text-amber-500 italic mt-0.5">
+                                  {item.customization.includes('|') ? (
+                                    <>
+                                      {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim())}
+                                      {' • '}
+                                      {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_'))}
+                                    </>
+                                  ) : (
+                                    item.customization
+                                  )}
+                                </p>
+                              )}
                               {(item as any).categoryName && (
                                 <p className="text-[8px] font-black uppercase tracking-widest text-amber-600 mt-0.5">
                                   {t(`categories.${(item as any).categoryName}`, (item as any).categoryName)} 
@@ -221,9 +266,9 @@ export default function AdminOrders() {
                             </div>
                           </div>
                           <div className="text-right">
-                             <p className="text-[10px] font-black text-brown-400">{item.price * item.quantity} DH</p>
+                             <p className="text-[10px] font-black text-brown-400">{item.price * item.quantity} MAD</p>
                              <p className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">
-                               {item.quantity} pts loyalty
+                               {item.quantity} {t('points_loyalty')}
                              </p>
                           </div>
                         </div>
@@ -264,7 +309,15 @@ export default function AdminOrders() {
       {completedOrders.length > 0 && (
         <div className="space-y-6 pt-12 border-t-2 border-stone-100">
           <div className="flex justify-between items-center px-1">
-            <h2 className="text-2xl font-black text-stone-900 uppercase italic tracking-tighter">Performance Analysis</h2>
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-stone-900 uppercase italic tracking-tighter">Performance Analysis</h2>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5 text-[10px] font-black text-amber-600 uppercase tracking-widest">
+                  <Clock size={12} />
+                  Avg Prep: {Math.round(completedOrders.reduce((acc, o) => acc + (o.readyInMinutes || 0), 0) / completedOrders.filter(o => o.readyInMinutes).length || 0)} MINS
+                </div>
+              </div>
+            </div>
             <div className="px-4 py-2 bg-green-100 text-green-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-green-200">
                Live Tracking
             </div>
@@ -299,7 +352,11 @@ export default function AdminOrders() {
                       <Clock size={12} />
                       <span className="text-[10px] font-black">{order.deliveredInMinutes || '?'} MINS TOTAL</span>
                     </div>
-                    {order.preparingAt && order.readyAt && (
+                    {order.readyInMinutes ? (
+                      <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest pl-1">
+                        Prep Time: {order.readyInMinutes} min
+                      </p>
+                    ) : order.preparingAt && order.readyAt && (
                       <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest pl-1">
                         Prep: {Math.round((order.readyAt.toDate().getTime() - order.preparingAt.toDate().getTime()) / 60000)} min
                       </p>

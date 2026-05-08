@@ -55,6 +55,12 @@ export default function WaiterLogin() {
                 isWaiter: true
               });
             }
+
+            // ALSO sync to 'waiters' collection for fast exists() check in rules
+            await setDoc(doc(db, 'waiters', user.uid), {
+              active: true,
+              updatedAt: serverTimestamp()
+            }, { merge: true });
           } catch (profileErr) {
             console.error('Failed to set waiter profile permissions:', profileErr);
             // We'll still try to navigate, but DB might still block if this failed

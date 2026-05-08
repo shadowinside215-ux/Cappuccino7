@@ -34,6 +34,9 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const { settings: brandSettings } = useBrandSettings();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [breakfastStep, setBreakfastStep] = useState<1 | 2>(1);
+  const [selectedDrink, setSelectedDrink] = useState<string>('');
+  const [sugarPreference, setSugarPreference] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showGeoPrompt, setShowGeoPrompt] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -151,9 +154,9 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
     return matchesCategory && matchesSearch && p.isAvailable;
   });
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, customization?: string) => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const existing = cart.find((item: any) => item.productId === product.id);
+    const existing = cart.find((item: any) => item.productId === product.id && item.customization === customization);
     if (existing) {
       existing.quantity += 1;
     } else {
@@ -162,7 +165,8 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         name: product.name,
         price: product.price,
         image: product.image,
-        quantity: 1
+        quantity: 1,
+        customization: customization
       });
     }
     localStorage.setItem('cart', JSON.stringify(cart));
@@ -227,11 +231,11 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 40 }}
               transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
-              className="relative w-full max-w-lg bg-[#1A120B] rounded-[3rem] overflow-hidden shadow-2xl border border-white/10"
+              className="relative w-full max-w-lg bg-[#1A120B] rounded-[3rem] overflow-y-auto max-h-[90vh] custom-scrollbar shadow-2xl border border-white/10"
             >
               <button 
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-6 right-6 z-10 w-10 h-10 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-90"
+                className="absolute top-6 right-6 z-10 w-10 h-10 bg-black/40 backdrop-blur-xl rounded-full flex items-center justify-center text-white hover:bg-white hover:text-stone-900 transition-all active:scale-90 border border-white/10"
               >
                 <X size={20} />
               </button>
@@ -246,7 +250,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 />
               </div>
               
-              <div className="p-10 space-y-8">
+              <div className="p-10 space-y-8 pb-12">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">
@@ -258,6 +262,108 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                     {t(`descriptions.${selectedProduct.name}`, selectedProduct.description)}
                   </p>
                 </div>
+
+                {/* Breakfast Customization Flow */}
+                {selectedProduct.categoryId === 'breakfast' && (
+                  <div className="space-y-6 pt-8 border-t border-white/5">
+                    <AnimatePresence mode="wait">
+                      {breakfastStep === 1 ? (
+                        <motion.div 
+                          key="step1"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className="space-y-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] font-black uppercase text-amber-500 tracking-[0.3em] italic">
+                              {t('choose_drink_question')}
+                            </p>
+                          </div>
+                          
+                          {/* Mini Scrollable Drink Menu */}
+                          <div className="max-h-[220px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                            {products
+                              .filter(p => p.categoryId === 'juices' || p.categoryId === 'coffee' || p.categoryId === 'drinks')
+                              .map((drink) => (
+                                <button
+                                  key={drink.id}
+                                  onClick={() => setSelectedDrink(drink.name)}
+                                  className={`w-full flex items-center justify-between px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all border ${
+                                    selectedDrink === drink.name 
+                                      ? 'bg-amber-400 text-stone-900 border-amber-400 shadow-xl shadow-amber-400/20' 
+                                      : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
+                                  }`}
+                                >
+                                  <span>{t(`products.${drink.name}`, drink.name)}</span>
+                                  <div className={`w-2 h-2 rounded-full ${selectedDrink === drink.name ? 'bg-stone-900' : 'bg-white/20'}`} />
+                                </button>
+                              ))}
+                          </div>
+
+                          <button
+                            disabled={!selectedDrink}
+                            onClick={() => setBreakfastStep(2)}
+                            className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                              selectedDrink 
+                                ? 'bg-white text-stone-900 shadow-xl' 
+                                : 'bg-white/10 text-white/20 cursor-not-allowed'
+                            }`}
+                          >
+                            {t('next_step')}
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <motion.div 
+                          key="step2"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className="space-y-6"
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] font-black uppercase text-amber-500 tracking-[0.3em] italic">
+                              {t('sugar_preference_question')}
+                            </p>
+                            <button 
+                              onClick={() => setBreakfastStep(1)}
+                              className="text-[9px] font-black uppercase text-amber-500 hover:text-amber-400 transition-colors"
+                            >
+                              {t('go_back')}
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            {[
+                                { id: 'With Sugar', label: t('with_sugar') }, 
+                                { id: 'Without Sugar', label: t('without_sugar') }
+                            ].map((pref) => (
+                              <button
+                                key={pref.id}
+                                onClick={() => setSugarPreference(pref.id)}
+                                className={`px-4 py-6 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all border ${
+                                  sugarPreference === pref.id 
+                                    ? 'bg-amber-400 text-stone-900 border-amber-400 shadow-xl shadow-amber-400/20' 
+                                    : 'bg-white/5 text-white/40 border-white/10 hover:border-white/20'
+                                }`}
+                              >
+                                {pref.id === 'With Sugar' ? '🍬 ' : '🚫 '}
+                                {pref.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
+                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mb-2 italic">{t('summary')}</p>
+                            <p className="text-xs font-bold text-white flex items-center gap-2">
+                              {t(`products.${selectedDrink}`, selectedDrink)} • {t(sugarPreference === 'With Sugar' ? 'with_sugar' : 'without_sugar')}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/5 p-4 rounded-3xl border border-white/5 space-y-1">
@@ -271,11 +377,22 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 </div>
 
                 <button 
+                  disabled={selectedProduct.categoryId === 'breakfast' && (!selectedDrink || !sugarPreference)}
                   onClick={() => {
-                    addToCart(selectedProduct);
+                    const customization = selectedProduct.categoryId === 'breakfast' 
+                      ? `${selectedDrink} - ${sugarPreference}`
+                      : undefined;
+                    addToCart(selectedProduct, customization);
                     setSelectedProduct(null);
+                    setBreakfastStep(1);
+                    setSelectedDrink('');
+                    setSugarPreference('');
                   }}
-                  className="w-full bg-white text-stone-900 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                  className={`w-full py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-3 ${
+                    (selectedProduct.categoryId === 'breakfast' && (!selectedDrink || !sugarPreference))
+                      ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                      : 'bg-white text-stone-900 hover:scale-[1.02] active:scale-95'
+                  }`}
                 >
                   {loading ? '...' : t('confirm_and_add')} <Plus size={20} />
                 </button>
@@ -689,9 +806,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         </div>
 
                         {userProfile && (userProfile.itemLoyalty?.[product.id] || 0) > 0 && (
-                          <div className="absolute bottom-4 left-4 bg-amber-400 text-stone-900 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-2xl flex items-center gap-1.5 ring-2 ring-white/10">
+                          <div className={`absolute bottom-4 left-4 ${userProfile.itemLoyalty?.[product.id] >= 11 ? 'bg-amber-400 text-stone-900 ring-4 ring-amber-400/30' : 'bg-amber-400 text-stone-900 ring-2 ring-white/10'} px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-2xl flex items-center gap-1.5 transition-all duration-500`}>
                             <Award size={10} strokeWidth={3} />
-                            <span>{userProfile.itemLoyalty?.[product.id]} {t('pts_short')}</span>
+                            <span>
+                              {userProfile.itemLoyalty?.[product.id] >= 11 
+                                ? `12 - ${t('get_free_order')}` 
+                                : `${userProfile.itemLoyalty?.[product.id]} ${t('pts_short')}`}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -710,7 +831,11 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                            <button
                              onClick={(e) => {
                                e.stopPropagation();
-                               addToCart(product);
+                               if (product.categoryId === 'breakfast') {
+                                 setSelectedProduct(product);
+                               } else {
+                                 addToCart(product);
+                               }
                              }}
                             className="bg-white text-stone-900 px-8 py-3.5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-2xl"
                            >

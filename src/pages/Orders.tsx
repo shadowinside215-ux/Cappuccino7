@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Order, OrderStatus } from '../types';
@@ -9,39 +9,46 @@ import { useNavigate } from 'react-router-dom';
 import { useBrandSettings } from '../lib/brand';
 import OptimizedImage from '../components/ui/OptimizedImage';
 
-function ClientOrderTimer({ createdAt, preparingAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
+function ClientOrderTimer({ createdAt, status, prepTime }: { createdAt: any, status: OrderStatus, prepTime: number }) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const driftRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (status !== 'preparing') {
+    const isActive = status !== 'delivered' && status !== 'cancelled' && status !== 'ready';
+    if (!isActive) {
       setTimeLeft(null);
       return;
     }
 
     const calculateTime = () => {
       let startTime = null;
-      if (preparingAt) {
-        if (preparingAt.toDate) {
-          startTime = preparingAt.toDate();
-        } else if (preparingAt instanceof Date) {
-          startTime = preparingAt;
+      if (createdAt) {
+        if (typeof createdAt.toDate === 'function') {
+          startTime = createdAt.toDate();
+        } else if (createdAt instanceof Date) {
+          startTime = createdAt;
+        } else if (typeof createdAt === 'object' && createdAt.seconds) {
+          startTime = new Date(createdAt.seconds * 1000);
         } else {
-          startTime = new Date(preparingAt);
+          startTime = new Date(createdAt);
         }
       }
       
-      if (!startTime || isNaN(startTime.getTime()) || startTime.getTime() < 1000000) {
-        setTimeLeft(30 * 60);
+      const durationMins = prepTime || 30;
+      
+      if (!startTime || isNaN(startTime.getTime())) {
+        setTimeLeft(durationMins * 60);
         return;
       }
 
-      const targetDate = new Date(startTime.getTime() + 30 * 60000); // Forced 30 minutes for consistency
-      let diff = Math.floor((targetDate.getTime() - Date.now()) / 1000);
-      
-      // Handle massive clock drift or 91 min bug
-      if (diff > 1800 || diff < -3600 || Math.abs(diff) > 86400) { 
-        diff = 30 * 60;
+      const now = Date.now();
+      if (driftRef.current === null) {
+        driftRef.current = startTime.getTime() - now;
       }
+
+      const adjustedNow = now + driftRef.current;
+      const targetDate = new Date(startTime.getTime() + durationMins * 60000);
+      let diff = Math.floor((targetDate.getTime() - adjustedNow) / 1000);
       
       setTimeLeft(diff);
     };
@@ -49,22 +56,28 @@ function ClientOrderTimer({ createdAt, preparingAt, prepTime, status }: { create
     calculateTime();
     const interval = setInterval(calculateTime, 1000);
     return () => clearInterval(interval);
-  }, [preparingAt, prepTime, status]);
+  }, [createdAt, prepTime, status]);
 
   if (timeLeft === null) return null;
 
-  const isOverdue = timeLeft < 0;
+  const durationSecs = (prepTime || 30) * 60;
+  const isOverdue = timeLeft <= 0;
+  const isOrange = !isOverdue && timeLeft <= durationSecs * 0.2;
   const absTime = Math.abs(timeLeft);
   const mins = Math.floor(absTime / 60);
   const secs = absTime % 60;
   const displayTime = `${mins}:${secs.toString().padStart(2, '0')}`;
 
+  const getTimerStyles = () => {
+    if (isOverdue) return 'bg-red-500/10 border-red-500/20 text-red-400';
+    if (isOrange) return 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+    return 'bg-white/5 border-white/10 text-green-400';
+  };
+
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border animate-in fade-in zoom-in duration-500 ${
-      isOverdue ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-white/5 border-white/10 text-amber-400'
-    }`}>
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border animate-in fade-in zoom-in duration-500 transition-colors ${getTimerStyles()}`}>
       <Timer size={14} className={isOverdue ? 'animate-pulse' : ''} />
-      <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+      <span className="text-[10px] font-black uppercase tracking-widest leading-none tabular-nums">
         {isOverdue ? 'Ready Soon' : `Ready in ${displayTime}`}
       </span>
     </div>
@@ -212,7 +225,6 @@ export default function Orders() {
                       </span>
                       <ClientOrderTimer 
                         createdAt={order.createdAt} 
-                        preparingAt={order.preparingAt}
                         prepTime={order.prepTime} 
                         status={order.status} 
                       />
@@ -278,17 +290,32 @@ export default function Orders() {
                 <div className="flex items-center gap-4 pt-8 border-t border-white/10 overflow-x-auto no-scrollbar py-2">
                   <AnimatePresence>
                     {order.items.map((item, i) => (
-                      <motion.div 
+                    <motion.div 
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.05 }}
                         key={i} 
-                        className="flex-shrink-0 flex items-center gap-3 bg-white/5 ring-1 ring-white/10 px-4 py-2 rounded-full backdrop-blur-md hover:bg-white/10 cursor-default"
+                        className="flex-shrink-0 flex flex-col gap-1 items-start bg-white/5 ring-1 ring-white/10 px-4 py-2 rounded-2xl backdrop-blur-md hover:bg-white/10 cursor-default"
                       >
-                        <div className="w-7 h-7 rounded-full bg-white text-stone-900 text-[11px] flex items-center justify-center font-black">
-                          {item.quantity}
+                        <div className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-full bg-white text-stone-900 text-[10px] flex items-center justify-center font-black">
+                            {item.quantity}
+                          </div>
+                          <span className="text-[10px] font-black text-white uppercase tracking-widest">{t(`products.${item.name}`, item.name)}</span>
                         </div>
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{t(`products.${item.name}`, item.name)}</span>
+                        {item.customization && (
+                          <span className="text-[8px] font-black uppercase text-amber-400 italic pl-9">
+                            {item.customization.includes('|') ? (
+                              <>
+                                {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim())}
+                                {' • '}
+                                {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_'))}
+                              </>
+                            ) : (
+                              item.customization
+                            )}
+                          </span>
+                        )}
                       </motion.div>
                     ))}
                   </AnimatePresence>
