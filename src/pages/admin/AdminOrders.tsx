@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getD
 import { db } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
 import { awardOrderPoints } from '../../services/orderService';
-import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag, Award, Gift } from 'lucide-react';
+import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag, Award, Gift, ChefHat } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
@@ -223,6 +223,31 @@ export default function AdminOrders() {
                       prepTime={order.prepTime} 
                       status={order.status} 
                     />
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    {order.kitchenStatus && (
+                      <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border-2 ${
+                        order.kitchenStatus === 'completed' ? 'bg-green-100 border-green-200 text-green-700' :
+                        order.kitchenStatus === 'ready' ? 'bg-blue-100 border-blue-200 text-blue-700' :
+                        order.kitchenStatus === 'preparing' ? 'bg-amber-100 border-amber-200 text-amber-700' :
+                        'bg-stone-100 border-stone-200 text-stone-500'
+                      }`}>
+                        <ChefHat size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Kitchen: {order.kitchenStatus}</span>
+                      </div>
+                    )}
+                    {order.barmanStatus && (
+                      <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border-2 ${
+                        order.barmanStatus === 'completed' ? 'bg-green-100 border-green-200 text-green-700' :
+                        order.barmanStatus === 'ready' ? 'bg-blue-100 border-blue-200 text-blue-700' :
+                        order.barmanStatus === 'preparing' ? 'bg-orange-100 border-orange-200 text-orange-700' :
+                        'bg-stone-100 border-stone-200 text-stone-500'
+                      }`}>
+                        <Coffee size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Barman: {order.barmanStatus}</span>
+                      </div>
+                    )}
                   </div>
 
                   {order.deliveryNotes && (

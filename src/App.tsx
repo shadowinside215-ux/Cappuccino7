@@ -24,6 +24,10 @@ import Login from './pages/Login';
 import AdminLogin from './pages/admin/AdminLogin';
 import WaiterLogin from './pages/waiter/WaiterLogin';
 import WaiterDashboard from './pages/waiter/WaiterDashboard';
+import KitchenLogin from './pages/staff/KitchenLogin';
+import KitchenDashboard from './pages/staff/KitchenDashboard';
+import BarmanLogin from './pages/staff/BarmanLogin';
+import BarmanDashboard from './pages/staff/BarmanDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import Settings from './pages/Settings';
 import Onboarding from './components/Onboarding';
@@ -99,6 +103,62 @@ const WaiterGuard = ({ userProfile, children }: { userProfile: UserProfile | nul
   return <Navigate to="/waiter/login" />;
 };
 
+const KitchenGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  const [isKitchenDocument, setIsKitchenDocument] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkKitchen = async () => {
+      if (localStorage.getItem('kitchen_session_active') === 'true') {
+        setIsKitchenDocument(true);
+        return;
+      }
+      if (userProfile?.isKitchen || userProfile?.isAdmin) {
+        setIsKitchenDocument(true);
+        return;
+      }
+      if (userProfile?.uid) {
+        const kitchenDoc = await getDoc(doc(db, 'kitchen', userProfile.uid));
+        setIsKitchenDocument(kitchenDoc.exists());
+      } else {
+        setIsKitchenDocument(false);
+      }
+    };
+    checkKitchen();
+  }, [userProfile]);
+
+  if (isKitchenDocument === null) return <div className="min-h-screen flex items-center justify-center bg-stone-950 text-white">Authenticating Kitchen...</div>;
+  if (isKitchenDocument || userProfile?.isKitchen) return <>{children}</>;
+  return <Navigate to="/kitchen/login" />;
+};
+
+const BarmanGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  const [isBarmanDocument, setIsBarmanDocument] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkBarman = async () => {
+      if (localStorage.getItem('barman_session_active') === 'true') {
+        setIsBarmanDocument(true);
+        return;
+      }
+      if (userProfile?.isBarman || userProfile?.isAdmin) {
+        setIsBarmanDocument(true);
+        return;
+      }
+      if (userProfile?.uid) {
+        const barmanDoc = await getDoc(doc(db, 'barman', userProfile.uid));
+        setIsBarmanDocument(barmanDoc.exists());
+      } else {
+        setIsBarmanDocument(false);
+      }
+    };
+    checkBarman();
+  }, [userProfile]);
+
+  if (isBarmanDocument === null) return <div className="min-h-screen flex items-center justify-center bg-[#1A0F0A] text-amber-50">Authenticating Barman...</div>;
+  if (isBarmanDocument || userProfile?.isBarman) return <>{children}</>;
+  return <Navigate to="/barman/login" />;
+};
+
 function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   const location = useLocation();
   const { t } = useTranslation();
@@ -169,12 +229,15 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   }, [i18n.language]);
 
   const isWaiterInStorage = localStorage.getItem('waiter_session_active') === 'true';
+  const isKitchenInStorage = localStorage.getItem('kitchen_session_active') === 'true';
+  const isBarmanInStorage = localStorage.getItem('barman_session_active') === 'true';
+  const isStaff = userProfile?.isWaiter || userProfile?.isKitchen || userProfile?.isBarman || isWaiterInStorage || isKitchenInStorage || isBarmanInStorage;
   const isWaiter = userProfile?.isWaiter || isWaiterInStorage;
-  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/waiter/login';
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/waiter/login' || location.pathname === '/kitchen/login' || location.pathname === '/barman/login';
 
   useEffect(() => {
-    // If not logged in, or is a waiter, or profile is still loading, don't listen
-    if (!userProfile?.uid || isWaiter) return;
+    // If not logged in, or is staff, or profile is still loading, don't listen
+    if (!userProfile?.uid || isStaff) return;
 
     const q = query(
       collection(db, 'orders'),
@@ -217,10 +280,16 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
   // If user is a waiter, they should only be able to see the waiter dashboard
   useEffect(() => {
-    if (isWaiter && !location.pathname.startsWith('/waiter') && location.pathname !== '/login') {
+    if (isWaiterInStorage && !location.pathname.startsWith('/waiter') && location.pathname !== '/login') {
       navigate('/waiter/dashboard');
     }
-  }, [isWaiter, location.pathname, navigate]);
+    if (isKitchenInStorage && !location.pathname.startsWith('/kitchen') && location.pathname !== '/login') {
+      navigate('/kitchen/dashboard');
+    }
+    if (isBarmanInStorage && !location.pathname.startsWith('/barman') && location.pathname !== '/login') {
+      navigate('/barman/dashboard');
+    }
+  }, [isWaiterInStorage, isKitchenInStorage, isBarmanInStorage, location.pathname, navigate]);
 
   const isIncompleteProfile = userProfile && 
      !userProfile.isAnonymous && 
@@ -440,7 +509,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
       <Navbar userProfile={userProfile} />
       <ReviewPopup />
-      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 ${isWaiter || isLoginPage ? '!max-w-none !p-0 !pt-0' : ''}`}>
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 ${isStaff || isLoginPage ? '!max-w-none !p-0 !pt-0' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -473,6 +542,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       {/* Waiter Routes */}
       <Route path="/waiter/login" element={<WaiterLogin />} />
       <Route path="/waiter/dashboard" element={<WaiterGuard userProfile={userProfile}><WaiterDashboard /></WaiterGuard>} />
+
+      {/* Kitchen Routes */}
+      <Route path="/kitchen/login" element={<KitchenLogin />} />
+      <Route path="/kitchen/dashboard" element={<KitchenGuard userProfile={userProfile}><KitchenDashboard /></KitchenGuard>} />
+
+      {/* Barman Routes */}
+      <Route path="/barman/login" element={<BarmanLogin />} />
+      <Route path="/barman/dashboard" element={<BarmanGuard userProfile={userProfile}><BarmanDashboard /></BarmanGuard>} />
     </Routes>
           </motion.div>
         </AnimatePresence>
@@ -493,6 +570,18 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-amber-500"
             >
               {t('waiter_access')}
+            </Link>
+            <Link 
+              to="/kitchen/login" 
+              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-blue-500"
+            >
+              {t('kitchen_access', 'Kitchen')}
+            </Link>
+            <Link 
+              to="/barman/login" 
+              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-orange-500"
+            >
+              {t('barman_access', 'Barman')}
             </Link>
           </div>
         </footer>

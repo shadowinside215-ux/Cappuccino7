@@ -447,6 +447,31 @@ export default function WaiterDashboard() {
                       />
                     </div>
 
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {order.kitchenStatus && (
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
+                          order.kitchenStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
+                          order.kitchenStatus === 'ready' ? 'bg-blue-50 border-blue-100 text-blue-600' :
+                          order.kitchenStatus === 'preparing' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                          'bg-stone-50 border-stone-100 text-stone-400'
+                        }`}>
+                          <ChefHat size={12} />
+                          <span className="text-[8px] font-black uppercase tracking-widest">K: {order.kitchenStatus}</span>
+                        </div>
+                      )}
+                      {order.barmanStatus && (
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
+                          order.barmanStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
+                          order.barmanStatus === 'ready' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                          order.barmanStatus === 'preparing' ? 'bg-orange-50 border-orange-100 text-orange-600' :
+                          'bg-stone-50 border-stone-100 text-stone-400'
+                        }`}>
+                          <Coffee size={12} />
+                          <span className="text-[8px] font-black uppercase tracking-widest">B: {order.barmanStatus}</span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-stone-50">
                        <button onClick={() => updateStatus(order, 'preparing')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-50 hover:bg-amber-50 group transition-colors">
                          <Soup size={18} className="text-stone-400 group-hover:text-amber-500" />

@@ -10,6 +10,8 @@ export interface UserProfile {
   itemLoyalty: Record<string, number>;
   isAdmin: boolean;
   isWaiter?: boolean;
+  isKitchen?: boolean;
+  isBarman?: boolean;
   isDriver?: boolean;
   isAnonymous?: boolean;
   createdAt: string;
@@ -48,6 +50,8 @@ export interface Order {
   items: OrderItem[];
   total: number;
   status: OrderStatus;
+  kitchenStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
+  barmanStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
   deliveryType: 'delivery' | 'pickup' | 'dine-in';
   prepTime: number; // in minutes
   estimatedReadyAt?: any; // Firestore Timestamp

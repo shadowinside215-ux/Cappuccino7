@@ -167,35 +167,43 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       const isGuest = auth.currentUser.isAnonymous;
 
       // Fetch metadata for all items first to determine categories
+      const kitchenCategories = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle'];
+      const barmanCategories = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink'];
+
       const itemsWithMetadata = await Promise.all(items.map(async (item) => {
         try {
           const productDoc = await getDoc(doc(db, 'products', item.productId));
           if (productDoc.exists()) {
             const productData = productDoc.data();
             const catDoc = await getDoc(doc(db, 'categories', productData.categoryId));
+            const categoryName = catDoc.exists() ? catDoc.data().name : 'Menu';
+            const lowerCat = categoryName.toLowerCase();
+            const lowerName = item.name.toLowerCase();
+
+            let system: 'kitchen' | 'barman' = 'barman'; // Default to barman for safety or menu items
+            if (kitchenCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
+              system = 'kitchen';
+            } else if (barmanCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
+              system = 'barman';
+            }
+
             return {
               ...item,
-              categoryName: catDoc.exists() ? catDoc.data().name : 'Menu',
-              subSection: productData.subSection || ''
+              categoryName,
+              subSection: productData.subSection || '',
+              system
             };
           }
         } catch (e) {
           console.error("Error fetching item metadata", e);
         }
-        return { ...item, categoryName: 'Menu', subSection: '' };
+        return { ...item, categoryName: 'Menu', subSection: '', system: 'barman' };
       }));
 
-      // Preparation time logic:
-      // 30 minutes for meals/dishes (default)
-      // 10 minutes for juices/drinks
-      const juiceKeywords = ['juice', 'jus', 'jus d\'orange', 'orange', 'fruit', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie'];
-      const isJuiceOnlyOrder = itemsWithMetadata.every(item => {
-        const cat = (item.categoryName || '').toLowerCase();
-        const itemName = (item.name || '').toLowerCase();
-        return juiceKeywords.some(kw => cat.includes(kw) || itemName.includes(kw));
-      });
+      const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen');
+      const hasBarmanItems = itemsWithMetadata.some(item => item.system === 'barman');
 
-      const prepTimeMinutes = isJuiceOnlyOrder ? 10 : 30;
+      const prepTimeMinutes = hasKitchenItems ? 30 : 10;
       const now = new Date();
       const estimatedReadyAt = new Date(now.getTime() + prepTimeMinutes * 60000);
 
@@ -206,6 +214,8 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         items: itemsWithMetadata,
         total: total,
         status: 'pending' as OrderStatus,
+        kitchenStatus: hasKitchenItems ? 'pending' : 'completed',
+        barmanStatus: hasBarmanItems ? 'pending' : 'completed',
         deliveryType,
         prepTime: prepTimeMinutes,
         estimatedReadyAt: estimatedReadyAt,
