@@ -7,6 +7,29 @@ import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 export default function BarmanLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -39,10 +62,16 @@ export default function BarmanLogin() {
               itemLoyalty: {},
               isAdmin: false,
               isBarman: true,
+              isKitchen: false,
+              isWaiter: false,
               createdAt: serverTimestamp()
             });
           } else {
-            await updateDoc(userDocRef, { isBarman: true });
+            await updateDoc(userDocRef, { 
+              isBarman: true,
+              isKitchen: false,
+              isWaiter: false
+            });
           }
           await setDoc(doc(db, 'barman', user.uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
         }
@@ -56,7 +85,11 @@ export default function BarmanLogin() {
       toast.error('Invalid barman credentials');
     } catch (err: any) {
       console.error('Login error:', err);
-      toast.error('Invalid credentials');
+      if (err.code?.startsWith('auth/')) {
+        toast.error('Authentication failed');
+      } else {
+        handleFirestoreError(err, OperationType.WRITE, 'barman profile setup');
+      }
     } finally {
       setLoading(false);
     }

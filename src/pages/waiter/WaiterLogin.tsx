@@ -48,11 +48,15 @@ export default function WaiterLogin() {
                 itemLoyalty: {},
                 isAdmin: false,
                 isWaiter: true,
+                isKitchen: false,
+                isBarman: false,
                 createdAt: serverTimestamp()
               });
             } else {
               await updateDoc(userDocRef, {
-                isWaiter: true
+                isWaiter: true,
+                isKitchen: false,
+                isBarman: false
               });
             }
 

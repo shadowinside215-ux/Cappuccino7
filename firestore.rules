@@ -28,12 +28,32 @@ service cloud.firestore {
       );
     }
     
+    function isKitchen() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/kitchen/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isKitchen', false) == true)
+      );
+    }
+    
+    function isBarman() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/barman/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isBarman', false) == true)
+      );
+    }
+    
     function isDriver() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/drivers/$(request.auth.uid)) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isDriver', false) == true)
       );
+    }
+    
+    function isStaff() {
+      return isAdmin() || isWaiter() || isKitchen() || isBarman();
     }
     
     function incoming() { return request.resource.data; }
@@ -50,19 +70,21 @@ service cloud.firestore {
       return data.uid == request.auth.uid &&
              data.name is string &&
              data.points is number &&
-             (data.get('isWaiter', false) is bool);
+             (data.get('isWaiter', false) is bool) &&
+             (data.get('isKitchen', false) is bool) &&
+             (data.get('isBarman', false) is bool);
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (isOwner(userId) || isAdmin() || isWaiter() || isDriver());
-      allow list: if isSignedIn() && (isAdmin() || isWaiter() || isDriver()); 
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin() || isWaiter() || isKitchen() || isBarman() || isDriver());
+      allow list: if isSignedIn() && (isAdmin() || isWaiter() || isKitchen() || isBarman() || isDriver()); 
       
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isAdmin() || (
         isSignedIn() && isOwner(userId) && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'address'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'isKitchen', 'isBarman', 'address'])
       ) || (
-        isWaiter() && 
+        (isWaiter() || isKitchen() || isBarman()) && 
         incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty'])
       );
       allow delete: if isAdmin();
@@ -82,6 +104,18 @@ service cloud.firestore {
     match /waiters/{waiterId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
+    }
+
+    // --- Kitchen List ---
+    match /kitchen/{staffId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || (isSignedIn() && staffId == request.auth.uid);
+    }
+
+    // --- Barman List ---
+    match /barman/{staffId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || (isSignedIn() && staffId == request.auth.uid);
     }
 
     // --- Settings (Brand, Global, etc.) ---
@@ -110,26 +144,27 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      // List permission:
-      allow list: if isAdmin() || isWaiter();
+      // Staff can see all orders
+      allow list: if isStaff();
+      
+      // Customers see their own, Drivers see deliveries
       allow list: if isSignedIn() && (
-        (resource == null) || // For count queries and list pre-valuation
+        (resource == null) ||
         (resource.data.userId == request.auth.uid) ||
-        (resource.data.deliveryType == 'delivery')
+        (isDriver() && resource.data.get('deliveryType', '') == 'delivery')
       );
       
-      // Get permission:
-      allow get: if isAdmin() || isWaiter();
-      allow get: if isSignedIn() && (
+      // Get permission
+      allow get: if isStaff() || (isSignedIn() && (
         resource.data.userId == request.auth.uid ||
-        resource.data.deliveryType == 'delivery'
-      );
+        (isDriver() && resource.data.get('deliveryType', '') == 'delivery')
+      ));
       
       allow create: if isSignedIn() && (isValidOrder(incoming()) || isAdmin());
       
-      allow update: if isAdmin() || isWaiter();
+      allow update: if isStaff();
       // Allow drivers to update delivery status
-      allow update: if isSignedIn() && existing().deliveryType == 'delivery' && 
+      allow update: if isSignedIn() && isDriver() && existing().get('deliveryType', '') == 'delivery' && 
                     incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
                     
       allow delete: if isAdmin();

@@ -168,7 +168,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
 
       // Fetch metadata for all items first to determine categories
       const kitchenCategories = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle'];
-      const barmanCategories = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink'];
+      const barmanCategories = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink', 'cappuccino'];
 
       const itemsWithMetadata = await Promise.all(items.map(async (item) => {
         try {
@@ -180,11 +180,13 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             const lowerCat = categoryName.toLowerCase();
             const lowerName = item.name.toLowerCase();
 
-            let system: 'kitchen' | 'barman' = 'barman'; // Default to barman for safety or menu items
-            if (kitchenCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
-              system = 'kitchen';
-            } else if (barmanCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
+            let system: 'kitchen' | 'barman' = 'barman'; // Default to barman
+            
+            // Check Barman first (high priority for drinks regardless of category)
+            if (barmanCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
               system = 'barman';
+            } else if (kitchenCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
+              system = 'kitchen';
             }
 
             return {

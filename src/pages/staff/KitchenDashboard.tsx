@@ -8,20 +8,61 @@ import { Order, OrderStatus } from '../../types';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+}
+
 const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
 
 export default function KitchenDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!auth.currentUser) {
+      setLoading(false);
+      return;
+    }
+
     // Kitchen only sees orders with kitchen items and where kitchenStatus is not completed
     const q = query(
       collection(db, 'orders'),
-      where('kitchenStatus', 'in', ['pending', 'preparing', 'ready']),
-      where('status', 'not-in', ['delivered', 'cancelled'])
+      where('kitchenStatus', 'in', ['pending', 'preparing', 'ready'])
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -35,7 +76,11 @@ export default function KitchenDashboard() {
       });
 
       snapshot.forEach((doc) => {
-        ordersData.push({ id: doc.id, ...doc.data() } as Order);
+        const data = doc.data() as Order;
+        // Client-side filter for status to avoid 'in' and 'not-in' conflict
+        if (data.status !== 'delivered' && data.status !== 'cancelled') {
+          ordersData.push({ id: doc.id, ...data });
+        }
       });
 
       // Sort by creation time
@@ -44,33 +89,59 @@ export default function KitchenDashboard() {
       setOrders(ordersData);
       setLoading(false);
 
-      if (hasNewOrder && !loading) {
+      if (hasNewOrder && initialLoadDone) {
         const audio = new Audio(NOTIFICATION_SOUND);
         audio.play().catch(e => console.log('Audio blocked', e));
-        toast.success(t('new_food_order', 'New Kitchen Order!'), {
+        toast.success(t('new_food_order', 'NEW KITCHEN ORDER!'), {
           icon: '🍳',
-          duration: 5000,
-          position: 'top-right'
+          duration: 10000,
+          position: 'top-center',
+          style: {
+            background: '#2563eb',
+            color: '#fff',
+            fontWeight: '900',
+            fontSize: '14px',
+            padding: '24px',
+            borderRadius: '24px',
+            textTransform: 'uppercase'
+          }
         });
       }
+
+      if (!initialLoadDone) {
+        setInitialLoadDone(true);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders (kitchen filter)');
+      toast.error(t('permission_denied_orders', 'Permission denied Accessing orders'));
     });
 
     return () => unsubscribe();
-  }, [loading, t]);
+  }, [initialLoadDone, t, auth.currentUser]);
 
   const updateKitchenStatus = async (order: Order, newStatus: string) => {
     try {
+      const newKitchenStatus = newStatus;
       const orderRef = doc(db, 'orders', order.id);
-      await updateDoc(orderRef, {
-        kitchenStatus: newStatus,
-        // If everything is ready/completed, we might want to update the global status
-        // But for now, we follow the staff workflow
-        ...(newStatus === 'preparing' ? { preparingAt: serverTimestamp() } : {}),
-        ...(newStatus === 'ready' ? { readyAt: serverTimestamp() } : {})
-      });
+      
+      const updates: any = {
+        kitchenStatus: newKitchenStatus,
+        ...(newKitchenStatus === 'preparing' ? { preparingAt: serverTimestamp() } : {}),
+        ...(newKitchenStatus === 'ready' ? { readyAt: serverTimestamp() } : {})
+      };
+
+      // Check if both are ready to update global status
+      if (newKitchenStatus === 'ready' && (order.barmanStatus === 'ready' || order.barmanStatus === 'completed' || !order.barmanStatus)) {
+        updates.status = 'ready';
+      } else if (newKitchenStatus === 'completed' && (order.barmanStatus === 'completed' || !order.barmanStatus)) {
+        updates.status = 'ready';
+      }
+
+      await updateDoc(orderRef, updates);
       
       toast.success(`${t('order_set_to')} ${newStatus}`);
-    } catch (err) {
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
       toast.error(t('failed_status_update'));
     }
   };

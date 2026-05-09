@@ -142,6 +142,8 @@ function OrderTimer({ createdAt, prepTime, status }: { createdAt: any, preparing
   );
 }
 
+const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
+
 export default function WaiterDashboard() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -177,10 +179,45 @@ export default function WaiterDashboard() {
         
         const lastOrderCount = parseInt(sessionStorage.getItem('last_order_count') || '0');
         if (activeOrders.length > lastOrderCount) {
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+          const audio = new Audio(NOTIFICATION_SOUND);
           audio.play().catch(e => console.log('Audio blocked', e));
           toast('New Order!', { icon: '🔔' });
         }
+
+        // Check for specific staff state changes
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'modified') {
+            const newData = change.doc.data() as Order;
+            const oldOrder = orders.find(o => o.id === change.doc.id);
+            
+            if (oldOrder) {
+              // Kitchen Notification for Waiter
+              if (newData.kitchenStatus !== oldOrder.kitchenStatus && (newData.kitchenStatus === 'ready' || newData.kitchenStatus === 'completed')) {
+                toast.success(`${t('kitchen_ready', 'Kitchen Order Ready!')} - ${newData.customerName}`, {
+                  icon: '🍳',
+                  duration: 8000,
+                  position: 'top-right',
+                  style: { background: '#2563eb', color: '#fff', fontWeight: 'bold' }
+                });
+                const audio = new Audio(NOTIFICATION_SOUND);
+                audio.play().catch(() => {});
+              }
+              
+              // Barman Notification for Waiter
+              if (newData.barmanStatus !== oldOrder.barmanStatus && (newData.barmanStatus === 'ready' || newData.barmanStatus === 'completed')) {
+                toast.success(`${t('barman_ready', 'Drinks Ready!')} - ${newData.customerName}`, {
+                  icon: '☕',
+                  duration: 8000,
+                  position: 'top-right',
+                  style: { background: '#d97706', color: '#fff', fontWeight: 'bold' }
+                });
+                const audio = new Audio(NOTIFICATION_SOUND);
+                audio.play().catch(() => {});
+              }
+            }
+          }
+        });
+
         sessionStorage.setItem('last_order_count', activeOrders.length.toString());
         setLoading(false);
       }, (error) => {

@@ -8,20 +8,61 @@ import { Order } from '../../types';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+}
+
 const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
 
 export default function BarmanDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!auth.currentUser) {
+      setLoading(false);
+      return;
+    }
+
     // Barman only sees orders with barman items and where barmanStatus is not completed
     const q = query(
       collection(db, 'orders'),
-      where('barmanStatus', 'in', ['pending', 'preparing', 'ready']),
-      where('status', 'not-in', ['delivered', 'cancelled'])
+      where('barmanStatus', 'in', ['pending', 'preparing', 'ready'])
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -35,7 +76,11 @@ export default function BarmanDashboard() {
       });
 
       snapshot.forEach((doc) => {
-        ordersData.push({ id: doc.id, ...doc.data() } as Order);
+        const data = doc.data() as Order;
+        // Client-side filter for status to avoid 'in' and 'not-in' conflict
+        if (data.status !== 'delivered' && data.status !== 'cancelled') {
+          ordersData.push({ id: doc.id, ...data });
+        }
       });
 
       // Sort by creation time
@@ -44,31 +89,59 @@ export default function BarmanDashboard() {
       setOrders(ordersData);
       setLoading(false);
 
-      if (hasNewOrder && !loading) {
+      if (hasNewOrder && initialLoadDone) {
         const audio = new Audio(NOTIFICATION_SOUND);
         audio.play().catch(e => console.log('Audio blocked', e));
-        toast.success(t('new_drink_order', 'New Drink Order!'), {
+        toast.success(t('new_drink_order', 'NEW DRINK ORDER!'), {
           icon: '☕',
-          duration: 5000,
-          position: 'top-right'
+          duration: 10000,
+          position: 'top-center',
+          style: {
+            background: '#d97706',
+            color: '#fff',
+            fontWeight: '900',
+            fontSize: '14px',
+            padding: '24px',
+            borderRadius: '24px',
+            textTransform: 'uppercase'
+          }
         });
       }
+
+      if (!initialLoadDone) {
+        setInitialLoadDone(true);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders (barman filter)');
+      toast.error(t('permission_denied_orders', 'Permission denied Accessing orders'));
     });
 
     return () => unsubscribe();
-  }, [loading, t]);
+  }, [initialLoadDone, t, auth.currentUser]);
 
   const updateBarmanStatus = async (order: Order, newStatus: string) => {
     try {
+      const newBarmanStatus = newStatus;
       const orderRef = doc(db, 'orders', order.id);
-      await updateDoc(orderRef, {
-        barmanStatus: newStatus,
-        ...(newStatus === 'preparing' ? { preparingAt: serverTimestamp() } : {}),
-        ...(newStatus === 'ready' ? { readyAt: serverTimestamp() } : {})
-      });
+      
+      const updates: any = {
+        barmanStatus: newBarmanStatus,
+        ...(newBarmanStatus === 'preparing' ? { preparingAt: serverTimestamp() } : {}),
+        ...(newBarmanStatus === 'ready' ? { readyAt: serverTimestamp() } : {})
+      };
+
+      // Check if both are ready to update global status
+      if (newBarmanStatus === 'ready' && (order.kitchenStatus === 'ready' || order.kitchenStatus === 'completed' || !order.kitchenStatus)) {
+        updates.status = 'ready';
+      } else if (newBarmanStatus === 'completed' && (order.kitchenStatus === 'completed' || !order.kitchenStatus)) {
+        updates.status = 'ready';
+      }
+
+      await updateDoc(orderRef, updates);
       
       toast.success(`${t('order_set_to')} ${newStatus}`);
-    } catch (err) {
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
       toast.error(t('failed_status_update'));
     }
   };
