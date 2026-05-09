@@ -154,10 +154,13 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       const isGuest = auth.currentUser.isAnonymous;
 
       // Category detection for kitchen (30m) vs barman (10m)
-      const kitchenKeywords = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle', 'petit déjeuner', 'omelette', 'tacos', 'panini'];
-      const barmanKeywords = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink', 'cappuccino', 'latte', 'espresso'];
+      const kitchenKeywords = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle', 'petit déjeuner', 'omelette', 'tacos', 'panini', 'oeuf', 'egg'];
+      const barmanKeywords = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink', 'cappuccino', 'latte', 'espresso', 'water', 'eau', 'soda', 'coke', 'fanta', 'sprite'];
 
-      const itemsWithMetadata = await Promise.all(items.map(async (item) => {
+      const itemsWithMetadata = [];
+      const originalCartItems = [...items];
+
+      for (const item of originalCartItems) {
         try {
           const productDoc = await getDoc(doc(db, 'products', item.productId));
           if (productDoc.exists()) {
@@ -167,35 +170,79 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             const lowerCat = categoryName.toLowerCase();
             const lowerName = item.name.toLowerCase();
 
-            let system: 'kitchen' | 'barman' | 'both' = 'barman'; 
-            
-            // Check for breakfast with drinks specifically
             const isBreakfast = lowerCat.includes('breakfast') || lowerName.includes('petit déjeuner');
-            const hasDrinkKeywords = barmanKeywords.some(kw => lowerName.includes(kw));
+            // Check if the item name explicitly mentions a drink
+            const drinkMatch = barmanKeywords.find(kw => lowerName.includes(kw));
+            
+            // If it's a breakfast combo (Food + Drink)
+            if (isBreakfast && drinkMatch) {
+              // Clean name for kitchen (remove drink mention)
+              let foodName = item.name;
+              // Simple regex to remove "+ Drink" or "with Drink" patterns
+              barmanKeywords.forEach(kw => {
+                const regex = new RegExp(`(\\+|with|and|&|\\s|\\/)*${kw}\\b`, 'gi');
+                foodName = foodName.replace(regex, '').trim();
+              });
 
-            if (isBreakfast && hasDrinkKeywords) {
-              system = 'both';
-            } else if (kitchenKeywords.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
-              system = 'kitchen';
-            } else if (barmanKeywords.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
-              system = 'barman';
+              // Create Food Part for Kitchen
+              itemsWithMetadata.push({
+                ...item,
+                name: foodName || item.name, // Fallback to original if we cleaned everything by mistake
+                categoryName,
+                subSection: productData.subSection || '',
+                system: 'kitchen',
+                isComboPart: true,
+                comboType: 'food',
+                pointsWorth: item.quantity
+              });
+              
+              // Create Drink Part for Barman
+              // Extract the drink part or just use the matched keyword
+              const drinkLabel = drinkMatch.charAt(0).toUpperCase() + drinkMatch.slice(1);
+              itemsWithMetadata.push({
+                ...item,
+                name: `${t('drink', 'Drink')}: ${drinkLabel}`,
+                price: 0,
+                categoryName,
+                subSection: productData.subSection || '',
+                system: 'barman',
+                isComboPart: true,
+                comboType: 'drink',
+                pointsWorth: 0
+              });
+            } else {
+              // Standard routing
+              let system: 'kitchen' | 'barman' = 'barman';
+              
+              // If it's purely a drink, it goes to barman even if in breakfast category
+              const matchesDrink = barmanKeywords.some(kw => lowerName.includes(kw));
+              const matchesFood = kitchenKeywords.some(kw => lowerName.includes(kw) || lowerCat.includes(kw));
+
+              if (matchesDrink) {
+                system = 'barman';
+              } else if (matchesFood) {
+                system = 'kitchen';
+              }
+
+              itemsWithMetadata.push({
+                ...item,
+                categoryName,
+                subSection: productData.subSection || '',
+                system,
+                pointsWorth: item.quantity
+              });
             }
-
-            return {
-              ...item,
-              categoryName,
-              subSection: productData.subSection || '',
-              system
-            };
+          } else {
+            itemsWithMetadata.push({ ...item, categoryName: 'Menu', subSection: '', system: 'barman' });
           }
         } catch (e) {
           console.error("Error fetching item metadata", e);
+          itemsWithMetadata.push({ ...item, categoryName: 'Menu', subSection: '', system: 'barman' });
         }
-        return { ...item, categoryName: 'Menu', subSection: '', system: 'barman' };
-      }));
+      }
 
-      const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen' || item.system === 'both');
-      const hasBarmanItems = itemsWithMetadata.some(item => item.system === 'barman' || item.system === 'both');
+      const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen');
+      const hasBarmanItems = itemsWithMetadata.some(item => item.system === 'barman');
 
       const prepTimeMinutes = hasKitchenItems ? 30 : 10;
       const now = new Date();

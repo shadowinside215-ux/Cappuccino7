@@ -40,6 +40,12 @@ export interface OrderItem {
   price: number;
   quantity: number;
   customization?: string;
+  system?: 'kitchen' | 'barman' | 'both';
+  categoryName?: string;
+  subSection?: string;
+  isComboPart?: boolean;
+  comboType?: 'food' | 'drink';
+  pointsWorth?: number;
 }
 
 export interface Order {

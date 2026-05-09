@@ -220,7 +220,7 @@ export default function AdminOrders() {
                           <div className="text-right">
                              <p className="text-[10px] font-black text-brown-400">{item.price * item.quantity} MAD</p>
                              <p className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">
-                               {item.quantity} {t('points_loyalty')}
+                               {(item as any).pointsWorth ?? item.quantity} {t('points_loyalty')}
                              </p>
                           </div>
                         </div>
@@ -318,7 +318,7 @@ export default function AdminOrders() {
                     <div className="flex items-center gap-2 text-amber-600 mb-1">
                        <Award size={12} />
                        <span className="text-[10px] font-black uppercase tracking-widest">
-                         {order.items.reduce((acc, item) => acc + item.quantity, 0)} Items Loyalty
+                         {order.items.reduce((acc, item) => acc + ((item as any).pointsWorth ?? item.quantity), 0)} Items Loyalty
                        </span>
                     </div>
                     <p className="text-[8px] font-black text-stone-300 uppercase tracking-widest">Target: 30 min</p>
