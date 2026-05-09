@@ -7,7 +7,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, googleProvider, db } from '../lib/firebase';
+import { auth, googleProvider, db, handleAuthError } from '../lib/firebase';
 import { useBrandSettings } from '../lib/brand';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff } from 'lucide-react';
@@ -56,17 +56,15 @@ export default function Login() {
       toast.success('Welcome back!');
       navigate('/');
     } catch (error: any) {
-      console.error(error);
-      let message = 'Google login failed.';
+      const message = handleAuthError(error);
       
       if (error.code === 'auth/unauthorized-domain') {
         const domain = window.location.hostname;
-        message = `This domain (${domain}) is not authorized. Please add it to your Firebase Console under Auth > Settings > Authorized Domains.`;
+        const msg = `This domain (${domain}) is not authorized. Please add it to your Firebase Console under Auth > Settings > Authorized Domains.`;
         
-        // Custom toast with copy button for easier troubleshooting
         toast((t) => (
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">{message}</p>
+            <p className="text-sm font-medium">{msg}</p>
             <button 
               onClick={() => {
                 navigator.clipboard.writeText(domain);
@@ -78,13 +76,7 @@ export default function Login() {
             </button>
           </div>
         ), { duration: 10000, id: 'unauthorized-domain-toast' });
-        return; // Already showed custom toast
-      } else if (error.code === 'auth/popup-blocked') {
-        message = 'Login popup was blocked. Please enable popups and try again.';
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        message = 'Login window was closed before completion.';
-      } else if (error.message) {
-        message = error.message;
+        return; 
       }
       
       toast.error(message);
@@ -169,12 +161,7 @@ export default function Login() {
       }
       navigate('/');
     } catch (error: any) {
-      console.error(error);
-      const message = error.code === 'auth/user-not-found' ? 'User not found.' :
-                      error.code === 'auth/wrong-password' ? 'Invalid password.' :
-                      error.code === 'auth/email-already-in-use' ? 'Email already in use.' :
-                      error.code === 'auth/invalid-credential' ? 'Invalid email or password.' :
-                      error.message;
+      const message = handleAuthError(error);
       toast.error(message);
     } finally {
       setLoading(false);

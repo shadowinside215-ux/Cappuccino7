@@ -214,7 +214,7 @@ export default function AdminOrders() {
                     <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 italic">
                       <ShoppingBag size={14} className="text-brown-600" />
                       <span className="font-black uppercase text-[10px] tracking-wider">
-                        {order.deliveryType === 'pickup' ? t('takeaway') : t('in_place')}
+                        {order.deliveryType === 'dine-in' ? t('dine_in', 'Dine In') : t('takeaway')}
                       </span>
                     </p>
                     <OrderTimer 

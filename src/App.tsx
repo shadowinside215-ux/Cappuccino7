@@ -557,32 +557,22 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
       {/* Persistent Access Footers */}
       {!isLoginPage && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/waiter') && !location.pathname.startsWith('/kitchen') && !location.pathname.startsWith('/barman') && (
-        <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-12 text-center space-y-4 relative z-[100]">
-          <div className="flex justify-center gap-10 flex-wrap py-8">
-            <Link 
-              to="/admin/login" 
-              className="text-[11px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-bento-primary transition-colors p-2"
-            >
-              • {t('admin_access')}
-            </Link>
-            <Link 
-              to="/waiter/login" 
-              className="text-[11px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-amber-500 transition-colors p-2"
-            >
-              • {t('waiter_access')}
-            </Link>
-            <Link 
-              to="/kitchen/login" 
-              className="text-[11px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-blue-500 transition-colors p-2"
-            >
-              • {t('kitchen_access', 'Kitchen')}
-            </Link>
-            <Link 
-              to="/barman/login" 
-              className="text-[11px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-orange-500 transition-colors p-2"
-            >
-              • {t('barman_access', 'Barman')}
-            </Link>
+        <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-16 text-center space-y-4 relative z-[100]">
+          <div className="flex justify-center gap-4 sm:gap-10 flex-wrap py-10">
+            {[
+              { to: "/admin/login", label: t('admin_access'), color: 'hover:text-bento-primary hover:bg-stone-100' },
+              { to: "/waiter/login", label: t('waiter_access'), color: 'hover:text-amber-600 hover:bg-amber-50' },
+              { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen'), color: 'hover:text-blue-600 hover:bg-blue-50' },
+              { to: "/barman/login", label: t('barman_access', 'Barman'), color: 'hover:text-orange-600 hover:bg-orange-50' },
+            ].map((link) => (
+              <Link 
+                key={link.to}
+                to={link.to} 
+                className={`text-[11px] font-black uppercase tracking-[0.4em] text-stone-400 py-3 px-6 rounded-2xl transition-all duration-300 border border-transparent ${link.color} hover:border-current/10 active:scale-95`}
+              >
+                • {link.label}
+              </Link>
+            ))}
           </div>
         </footer>
       )}

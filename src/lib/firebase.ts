@@ -24,6 +24,7 @@ export enum OperationType {
   LIST = 'list',
   GET = 'get',
   WRITE = 'write',
+  AUTH = 'auth'
 }
 
 export interface FirestoreErrorInfo {
@@ -36,6 +37,20 @@ export interface FirestoreErrorInfo {
     emailVerified?: boolean | null;
     isAnonymous?: boolean | null;
   }
+}
+
+export function handleAuthError(error: any) {
+  console.error('Auth Error:', error);
+  if (error.code === 'auth/network-request-failed') {
+    return 'Network connection lost. Please check your internet and try again.';
+  }
+  if (error.code === 'auth/popup-blocked') {
+    return 'Login window was blocked by your browser. Please allow popups.';
+  }
+  if (error.code === 'auth/too-many-requests') {
+    return 'Too many failed attempts. Please try again later.';
+  }
+  return error.message || 'Authentication failed. Please try again.';
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {

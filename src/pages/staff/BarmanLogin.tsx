@@ -2,33 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, Lock, User as UserIcon, ArrowRight, Loader2, Signal } from 'lucide-react';
 import { motion } from 'motion/react';
-import { auth, db } from '../../lib/firebase';
+import { auth, db, handleFirestoreError, handleAuthError, OperationType } from '../../lib/firebase';
 import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-    },
-    operationType,
-    path
-  };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
 
 export default function BarmanLogin() {
   const [username, setUsername] = useState('');
@@ -84,12 +61,8 @@ export default function BarmanLogin() {
 
       toast.error('Invalid barman credentials');
     } catch (err: any) {
-      console.error('Login error:', err);
-      if (err.code?.startsWith('auth/')) {
-        toast.error('Authentication failed');
-      } else {
-        handleFirestoreError(err, OperationType.WRITE, 'barman profile setup');
-      }
+      const message = handleAuthError(err);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

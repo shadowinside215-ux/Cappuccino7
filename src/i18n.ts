@@ -15,7 +15,7 @@ const resources = {
       "hero_description": "Crafting exceptional coffee moments and artisan morning experiences in the heart of the city.",
       "start_order": "Start Order",
       "explore": "Explore",
-      "dine_in": "Dine-in",
+      "dine_in": "Dine In",
       "all_items": "All Items",
       "login": "Log In",
       "logout": "Log Out",

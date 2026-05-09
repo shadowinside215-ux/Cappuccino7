@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ChefHat, ArrowRight, Loader2, Signal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth, db } from '../../lib/firebase';
+import { auth, db, handleAuthError } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -94,8 +94,8 @@ export default function WaiterLogin() {
         await auth.signOut();
       }
     } catch (err: any) {
-      console.error('Login error:', err);
-      toast.error('Invalid credentials');
+      const message = handleAuthError(err);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

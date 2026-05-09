@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth, db } from '../../lib/firebase';
+import { auth, db, handleAuthError } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -33,8 +33,8 @@ export default function AdminLogin() {
         toast.success(`Authenticated as ${result.user.email}`);
       }
     } catch (err: any) {
-      console.error(err);
-      toast.error('Identity verification failed');
+      const message = handleAuthError(err);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
