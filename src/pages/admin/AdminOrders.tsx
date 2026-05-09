@@ -6,82 +6,10 @@ import { awardOrderPoints } from '../../services/orderService';
 import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag, Award, Gift, ChefHat } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { OrderTimer } from '../../components/OrderTimer';
 
 const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivered'];
 
-// Import the OrderTimer logic (we'll define it locally since it's used in WaiterDashboard but they aren't in a common folder yet)
-function OrderTimer({ createdAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
-  const { t } = useTranslation();
-  const [elapsed, setElapsed] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const driftRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const calculateTimes = () => {
-      const now = Date.now();
-      let createdDate: Date | null = null;
-      if (createdAt) {
-        if (typeof createdAt.toDate === 'function') {
-          createdDate = createdAt.toDate();
-        } else if (createdAt instanceof Date) {
-          createdDate = createdAt;
-        } else if (typeof createdAt === 'object' && createdAt.seconds) {
-          createdDate = new Date(createdAt.seconds * 1000);
-        } else {
-          createdDate = new Date(createdAt);
-        }
-      }
-      
-      if (!createdDate || isNaN(createdDate.getTime())) return;
-
-      if (driftRef.current === null) {
-        driftRef.current = createdDate.getTime() - now;
-      }
-
-      const adjustedNow = now + driftRef.current;
-      setElapsed(Math.floor((adjustedNow - createdDate.getTime()) / 1000));
-
-      const isActive = status !== 'delivered' && status !== 'cancelled';
-      if (isActive) {
-        const durationMins = prepTime || 30;
-        const targetDate = new Date(createdDate.getTime() + durationMins * 60000);
-        let diff = Math.floor((targetDate.getTime() - adjustedNow) / 1000);
-        setTimeLeft(diff);
-      } else {
-        setTimeLeft(null);
-      }
-    };
-    calculateTimes();
-    const interval = setInterval(calculateTimes, 1000);
-    return () => clearInterval(interval);
-  }, [createdAt, status, prepTime]);
-
-  const formatSecs = (totalSecs: number) => {
-    const absSecs = Math.abs(totalSecs);
-    const mins = Math.floor(absSecs / 60);
-    const secs = absSecs % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const isActive = status !== 'delivered' && status !== 'cancelled';
-  const durationSecs = (prepTime || 30) * 60;
-  const isOverdue = timeLeft !== null && timeLeft <= 0;
-  const isOrange = !isOverdue && timeLeft !== null && timeLeft <= durationSecs * 0.2;
-
-  const getTimerStyles = () => {
-    if (!isActive) return 'bg-amber-100 text-amber-700';
-    if (isOverdue) return 'bg-red-500 text-white shadow-lg shadow-red-500/20';
-    if (isOrange) return 'bg-amber-500 text-white shadow-lg shadow-amber-500/20';
-    return 'bg-stone-900 text-white shadow-lg shadow-stone-900/20';
-  };
-
-  return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors duration-500 ${getTimerStyles()}`}>
-       <Clock size={12} className={isActive && isOverdue ? 'animate-pulse' : (isActive ? 'text-white' : 'text-amber-400')} />
-       <span className="tabular-nums">{isActive ? (timeLeft !== null ? `${isOverdue ? '-' : ''}${formatSecs(timeLeft)} ${t('waiting').toUpperCase()}` : '--:--') : `${formatSecs(elapsed)} ${t('total_duration').toUpperCase()}`}</span>
-    </div>
-  );
-}
 
 export default function AdminOrders() {
   const { t } = useTranslation();
@@ -219,7 +147,6 @@ export default function AdminOrders() {
                     </p>
                     <OrderTimer 
                       createdAt={order.createdAt} 
-                      preparingAt={order.preparingAt} 
                       prepTime={order.prepTime} 
                       status={order.status} 
                     />

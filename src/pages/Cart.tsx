@@ -20,19 +20,6 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'dine-in'>('dine-in');
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
 
-  const calculatePrepTime = () => {
-    // Check if any item in cart is a meal/food
-    // We'll look for keywords in category or description if category isn't explicit
-    const hasFood = items.some(item => 
-      item.category?.toLowerCase().includes('meal') || 
-      item.category?.toLowerCase().includes('food') ||
-      item.category?.toLowerCase().includes('burger') ||
-      item.category?.toLowerCase().includes('pizza') ||
-      item.category?.toLowerCase().includes('pasta') ||
-      item.name.toLowerCase().includes('meal')
-    );
-    return hasFood ? 30 : 10;
-  };
   const [isLocating, setIsLocating] = useState(false);
   const [locatingError, setLocatingError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -166,9 +153,9 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       const pointsEarned = totalItems;
       const isGuest = auth.currentUser.isAnonymous;
 
-      // Fetch metadata for all items first to determine categories
-      const kitchenCategories = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle'];
-      const barmanCategories = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink', 'cappuccino'];
+      // Category detection for kitchen (30m) vs barman (10m)
+      const kitchenKeywords = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle', 'petit déjeuner', 'omelette', 'tacos', 'panini'];
+      const barmanKeywords = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink', 'cappuccino', 'latte', 'espresso'];
 
       const itemsWithMetadata = await Promise.all(items.map(async (item) => {
         try {
@@ -184,14 +171,14 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             
             // Check for breakfast with drinks specifically
             const isBreakfast = lowerCat.includes('breakfast') || lowerName.includes('petit déjeuner');
-            const hasDrinkKeywords = barmanCategories.some(kw => lowerName.includes(kw));
+            const hasDrinkKeywords = barmanKeywords.some(kw => lowerName.includes(kw));
 
             if (isBreakfast && hasDrinkKeywords) {
               system = 'both';
-            } else if (barmanCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
-              system = 'barman';
-            } else if (kitchenCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
+            } else if (kitchenKeywords.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
               system = 'kitchen';
+            } else if (barmanKeywords.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
+              system = 'barman';
             }
 
             return {

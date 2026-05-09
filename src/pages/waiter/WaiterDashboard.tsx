@@ -23,125 +23,8 @@ import {
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import { OrderTimer } from '../../components/OrderTimer';
 
-// Dedicated Order Timer Component
-function OrderTimer({ createdAt, prepTime, status }: { createdAt: any, preparingAt?: any, prepTime: number, status: OrderStatus }) {
-  const { t } = useTranslation();
-  const [elapsed, setElapsed] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const driftRef = React.useRef<number | null>(null);
-
-  useEffect(() => {
-    const calculateTimes = () => {
-      const now = Date.now();
-      
-      // 1. Parse Created Date
-      let createdDate: Date | null = null;
-      if (createdAt) {
-        if (typeof createdAt.toDate === 'function') {
-          createdDate = createdAt.toDate();
-        } else if (createdAt instanceof Date) {
-          createdDate = createdAt;
-        } else if (typeof createdAt === 'object' && createdAt.seconds) {
-          createdDate = new Date(createdAt.seconds * 1000);
-        } else {
-          createdDate = new Date(createdAt);
-        }
-      }
-      
-      if (!createdDate || isNaN(createdDate.getTime())) return;
-
-      // 2. Handle Clock Drift
-      // If server time is significantly different from client now, determine offset once
-      if (driftRef.current === null) {
-        driftRef.current = createdDate.getTime() - now;
-      }
-
-      const adjustedNow = now + driftRef.current;
-      setElapsed(Math.floor((adjustedNow - createdDate.getTime()) / 1000));
-
-      // 3. Calculate Countdown Time
-      const durationMins = prepTime || 30;
-      const isActive = status !== 'delivered' && status !== 'cancelled';
-      
-      if (isActive) {
-        const targetDate = new Date(createdDate.getTime() + durationMins * 60000);
-        let diff = Math.floor((targetDate.getTime() - adjustedNow) / 1000);
-        setTimeLeft(diff);
-      } else {
-        setTimeLeft(null);
-      }
-    };
-
-    calculateTimes();
-    const interval = setInterval(calculateTimes, 1000);
-    return () => clearInterval(interval);
-  }, [createdAt, prepTime, status]);
-
-  const formatSecs = (totalSecs: number) => {
-    const absSecs = Math.abs(totalSecs);
-    const mins = Math.floor(absSecs / 60);
-    const secs = absSecs % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const isActive = status !== 'delivered' && status !== 'cancelled';
-  const durationSecs = (prepTime || 30) * 60;
-  
-  // Status Colors Logic
-  // Green: > 20% time left
-  // Orange: < 20% time left
-  // Red: Overdue
-  const getStatusColor = () => {
-    if (!timeLeft) return 'bg-green-500';
-    if (timeLeft <= 0) return 'bg-red-500';
-    if (timeLeft <= durationSecs * 0.2) return 'bg-amber-500';
-    return 'bg-green-500';
-  };
-
-  const getTextColor = () => {
-    if (!timeLeft) return 'text-stone-900';
-    if (timeLeft <= 0) return 'text-red-500';
-    if (timeLeft <= durationSecs * 0.2) return 'text-amber-500';
-    return 'text-stone-900';
-  };
-  
-  return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center px-1">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">
-            {isActive ? t('time_remaining') : t('final_duration')}
-          </span>
-          <div className="flex items-center gap-2 text-stone-900">
-            <Clock size={12} className={timeLeft && timeLeft <= 0 ? 'text-red-500' : 'text-amber-500'} />
-            <span className="text-sm font-black tabular-nums">
-              {isActive ? (timeLeft !== null ? formatSecs(timeLeft) : '--:--') : formatSecs(elapsed)}
-            </span>
-          </div>
-        </div>
-        
-        {isActive && timeLeft !== null && (
-          <div className="text-right">
-             <span className={`text-lg font-black tabular-nums transition-colors duration-300 ${getTextColor()} ${timeLeft < 0 ? 'animate-pulse' : ''}`}>
-               {timeLeft < 0 ? '-' : ''}{formatSecs(timeLeft)}
-             </span>
-          </div>
-        )}
-      </div>
-
-      {isActive && (
-        <div className="h-2 bg-stone-100 rounded-full overflow-hidden border border-stone-200">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.max(0, Math.min(100, (1 - (timeLeft || 0) / durationSecs) * 100))}%` }}
-            className={`h-full transition-colors duration-500 ${getStatusColor()}`}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
 
 const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
 
@@ -595,7 +478,6 @@ export default function WaiterDashboard() {
                                     </div>
                                     <OrderTimer 
                                       createdAt={activeOrder.createdAt} 
-                                      preparingAt={activeOrder.preparingAt}
                                       prepTime={activeOrder.prepTime} 
                                       status={activeOrder.status} 
                                     />

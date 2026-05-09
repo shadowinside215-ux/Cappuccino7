@@ -4,85 +4,12 @@ import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Order, OrderStatus } from '../types';
 import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus, ExternalLink, MessageCircle, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { OrderTimer } from '../components/OrderTimer';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useBrandSettings } from '../lib/brand';
 import OptimizedImage from '../components/ui/OptimizedImage';
 
-function ClientOrderTimer({ createdAt, status, prepTime }: { createdAt: any, status: OrderStatus, prepTime: number }) {
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const driftRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const isActive = status !== 'delivered' && status !== 'cancelled' && status !== 'ready';
-    if (!isActive) {
-      setTimeLeft(null);
-      return;
-    }
-
-    const calculateTime = () => {
-      let startTime = null;
-      if (createdAt) {
-        if (typeof createdAt.toDate === 'function') {
-          startTime = createdAt.toDate();
-        } else if (createdAt instanceof Date) {
-          startTime = createdAt;
-        } else if (typeof createdAt === 'object' && createdAt.seconds) {
-          startTime = new Date(createdAt.seconds * 1000);
-        } else {
-          startTime = new Date(createdAt);
-        }
-      }
-      
-      const durationMins = prepTime || 30;
-      
-      if (!startTime || isNaN(startTime.getTime())) {
-        setTimeLeft(durationMins * 60);
-        return;
-      }
-
-      const now = Date.now();
-      if (driftRef.current === null) {
-        driftRef.current = startTime.getTime() - now;
-      }
-
-      const adjustedNow = now + driftRef.current;
-      const targetDate = new Date(startTime.getTime() + durationMins * 60000);
-      let diff = Math.floor((targetDate.getTime() - adjustedNow) / 1000);
-      
-      setTimeLeft(diff);
-    };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
-  }, [createdAt, prepTime, status]);
-
-  if (timeLeft === null) return null;
-
-  const durationSecs = (prepTime || 30) * 60;
-  const isOverdue = timeLeft <= 0;
-  const isOrange = !isOverdue && timeLeft <= durationSecs * 0.2;
-  const absTime = Math.abs(timeLeft);
-  const mins = Math.floor(absTime / 60);
-  const secs = absTime % 60;
-  const displayTime = `${mins}:${secs.toString().padStart(2, '0')}`;
-
-  const getTimerStyles = () => {
-    if (isOverdue) return 'bg-red-500/10 border-red-500/20 text-red-400';
-    if (isOrange) return 'bg-amber-500/10 border-amber-500/20 text-amber-400';
-    return 'bg-white/5 border-white/10 text-green-400';
-  };
-
-  return (
-    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border animate-in fade-in zoom-in duration-500 transition-colors ${getTimerStyles()}`}>
-      <Timer size={14} className={isOverdue ? 'animate-pulse' : ''} />
-      <span className="text-[10px] font-black uppercase tracking-widest leading-none tabular-nums">
-        {isOverdue ? 'Ready Soon' : `Ready in ${displayTime}`}
-      </span>
-    </div>
-  );
-}
 
 const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
@@ -223,10 +150,11 @@ export default function Orders() {
                       }`}>
                         {order.status === 'delivered' ? 'Completed' : order.status}
                       </span>
-                      <ClientOrderTimer 
+                      <OrderTimer 
                         createdAt={order.createdAt} 
                         prepTime={order.prepTime} 
                         status={order.status} 
+                        variant="client"
                       />
                     </div>
                     <p className="text-[10px] text-white/40 font-black uppercase tracking-widest font-mono">

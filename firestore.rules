@@ -70,9 +70,13 @@ service cloud.firestore {
       return data.uid == request.auth.uid &&
              data.name is string &&
              data.points is number &&
+             (data.get('email', '') is string) &&
+             (data.get('coffeeCount', 0) is number) &&
              (data.get('isWaiter', false) is bool) &&
              (data.get('isKitchen', false) is bool) &&
-             (data.get('isBarman', false) is bool);
+             (data.get('isBarman', false) is bool) &&
+             (data.get('isAdmin', false) is bool) &&
+             (data.get('createdAt', request.time) is timestamp);
     }
 
     match /users/{userId} {
@@ -82,7 +86,7 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isAdmin() || (
         isSignedIn() && isOwner(userId) && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'isKitchen', 'isBarman', 'address'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'isKitchen', 'isBarman', 'address', 'email', 'createdAt'])
       ) || (
         (isWaiter() || isKitchen() || isBarman()) && 
         incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty'])
@@ -103,7 +107,7 @@ service cloud.firestore {
     // --- Waiter List ---
     match /waiters/{waiterId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || (isSignedIn() && waiterId == request.auth.uid);
     }
 
     // --- Kitchen List ---
