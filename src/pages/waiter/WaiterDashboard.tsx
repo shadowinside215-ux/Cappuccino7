@@ -17,7 +17,8 @@ import {
   Users,
   ShoppingBag,
   Search,
-  Gift
+  Gift,
+  MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -437,7 +438,7 @@ export default function WaiterDashboard() {
                         <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
                           order.deliveryType === 'pickup' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'
                         }`}>
-                          {order.deliveryType === 'pickup' ? t('takeaway') : t('in_place')}
+                          {order.deliveryType === 'pickup' ? t('takeaway') : t('dine_in', 'Dine In')}
                         </span>
                         <p className="text-[10px] font-bold text-stone-300">{t('ordered_at')}: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}</p>
                       </div>
@@ -475,6 +476,15 @@ export default function WaiterDashboard() {
                           <span className="text-lg font-black text-stone-900">{order.total} MAD</span>
                        </div>
                     </div>
+
+                    {order.deliveryNotes && (
+                      <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 italic">
+                        <MessageSquare size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-xs font-bold text-stone-700 leading-relaxed">
+                          {order.deliveryNotes}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="mb-6 px-2">
                       <OrderTimer 

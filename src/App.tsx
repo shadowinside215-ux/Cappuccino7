@@ -556,32 +556,32 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       </main>
 
       {/* Persistent Access Footers */}
-      {!location.pathname.startsWith('/admin') && !location.pathname.startsWith('/waiter') && (
-        <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-12 text-center opacity-30 hover:opacity-100 transition-opacity space-y-4">
-          <div className="flex justify-center gap-8 flex-wrap">
+      {!isLoginPage && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/waiter') && !location.pathname.startsWith('/kitchen') && !location.pathname.startsWith('/barman') && (
+        <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-12 text-center space-y-4 relative z-[100]">
+          <div className="flex justify-center gap-10 flex-wrap py-8">
             <Link 
               to="/admin/login" 
-              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-bento-primary"
+              className="text-[11px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-bento-primary transition-colors p-2"
             >
-              {t('admin_access')}
+              • {t('admin_access')}
             </Link>
             <Link 
               to="/waiter/login" 
-              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-amber-500"
+              className="text-[11px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-amber-500 transition-colors p-2"
             >
-              {t('waiter_access')}
+              • {t('waiter_access')}
             </Link>
             <Link 
               to="/kitchen/login" 
-              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-blue-500"
+              className="text-[11px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-blue-500 transition-colors p-2"
             >
-              {t('kitchen_access', 'Kitchen')}
+              • {t('kitchen_access', 'Kitchen')}
             </Link>
             <Link 
               to="/barman/login" 
-              className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 hover:text-orange-500"
+              className="text-[11px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-orange-500 transition-colors p-2"
             >
-              {t('barman_access', 'Barman')}
+              • {t('barman_access', 'Barman')}
             </Link>
           </div>
         </footer>

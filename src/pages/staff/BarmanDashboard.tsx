@@ -238,7 +238,7 @@ export default function BarmanDashboard() {
                 {/* Items List - Only Barman Items */}
                 <div className="space-y-4 mb-8 bg-[#1A0F0A]/50 p-6 rounded-[2rem] border border-white/5">
                   <p className="text-[10px] font-black text-amber-900/60 uppercase tracking-widest">{t('drink_orders')}</p>
-                  {order.items.filter((i: any) => i.system === 'barman').map((item, idx) => {
+                  {order.items.filter((i: any) => i.system === 'barman' || i.system === 'both').map((item, idx) => {
                     const isIced = item.name.toLowerCase().includes('ice') || item.name.toLowerCase().includes('glacé');
                     const isHot = !isIced && (item.name.toLowerCase().includes('chaud') || item.name.toLowerCase().includes('hot') || item.categoryName?.toLowerCase().includes('hot'));
 

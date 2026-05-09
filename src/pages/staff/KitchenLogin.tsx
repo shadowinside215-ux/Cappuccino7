@@ -111,6 +111,12 @@ export default function KitchenLogin() {
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-stone-800 to-blue-500" />
           
           <div className="text-center space-y-6">
+            <button 
+              onClick={() => navigate('/login')}
+              className="absolute top-8 left-8 text-stone-500 hover:text-white transition-colors flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+            >
+              <ArrowRight size={16} className="rotate-180" /> Back
+            </button>
             <motion.div 
               whileHover={{ rotate: -5, scale: 1.05 }}
               className="w-32 h-32 bg-stone-800 rounded-[2.5rem] overflow-hidden shadow-2xl p-1 mx-auto border-2 border-stone-700 flex items-center justify-center relative group"

@@ -238,7 +238,7 @@ export default function KitchenDashboard() {
                 {/* Items List - Only Kitchen Items */}
                 <div className="space-y-4 mb-8 bg-stone-950/50 p-6 rounded-[2rem] border border-white/5">
                   <p className="text-[10px] font-black text-stone-600 uppercase tracking-widest">{t('food_orders')}</p>
-                  {order.items.filter((i: any) => i.system === 'kitchen').map((item, idx) => (
+                  {order.items.filter((i: any) => i.system === 'kitchen' || i.system === 'both').map((item, idx) => (
                     <div key={idx} className="flex justify-between items-start group">
                       <div className="flex items-start gap-3">
                         <span className="text-blue-400 font-black text-lg">x{item.quantity}</span>

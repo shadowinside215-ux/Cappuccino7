@@ -180,10 +180,15 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             const lowerCat = categoryName.toLowerCase();
             const lowerName = item.name.toLowerCase();
 
-            let system: 'kitchen' | 'barman' = 'barman'; // Default to barman
+            let system: 'kitchen' | 'barman' | 'both' = 'barman'; 
             
-            // Check Barman first (high priority for drinks regardless of category)
-            if (barmanCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
+            // Check for breakfast with drinks specifically
+            const isBreakfast = lowerCat.includes('breakfast') || lowerName.includes('petit déjeuner');
+            const hasDrinkKeywords = barmanCategories.some(kw => lowerName.includes(kw));
+
+            if (isBreakfast && hasDrinkKeywords) {
+              system = 'both';
+            } else if (barmanCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
               system = 'barman';
             } else if (kitchenCategories.some(kw => lowerCat.includes(kw) || lowerName.includes(kw))) {
               system = 'kitchen';
@@ -202,8 +207,8 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         return { ...item, categoryName: 'Menu', subSection: '', system: 'barman' };
       }));
 
-      const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen');
-      const hasBarmanItems = itemsWithMetadata.some(item => item.system === 'barman');
+      const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen' || item.system === 'both');
+      const hasBarmanItems = itemsWithMetadata.some(item => item.system === 'barman' || item.system === 'both');
 
       const prepTimeMinutes = hasKitchenItems ? 30 : 10;
       const now = new Date();
@@ -489,7 +494,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                 >
                   <div className="flex flex-col items-center gap-1">
                     <Coffee size={16} />
-                    {t('in_place')}
+                    {t('dine_in', 'Dine In')}
                   </div>
                 </button>
                 <button 

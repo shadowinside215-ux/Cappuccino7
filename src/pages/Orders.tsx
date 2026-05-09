@@ -240,11 +240,11 @@ export default function Orders() {
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 text-white">
-                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 hidden">
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
                     <div className="flex items-center gap-3 mb-3">
                       {order.deliveryType === 'delivery' ? <Truck size={18} className="text-amber-400" /> : <Package size={18} className="text-amber-400" />}
                       <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
-                        {order.deliveryType === 'delivery' ? t('delivery') : t('pickup')}
+                        {order.deliveryType === 'delivery' ? t('delivery') : (order.deliveryType === 'dine-in' ? t('dine_in', 'Dine In') : t('pickup'))}
                       </p>
                     </div>
                     <div className="space-y-4">

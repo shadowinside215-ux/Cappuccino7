@@ -171,8 +171,8 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
     }
     localStorage.setItem('cart', JSON.stringify(cart));
     toast.success(`Added ${product.name} to cart`);
-    // Dispatch custom event to notify Cart icon (if needed)
     window.dispatchEvent(new Event('cartUpdated'));
+    navigate('/cart');
   };
 
   const isAdmin = sessionStorage.getItem('admin_mode') === 'true' || userProfile?.isAdmin;
@@ -190,10 +190,8 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
   const getTranslatedCategory = (catName: string) => {
     const name = catName.toLowerCase();
-    if (name.includes('breakfast')) return t('categories.breakfast');
+    if (name.includes('drinks') || name.includes('jus')) return t('categories.hot_drinks', 'Hot Drinks');
     if (name === 'crepes_desserts') return t('categories.crepes_desserts');
-    if (name.includes('brunch')) return t('categories.brunch');
-    if (name.includes('drinks')) return t('categories.drinks');
     if (name.includes('fast food')) return t('categories.fast_food');
     if (name.includes('healthy')) return t('categories.healthy');
     if (name.includes('desserts')) return t('categories.desserts');
@@ -284,7 +282,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                           {/* Mini Scrollable Drink Menu */}
                           <div className="max-h-[220px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
                             {products
-                              .filter(p => p.categoryId === 'juices' || p.categoryId === 'coffee' || p.categoryId === 'drinks')
+                              .filter(p => (p.categoryId === 'coffee' || p.categoryId === 'drinks' || p.categoryId === 'tea') && !p.name.toLowerCase().includes('juice') && !p.name.toLowerCase().includes('jus') && !p.name.toLowerCase().includes('smoothie'))
                               .map((drink) => (
                                 <button
                                   key={drink.id}
