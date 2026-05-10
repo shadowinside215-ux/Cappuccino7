@@ -28,6 +28,8 @@ import KitchenLogin from './pages/staff/KitchenLogin';
 import KitchenDashboard from './pages/staff/KitchenDashboard';
 import BarmanLogin from './pages/staff/BarmanLogin';
 import BarmanDashboard from './pages/staff/BarmanDashboard';
+import CashierLogin from './pages/cashier/CashierLogin';
+import CashierDashboard from './pages/cashier/CashierDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import Settings from './pages/Settings';
 import Onboarding from './components/Onboarding';
@@ -159,6 +161,30 @@ const BarmanGuard = ({ userProfile, children }: { userProfile: UserProfile | nul
   return <Navigate to="/barman/login" />;
 };
 
+const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  const [isCashierDocument, setIsCashierDocument] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkCashier = async () => {
+      if (userProfile?.isCashier || userProfile?.isAdmin) {
+        setIsCashierDocument(true);
+        return;
+      }
+      if (userProfile?.uid) {
+        const cashierDoc = await getDoc(doc(db, 'cashiers', userProfile.uid));
+        setIsCashierDocument(cashierDoc.exists());
+      } else {
+        setIsCashierDocument(false);
+      }
+    };
+    checkCashier();
+  }, [userProfile]);
+
+  if (isCashierDocument === null) return <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] text-white">Authenticating Cashier...</div>;
+  if (isCashierDocument || userProfile?.isCashier) return <>{children}</>;
+  return <Navigate to="/cashier/login" />;
+};
+
 function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   const location = useLocation();
   const { t } = useTranslation();
@@ -231,13 +257,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const isWaiterInStorage = localStorage.getItem('waiter_session_active') === 'true';
   const isKitchenInStorage = localStorage.getItem('kitchen_session_active') === 'true';
   const isBarmanInStorage = localStorage.getItem('barman_session_active') === 'true';
-  const isStaff = userProfile?.isWaiter || userProfile?.isKitchen || userProfile?.isBarman || isWaiterInStorage || isKitchenInStorage || isBarmanInStorage;
+  const isCashier = userProfile?.isCashier;
+  const isStaffValue = userProfile?.isWaiter || userProfile?.isKitchen || userProfile?.isBarman || isCashier || isWaiterInStorage || isKitchenInStorage || isBarmanInStorage;
   const isWaiter = userProfile?.isWaiter || isWaiterInStorage;
-  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/waiter/login' || location.pathname === '/kitchen/login' || location.pathname === '/barman/login';
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/waiter/login' || location.pathname === '/kitchen/login' || location.pathname === '/barman/login' || location.pathname === '/cashier/login';
 
   useEffect(() => {
     // If not logged in, or is staff, or profile is still loading, don't listen
-    if (!userProfile?.uid || isStaff) return;
+    if (!userProfile?.uid || isStaffValue) return;
 
     const q = query(
       collection(db, 'orders'),
@@ -509,7 +536,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
       <Navbar userProfile={userProfile} />
       <ReviewPopup />
-      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 ${isStaff || isLoginPage ? '!max-w-none !p-0 !pt-0' : ''}`}>
+      <main className={`max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10 ${isStaffValue || isLoginPage || location.pathname.startsWith('/cashier') ? '!max-w-none !p-0 !pt-0' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -550,6 +577,10 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       {/* Barman Routes */}
       <Route path="/barman/login" element={<BarmanLogin />} />
       <Route path="/barman/dashboard" element={<BarmanGuard userProfile={userProfile}><BarmanDashboard /></BarmanGuard>} />
+
+      {/* Cashier POS Routes */}
+      <Route path="/cashier/login" element={<CashierLogin />} />
+      <Route path="/cashier/dashboard" element={<CashierGuard userProfile={userProfile}><CashierDashboard /></CashierGuard>} />
     </Routes>
           </motion.div>
         </AnimatePresence>
@@ -562,6 +593,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             {[
               { to: "/admin/login", label: t('admin_access'), color: 'hover:text-bento-primary hover:bg-stone-100' },
               { to: "/waiter/login", label: t('waiter_access'), color: 'hover:text-amber-600 hover:bg-amber-50' },
+              { to: "/cashier/login", label: t('cashier_access', 'POS Cashier'), color: 'hover:text-emerald-600 hover:bg-emerald-50' },
               { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen'), color: 'hover:text-blue-600 hover:bg-blue-50' },
               { to: "/barman/login", label: t('barman_access', 'Barman'), color: 'hover:text-orange-600 hover:bg-orange-50' },
             ].map((link) => (

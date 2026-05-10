@@ -13,6 +13,7 @@ export interface UserProfile {
   isKitchen?: boolean;
   isBarman?: boolean;
   isDriver?: boolean;
+  isCashier?: boolean;
   isAnonymous?: boolean;
   createdAt: string;
 }
