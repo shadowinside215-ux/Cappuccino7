@@ -306,60 +306,53 @@ export default function CashierDashboard() {
 
   return (
     <div className="h-screen bg-[#111] text-[#E0E0E0] flex flex-col font-mono overflow-hidden select-none">
-      {/* Universal Utility Navigation (Floating / Discreet) */}
-      <div className="absolute top-4 left-4 z-[50] flex gap-2">
-         <button 
-           onClick={() => setShowVendeurGrid(true)}
-           className="bg-stone-900/80 backdrop-blur px-4 py-2 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-white/10"
-         >
-           {t('pos_vendeur')}: {activeVendeur}
-         </button>
-         <button 
-           onClick={() => setShowJournalModal(true)}
-           className="bg-stone-900/80 backdrop-blur px-4 py-2 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-widest text-amber-500 hover:bg-white/10"
-         >
-           {t('pos_journal')}
-         </button>
-         <button 
-           onClick={() => setShowClosureModal(true)}
-           className="bg-stone-900/80 backdrop-blur px-4 py-2 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-widest text-red-500 hover:bg-white/10"
-         >
-           {t('pos_closure')}
-         </button>
-         <div className="bg-stone-900/80 backdrop-blur px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2">
-            <Search size={12} className="text-stone-500" />
-            <input 
-              type="text" 
-              placeholder={t('pos_search')} 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-[9px] font-black uppercase text-white placeholder:text-stone-700 w-24"
-            />
-         </div>
-      </div>
-
+      {/* Utility Navigation - Integrated better or moved to bottom if needed, for now subtle at bottom or in categories */}
+      
       <div className="flex-1 flex overflow-hidden">
         {/* Left Side: Product Grid & Categories (Main View) */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Product Grid Area */}
-          <div className="flex-1 overflow-y-auto bg-[#000] custom-scrollbar">
-            <div className="grid grid-cols-4 md:grid-cols-5 xl:grid-cols-6 border-b border-white/5">
+          {/* Product Grid Area - Using a more stable 6-col grid as per image */}
+          <div className="flex-1 overflow-y-auto bg-[#1A1A1A] custom-scrollbar">
+            <div className="grid grid-cols-6 border-b border-white/5">
               {filteredProducts.map(product => (
                 <motion.button
                   key={product.id}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => addToCart(product)}
-                  className="aspect-video bg-[#00ADC0] border border-black/20 flex flex-col items-center justify-center p-3 text-center group active:brightness-50 transition-all hover:brightness-110"
+                  className="aspect-[4/3] bg-[#00ADC0] border border-black/10 flex flex-col items-center justify-center p-2 text-center group active:brightness-50 transition-all hover:brightness-110"
                 >
-                  <span className="text-[12px] font-black uppercase leading-tight mb-2 text-white drop-shadow-md line-clamp-2">{product.name}</span>
-                  <span className="text-[14px] font-black text-white/90 tabular-nums">{product.price.toFixed(2)}</span>
+                  <span className="text-[10px] md:text-[11px] font-black uppercase leading-none mb-2 text-white drop-shadow-sm line-clamp-2 px-1">{product.name}</span>
+                  <span className="text-[12px] md:text-[13px] font-black text-white/80 tabular-nums">{product.price.toFixed(2)}</span>
                 </motion.button>
               ))}
             </div>
           </div>
 
-          {/* Categories Bottom Bar (Dark themed as in image) */}
-          <div className="h-28 bg-[#1A1A1A] border-t border-white/5 flex items-center relative">
+          {/* Categories Bottom Bar - Matching the dark theme and size from image */}
+          <div className="h-24 bg-[#111] border-t border-white/5 flex items-center relative">
+             <div className="flex flex-col h-full bg-stone-900 border-r border-white/5 px-2 justify-center gap-1 z-20">
+                <button 
+                  onClick={() => setShowVendeurGrid(true)}
+                  className="px-3 py-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg text-[8px] font-black uppercase"
+                >
+                  {activeVendeur}
+                </button>
+                <div className="flex gap-1">
+                   <button onClick={() => setShowJournalModal(true)} className="p-1.5 bg-white/5 rounded-lg text-stone-400 hover:text-white" title={t('pos_journal')}><History size={14} /></button>
+                   <button onClick={() => setShowClosureModal(true)} className="p-1.5 bg-white/5 rounded-lg text-red-500 hover:bg-red-500/10" title={t('pos_closure')}><LogOut size={14} /></button>
+                </div>
+             </div>
+
+             <div className="h-full px-4 border-r border-white/5 flex items-center bg-stone-950/50">
+                <Search size={14} className="text-stone-500 mr-2" />
+                <input 
+                  type="text" 
+                  placeholder={t('pos_search')} 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none outline-none text-[10px] font-black uppercase text-white placeholder:text-stone-700 w-32"
+                />
+             </div>
              <button 
                onClick={() => scrollCategories('left')}
                className="absolute left-0 z-10 h-full w-12 bg-black/60 flex items-center justify-center text-white hover:bg-black transition-colors"
@@ -373,9 +366,9 @@ export default function CashierDashboard() {
              >
                 <button 
                   onClick={() => setSelectedCategory('all')}
-                  className={`flex-shrink-0 min-w-[140px] h-full flex flex-col items-center justify-center gap-2 border-r border-white/5 uppercase text-[10px] font-black transition-all ${selectedCategory === 'all' ? 'bg-amber-600 text-black' : 'text-stone-500 hover:bg-white/5'}`}
+                  className={`flex-shrink-0 min-w-[120px] h-full flex flex-col items-center justify-center gap-1 border-r border-white/5 uppercase text-[9px] font-black transition-all ${selectedCategory === 'all' ? 'bg-amber-600 text-black' : 'text-stone-500 hover:bg-white/5'}`}
                 >
-                  <LayoutGrid size={20} />
+                  <LayoutGrid size={16} />
                   {t('pos_all')}
                 </button>
                 {categories.map(cat => {
@@ -384,9 +377,9 @@ export default function CashierDashboard() {
                     <button 
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex-shrink-0 min-w-[160px] h-full flex flex-col items-center justify-center gap-2 border-r border-white/5 uppercase text-[10px] font-black transition-all ${selectedCategory === cat.id ? 'bg-amber-600 text-black' : 'text-stone-500 hover:bg-white/5'}`}
+                      className={`flex-shrink-0 min-w-[140px] h-full flex flex-col items-center justify-center gap-1 border-r border-white/5 uppercase text-[9px] font-black transition-all ${selectedCategory === cat.id ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-white/5'}`}
                     >
-                      <Icon size={20} />
+                      <Icon size={16} />
                       {cat.name}
                     </button>
                   );
@@ -402,8 +395,8 @@ export default function CashierDashboard() {
           </div>
         </div>
 
-        {/* Right Side: Virtual Ticket (Light gray as in image) */}
-        <div className="w-[380px] md:w-[440px] bg-[#E5E7EB] text-[#111] flex flex-col shadow-2xl relative border-l border-white/10">
+        {/* Right Side: Virtual Ticket (Specific fixed width as in image) */}
+        <div className="w-[340px] md:w-[400px] bg-[#E5E7EB] text-[#111] flex flex-col shadow-2xl relative border-l border-white/10">
            {/* Ticket Content */}
            <div className="flex-1 flex flex-col overflow-hidden">
              <div className="p-4 border-b border-gray-300 flex items-center justify-between bg-gray-200">
