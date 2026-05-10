@@ -8,8 +8,7 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore with forced long polling for better connectivity in restricted environments
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  useFetchStreams: false // More compatible with certain proxies
+  experimentalForceLongPolling: true
 }, firebaseConfig.firestoreDatabaseId || '(default)');
 
 export const auth = getAuth(app);
@@ -50,6 +49,9 @@ export function handleAuthError(error: any) {
   }
   if (error.code === 'auth/too-many-requests') {
     return 'Too many failed attempts. Please try again later.';
+  }
+  if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+    return 'Invalid email or password. Please check your credentials and try again.';
   }
   return error.message || 'Authentication failed. Please try again.';
 }

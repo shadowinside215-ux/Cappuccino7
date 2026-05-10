@@ -18,8 +18,11 @@ export default function CashierLogin() {
     setLoading(true);
 
     try {
+      const cleanUsername = username.trim().toLowerCase();
+      const cleanPassword = password.trim();
+
       // Special logic for 'cashier' / 'cashier3000'
-      if (username.toLowerCase() === 'cashier' && password === 'cashier3000') {
+      if (cleanUsername === 'cashier' && cleanPassword === 'cashier3000') {
         let user;
         
         // Use anonymous login for instant terminal activation to avoid credential conflicts
@@ -59,8 +62,8 @@ export default function CashierLogin() {
       }
 
       // Standard login
-      const loginEmail = username.includes('@') ? username : `${username}@cappuccino7.com`;
-      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+      const loginEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@cappuccino7.com`;
+      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, cleanPassword);
       const user = userCredential.user;
 
       const userDoc = await getDoc(doc(db, 'users', user.uid));

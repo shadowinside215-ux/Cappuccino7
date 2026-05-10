@@ -20,56 +20,42 @@ export default function WaiterLogin() {
     setLoading(true);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanPassword = password.trim();
+
       // Special logic for the simple 'waiter' / 'waiter1234' login
-      if (email.toLowerCase() === 'waiter' && password === 'waiter1234') {
+      if (cleanEmail === 'waiter' && cleanPassword === 'waiter1234') {
         let user;
-        try {
-          // Attempt to sign in with a dedicated account
-          const userCredential = await signInWithEmailAndPassword(auth, 'waiter@cappuccino7.com', 'waiter1234');
-          user = userCredential.user;
-        } catch (authErr) {
-          // If the account doesn't exist, use anonymous sign-in for the "magic" mode
-          const userCredential = await signInAnonymously(auth);
-          user = userCredential.user;
+        
+        // Use anonymous sign-in for the "magic" mode to avoid credential conflicts
+        const userCredential = await signInAnonymously(auth);
+        user = userCredential.user;
 
-          // Synchronously create/update the user profile to have waiter permissions
-          // This allows the Firestore rules to recognize them as a waiter
-          try {
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            
-            if (!userDocSnap.exists()) {
-              await setDoc(userDocRef, {
-                uid: user.uid,
-                name: 'System Waiter',
-                email: 'waiter@internal',
-                points: 0,
-                coffeeCount: 0,
-                itemLoyalty: {},
-                isAdmin: false,
-                isWaiter: true,
-                isKitchen: false,
-                isBarman: false,
-                createdAt: serverTimestamp()
-              });
-            } else {
-              await updateDoc(userDocRef, {
-                isWaiter: true,
-                isKitchen: false,
-                isBarman: false
-              });
-            }
-
-            // ALSO sync to 'waiters' collection for fast exists() check in rules
-            await setDoc(doc(db, 'waiters', user.uid), {
-              active: true,
-              updatedAt: serverTimestamp()
-            }, { merge: true });
-          } catch (profileErr) {
-            console.error('Failed to set waiter profile permissions:', profileErr);
-            // We'll still try to navigate, but DB might still block if this failed
-          }
+        // Synchronously create/update the user profile to have waiter permissions
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (!userDocSnap.exists()) {
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            name: 'System Waiter',
+            email: 'waiter@internal',
+            points: 0,
+            coffeeCount: 0,
+            itemLoyalty: {},
+            isAdmin: false,
+            isWaiter: true,
+            isKitchen: false,
+            isBarman: false,
+            createdAt: serverTimestamp()
+          });
         }
+
+        // ALSO sync to 'waiters' collection for fast exists() check in rules
+        await setDoc(doc(db, 'waiters', user.uid), {
+          active: true,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
         
         // Save a session flag for the guard to allow this specific session
         localStorage.setItem('waiter_session_active', 'true');
@@ -79,8 +65,8 @@ export default function WaiterLogin() {
       }
 
       // Standard email login
-      const loginEmail = email.includes('@') ? email : `${email}@cappuccino7.com`;
-      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+      const loginEmail = cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@cappuccino7.com`;
+      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, cleanPassword);
       const user = userCredential.user;
 
       const userDoc = await getDoc(doc(db, 'users', user.uid));

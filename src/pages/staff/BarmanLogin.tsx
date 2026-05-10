@@ -18,40 +18,34 @@ export default function BarmanLogin() {
     setLoading(true);
 
     try {
-      if (username.toLowerCase() === 'barman' && password === 'barman5000') {
+      const cleanUsername = username.trim().toLowerCase();
+      const cleanPassword = password.trim();
+
+      if (cleanUsername === 'barman' && cleanPassword === 'barman5000') {
         let user;
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, 'barman@cappuccino7.com', 'barman5000');
-          user = userCredential.user;
-        } catch (authErr) {
-          const userCredential = await signInAnonymously(auth);
-          user = userCredential.user;
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          
-          if (!userDocSnap.exists()) {
-            await setDoc(userDocRef, {
-              uid: user.uid,
-              name: 'Barman Staff',
-              email: 'barman@internal',
-              points: 0,
-              coffeeCount: 0,
-              itemLoyalty: {},
-              isAdmin: false,
-              isBarman: true,
-              isKitchen: false,
-              isWaiter: false,
-              createdAt: serverTimestamp()
-            });
-          } else {
-            await updateDoc(userDocRef, { 
-              isBarman: true,
-              isKitchen: false,
-              isWaiter: false
-            });
-          }
-          await setDoc(doc(db, 'barman', user.uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
+        // Use anonymous sign-in for the "magic" mode to avoid credential conflicts
+        const userCredential = await signInAnonymously(auth);
+        user = userCredential.user;
+
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (!userDocSnap.exists()) {
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            name: 'Barman Staff',
+            email: 'barman@internal',
+            points: 0,
+            coffeeCount: 0,
+            itemLoyalty: {},
+            isAdmin: false,
+            isBarman: true,
+            isKitchen: false,
+            isWaiter: false,
+            createdAt: serverTimestamp()
+          });
         }
+        await setDoc(doc(db, 'barman', user.uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
         
         localStorage.setItem('barman_session_active', 'true');
         toast.success('Barman mode activated');

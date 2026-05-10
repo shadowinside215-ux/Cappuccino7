@@ -18,40 +18,34 @@ export default function KitchenLogin() {
     setLoading(true);
 
     try {
-      if (username.toLowerCase() === 'kitchen' && password === 'kitchen7000') {
+      const cleanUsername = username.trim().toLowerCase();
+      const cleanPassword = password.trim();
+
+      if (cleanUsername === 'kitchen' && cleanPassword === 'kitchen7000') {
         let user;
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, 'kitchen@cappuccino7.com', 'kitchen7000');
-          user = userCredential.user;
-        } catch (authErr) {
-          const userCredential = await signInAnonymously(auth);
-          user = userCredential.user;
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          
-          if (!userDocSnap.exists()) {
-            await setDoc(userDocRef, {
-              uid: user.uid,
-              name: 'Kitchen Staff',
-              email: 'kitchen@internal',
-              points: 0,
-              coffeeCount: 0,
-              itemLoyalty: {},
-              isAdmin: false,
-              isKitchen: true,
-              isBarman: false,
-              isWaiter: false,
-              createdAt: serverTimestamp()
-            });
-          } else {
-            await updateDoc(userDocRef, { 
-              isKitchen: true,
-              isBarman: false,
-              isWaiter: false
-            });
-          }
-          await setDoc(doc(db, 'kitchen', user.uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
+        // Use anonymous sign-in for the "magic" mode to avoid credential conflicts
+        const userCredential = await signInAnonymously(auth);
+        user = userCredential.user;
+        
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (!userDocSnap.exists()) {
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            name: 'Kitchen Staff',
+            email: 'kitchen@internal',
+            points: 0,
+            coffeeCount: 0,
+            itemLoyalty: {},
+            isAdmin: false,
+            isKitchen: true,
+            isBarman: false,
+            isWaiter: false,
+            createdAt: serverTimestamp()
+          });
         }
+        await setDoc(doc(db, 'kitchen', user.uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
         
         localStorage.setItem('kitchen_session_active', 'true');
         toast.success('Kitchen mode activated');

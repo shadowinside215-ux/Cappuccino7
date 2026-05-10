@@ -59,7 +59,10 @@ export interface Order {
   status: OrderStatus;
   kitchenStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
   barmanStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
-  deliveryType: 'delivery' | 'pickup' | 'dine-in';
+  isPOS?: boolean;
+  paymentMethod?: 'cash' | 'card' | 'online' | 'PROVISOIRE';
+  vendeur?: string;
+  deliveryType: 'delivery' | 'pickup' | 'dine-in' | 'takeaway';
   prepTime: number; // in minutes
   estimatedReadyAt?: any; // Firestore Timestamp
   preparingAt?: any; // Firestore Timestamp

