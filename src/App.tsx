@@ -127,7 +127,7 @@ const KitchenGuard = ({ userProfile, children }: { userProfile: UserProfile | nu
     checkKitchen();
   }, [userProfile]);
 
-  if (isKitchenDocument === null) return <div className="min-h-screen flex items-center justify-center bg-stone-950 text-white">Authenticating Kitchen...</div>;
+  if (isKitchenDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg text-bento-ink">Authenticating Kitchen...</div>;
   if (isKitchenDocument || userProfile?.isKitchen) return <>{children}</>;
   return <Navigate to="/kitchen/login" />;
 };
@@ -155,7 +155,7 @@ const BarmanGuard = ({ userProfile, children }: { userProfile: UserProfile | nul
     checkBarman();
   }, [userProfile]);
 
-  if (isBarmanDocument === null) return <div className="min-h-screen flex items-center justify-center bg-[#1A0F0A] text-amber-50">Authenticating Barman...</div>;
+  if (isBarmanDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg text-bento-ink">Authenticating Barman...</div>;
   if (isBarmanDocument || userProfile?.isBarman) return <>{children}</>;
   return <Navigate to="/barman/login" />;
 };
@@ -179,7 +179,7 @@ const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | nu
     checkCashier();
   }, [userProfile]);
 
-  if (isCashierDocument === null) return <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] text-white">Authenticating Cashier...</div>;
+  if (isCashierDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg text-bento-ink">Authenticating Cashier...</div>;
   if (isCashierDocument || userProfile?.isCashier) return <>{children}</>;
   return <Navigate to="/cashier/login" />;
 };
@@ -205,8 +205,8 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
 
   return (
     <nav className="fixed bottom-6 left-6 right-6 z-[60] lg:hidden">
-      <div className="max-w-md mx-auto bg-stone-950/80 backdrop-blur-3xl border border-white/10 px-4 py-3 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] flex justify-around items-center relative">
-        <Link to="/" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/' ? 'text-white scale-110' : 'text-white/40'}`}>
+      <div className="max-w-md mx-auto bg-bento-card-bg/80 backdrop-blur-3xl border border-bento-card-border px-4 py-3 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] flex justify-around items-center relative">
+        <Link to="/" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/' ? 'text-bento-primary scale-110' : 'text-bento-ink/40'}`}>
           <Coffee size={22} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
           <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('menu')}</span>
           {location.pathname === '/' && (
@@ -360,7 +360,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
      (!userProfile.name || userProfile.name === 'Guest User' || userProfile.name === '');
 
   return (
-    <div className={`min-h-screen bg-stone-950 font-sans text-stone-100 ${!isStaffView ? 'pb-24 sm:pb-0 sm:pt-20' : ''}`}>
+    <div className={`min-h-screen bg-bento-bg font-sans text-bento-ink ${!isStaffView ? 'pb-24 sm:pb-0 sm:pt-20' : ''}`}>
       <Toaster position="top-center" />
       
       {loading ? (
@@ -381,9 +381,9 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           
           {!isStaffView && !isLoginPage && (
             <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
-              <div className="max-w-7xl mx-auto flex justify-between items-center bg-stone-900/40 backdrop-blur-3xl border border-white/5 px-6 py-4 rounded-[2rem] shadow-2xl">
+              <div className="max-w-7xl mx-auto flex justify-between items-center bg-bento-card-bg/40 backdrop-blur-3xl border border-bento-card-border px-6 py-4 rounded-[2rem] shadow-2xl">
                 <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-2xl bg-bento-bg flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
                     <OptimizedImage 
                       priority
                       src={brand.logoUrl} 
@@ -458,7 +458,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
                   <button 
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="p-2 text-white bg-stone-800 rounded-xl hover:bg-stone-700 transition-colors lg:hidden"
+                    className="p-2 text-bento-ink bg-bento-card-bg rounded-xl hover:bg-stone-500/10 transition-colors lg:hidden"
                   >
                     {isMenuOpen ? <X size={24} /> : <MoreVertical size={24} />}
                   </button>
@@ -494,25 +494,25 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 </div>
 
                 <div className="space-y-2 flex-grow">
-                  <Link onClick={() => setIsMenuOpen(false)} to="/" className="flex items-center gap-4 p-5 rounded-2xl bg-stone-900 text-amber-500 font-bold text-lg">
+                  <Link onClick={() => setIsMenuOpen(false)} to="/" className="flex items-center gap-4 p-5 rounded-2xl bg-bento-primary text-bento-bg font-bold text-lg">
                     <HomeIcon /> <span>{t('menu')}</span>
                   </Link>
-                  <Link onClick={() => setIsMenuOpen(false)} to="/cart" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-900 text-white/70 font-bold text-lg">
+                  <Link onClick={() => setIsMenuOpen(false)} to="/cart" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                     <ShoppingCart /> <span>{t('cart')}</span>
                   </Link>
                   {user && !user.isAnonymous && (
-                    <Link onClick={() => setIsMenuOpen(false)} to="/orders" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-900 text-white/70 font-bold text-lg">
+                    <Link onClick={() => setIsMenuOpen(false)} to="/orders" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                       <ListOrdered /> <span>{t('orders')}</span>
                     </Link>
                   )}
-                  <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-900 text-white/70 font-bold text-lg">
+                  <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                     <UserIcon /> <span>{t('profile')}</span>
                   </Link>
-                  <Link onClick={() => setIsMenuOpen(false)} to="/settings" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-900 text-white/70 font-bold text-lg">
+                  <Link onClick={() => setIsMenuOpen(false)} to="/settings" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                     <SettingsIcon /> <span>{t('settings')}</span>
                   </Link>
                   {isAdmin && (
-                    <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-900 text-white/70 font-bold text-lg">
+                    <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                       <LayoutDashboard /> <span>{t('admin')}</span>
                     </Link>
                   )}
@@ -521,20 +521,20 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 <div className="mt-8 pt-8 border-t border-white/5">
                   <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-4">Choose Language</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {['en', 'fr', 'ar', 'es'].map((lang) => (
-                      <button
-                        key={lang}
-                        onClick={() => changeLanguage(lang)}
-                        className={`py-4 rounded-2xl text-xs font-black uppercase transition-all flex flex-col items-center gap-2 border ${
-                          i18n.language === lang 
-                          ? 'bg-amber-500 text-stone-900 border-amber-500 shadow-lg' 
-                          : 'bg-stone-900 text-stone-400 border-white/5'
-                        }`}
-                      >
-                        <Languages size={18} />
-                        {lang.toUpperCase()}
-                      </button>
-                    ))}
+                {['en', 'fr', 'ar', 'es'].map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => changeLanguage(lang)}
+                    className={`py-4 rounded-2xl text-xs font-black uppercase transition-all flex flex-col items-center gap-2 border ${
+                      i18n.language === lang 
+                      ? 'bg-amber-500 text-stone-900 border-amber-500 shadow-lg' 
+                      : 'bg-bento-card-bg text-bento-ink/40 border-bento-card-border'
+                    }`}
+                  >
+                    <Languages size={18} />
+                    {lang.toUpperCase()}
+                  </button>
+                ))}
                   </div>
                 </div>
               </motion.div>
@@ -582,7 +582,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
           {isLoginPage && !isStaffView && (
             <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
-              <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-white/5 bg-black/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
+              <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-bento-card-border bg-bento-card-bg/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
                 {[
                   { to: "/admin/login", label: t('admin_access') },
                   { to: "/waiter/login", label: t('waiter_access') },

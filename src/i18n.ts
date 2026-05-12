@@ -1730,7 +1730,7 @@ const resources = {
         "Signature Cappuccino": "Cappuccino Signature",
         "Fromage (Mozzarella et fromage rouge)": "Queso (Mozzarella y Queso Rojo)",
         "Dinde fumée (Sauce blanche, dinde fumée, fromage)": "Pavo ahumado (Salsa blanca, pavo ahumado, queso)",
-        "Poulet Champignon (Sauce champignon, pollo, fromage)": "Pollo con Champiñones (Salsa de champiñones, pollo, queso)",
+        "Poulet Champignon (Sauce champignon, poulet, fromage)": "Pollo con Champiñones (Salsa de champiñones, pollo, queso)",
         "Nature": "Natural",
         "Confiture": "Mermelada",
         "Nutella et Banane": "Nutella y Plátano",

@@ -74,6 +74,7 @@ export default function CashierDashboard() {
   const [unpaidOrders, setUnpaidOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { settings: brand } = useBrandSettings();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -151,7 +152,28 @@ export default function CashierDashboard() {
       orderBy('createdAt', 'desc')
     );
     const unsubUnpaid = onSnapshot(qUnpaid, (snap) => {
-      setUnpaidOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+      const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+      setUnpaidOrders(orders);
+      
+      // Auto-load latest unpaid order if cart is empty and nothing is selected
+      if (orders.length > 0) {
+        setUnpaidOrders(prev => {
+          // If we had no orders before or the latest one changed
+          if (prev.length === 0 || (orders[0] && orders[0].id !== prev[0]?.id)) {
+            // Only auto-load if current cart is empty and we aren't already viewing an order
+            setCart(currentCart => {
+              setSelectedOrder(currentSelected => {
+                if (currentCart.length === 0 && !currentSelected) {
+                  return orders[0];
+                }
+                return currentSelected;
+              });
+              return currentCart;
+            });
+          }
+          return orders;
+        });
+      }
     }, (error) => {
       console.warn('Unpaid listener error:', error.message);
     });
@@ -304,13 +326,13 @@ export default function CashierDashboard() {
       // Update order with payment method first
       await updateDoc(doc(db, 'orders', order.id), {
         paymentMethod: method,
-        isPaid: true, // stats service will also do this but redundancy is safe
         updatedAt: serverTimestamp()
       });
 
       await addOrderToStats(order.id, order.total);
       
       toast.success(t('pos_payment_confirmed'));
+      setSelectedOrder(null); // Clear selected order after payment
     } catch (err) {
       console.error(err);
       toast.error('Failed to mark as paid');
@@ -340,18 +362,18 @@ export default function CashierDashboard() {
   };
 
   return (
-    <div className="h-screen bg-[#111] text-[#E0E0E0] flex flex-col font-mono overflow-hidden select-none">
+    <div className="h-screen bg-bento-bg text-bento-ink flex flex-col font-mono overflow-hidden select-none">
       {/* View Switcher Tabs */}
-      <div className="h-14 bg-stone-900 border-b border-white/5 flex items-center px-4 gap-4">
+      <div className="h-14 bg-bento-card-bg border-b border-bento-card-border flex items-center px-4 gap-4">
          <button 
            onClick={() => setView('pos')}
-           className={`px-6 h-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${view === 'pos' ? 'border-amber-500 text-white' : 'border-transparent text-stone-500'}`}
+           className={`px-6 h-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${view === 'pos' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
          >
            Terminal POS
          </button>
          <button 
            onClick={() => setView('pending')}
-           className={`px-6 h-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 relative ${view === 'pending' ? 'border-amber-500 text-white' : 'border-transparent text-stone-500'}`}
+           className={`px-6 h-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 relative ${view === 'pending' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
          >
            {t('pos_pending_payments')}
            {unpaidOrders.length > 0 && (
@@ -366,8 +388,8 @@ export default function CashierDashboard() {
         {/* Left Side: Product Grid or Pending View */}
         <div className="flex-1 flex flex-col min-w-0">
           {view === 'pos' ? (
-            <div className="flex-1 overflow-y-auto bg-[#1A1A1A] custom-scrollbar">
-              <div className="grid grid-cols-5 md:grid-cols-6 border-b border-white/5">
+            <div className="flex-1 overflow-y-auto bg-bento-bg custom-scrollbar">
+              <div className="grid grid-cols-5 md:grid-cols-6 border-b border-bento-card-border">
                 {filteredProducts.map(product => (
                   <motion.button
                     key={product.id}
@@ -382,21 +404,21 @@ export default function CashierDashboard() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto bg-[#111] p-6 space-y-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto bg-bento-bg p-6 space-y-4 custom-scrollbar">
                <h2 className="text-2xl font-black uppercase italic tracking-tighter text-amber-500 mb-8">{t('pos_unpaid_orders')}</h2>
                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   {unpaidOrders.map(order => (
-                    <div key={order.id} className="bg-stone-900 border border-white/5 p-6 rounded-3xl flex flex-col justify-between group hover:border-amber-500/30 transition-all">
+                    <div key={order.id} className="bg-bento-card-bg border border-bento-card-border p-6 rounded-3xl flex flex-col justify-between group hover:border-amber-500/30 transition-all shadow-sm">
                        <div className="flex justify-between items-start mb-6">
                           <div>
                              <div className="flex items-center gap-3 mb-1">
-                                <span className="text-xl font-black text-white uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
-                                <span className="px-2 py-0.5 bg-stone-800 text-stone-500 text-[8px] font-black uppercase rounded">{order.deliveryType}</span>
+                                <span className="text-xl font-black text-bento-ink uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
+                                <span className="px-2 py-0.5 bg-bento-bg text-stone-500 text-[8px] font-black uppercase rounded">{order.deliveryType}</span>
                              </div>
                              <p className="text-stone-400 font-bold text-[10px] uppercase">{order.customerName}</p>
                           </div>
                           <div className="text-right">
-                             <p className="text-2xl font-black text-white tabular-nums">{order.total.toFixed(2)}</p>
+                             <p className="text-2xl font-black text-bento-ink tabular-nums">{order.total.toFixed(2)}</p>
                              <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">MAD TOTAL</p>
                           </div>
                        </div>
@@ -427,7 +449,7 @@ export default function CashierDashboard() {
                     </div>
                   ))}
                   {unpaidOrders.length === 0 && (
-                    <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-20 bg-stone-900/50 rounded-[3rem] border-2 border-dashed border-white/5">
+                    <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-20 bg-bento-card-bg rounded-[3rem] border-2 border-dashed border-bento-card-border">
                        <CheckCircle2 size={64} strokeWidth={1} />
                        <p className="font-black uppercase tracking-[0.5em] text-[10px] mt-6">All Orders Settled</p>
                     </div>
@@ -436,19 +458,19 @@ export default function CashierDashboard() {
             </div>
           )}
 
-          {/* Categories Bottom Bar - Matching the dark theme and size from image */}
-          <div className="h-24 bg-[#111] border-t border-white/5 flex items-center relative">
-             <div className="flex flex-col h-full bg-stone-900 border-r border-white/5 px-2 justify-center gap-1 z-20">
+          {/* Categories Bottom Bar - Matching the theme */}
+          <div className="h-24 bg-bento-bg border-t border-bento-card-border flex items-center relative">
+             <div className="flex flex-col h-full bg-bento-card-bg border-r border-bento-card-border px-2 justify-center gap-1 z-20">
                 <div className="flex gap-1 mb-1">
                    <button 
                      onClick={() => i18n.changeLanguage('en')}
-                     className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-colors ${i18n.language === 'en' ? 'bg-amber-500 text-black' : 'bg-white/5 text-stone-500 hover:text-white'}`}
+                     className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-colors ${i18n.language === 'en' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'bg-stone-500/10 text-stone-500 hover:text-bento-ink'}`}
                    >
                      EN
                    </button>
                    <button 
                      onClick={() => i18n.changeLanguage('fr')}
-                     className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-colors ${i18n.language === 'fr' ? 'bg-amber-500 text-black' : 'bg-white/5 text-stone-500 hover:text-white'}`}
+                     className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-colors ${i18n.language === 'fr' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'bg-stone-500/10 text-stone-500 hover:text-bento-ink'}`}
                    >
                      FR
                    </button>
@@ -460,35 +482,35 @@ export default function CashierDashboard() {
                   {activeVendeur}
                 </button>
                 <div className="flex gap-1">
-                   <button onClick={() => setShowJournalModal(true)} className="p-1.5 bg-white/5 rounded-lg text-stone-400 hover:text-white" title={t('pos_journal')}><History size={14} /></button>
-                   <button onClick={() => setShowClosureModal(true)} className="p-1.5 bg-white/5 rounded-lg text-red-500 hover:bg-red-500/10" title={t('pos_closure')}><LogOut size={14} /></button>
+                   <button onClick={() => setShowJournalModal(true)} className="p-1.5 bg-stone-500/10 rounded-lg text-stone-400 hover:text-bento-ink" title={t('pos_journal')}><History size={14} /></button>
+                   <button onClick={() => setShowClosureModal(true)} className="p-1.5 bg-stone-500/10 rounded-lg text-red-500 hover:bg-red-500/10" title={t('pos_closure')}><LogOut size={14} /></button>
                 </div>
              </div>
 
-             <div className="h-full px-4 border-r border-white/5 flex items-center bg-stone-950/50">
+             <div className="h-full px-4 border-r border-bento-card-border flex items-center bg-bento-bg/50">
                 <Search size={14} className="text-stone-500 mr-2" />
                 <input 
                   type="text" 
                   placeholder={t('pos_search')} 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent border-none outline-none text-[10px] font-black uppercase text-white placeholder:text-stone-700 w-32"
+                  className="bg-transparent border-none outline-none text-[10px] font-black uppercase text-bento-ink placeholder:text-stone-400 w-32"
                 />
              </div>
              <button 
                onClick={() => scrollCategories('left')}
-               className="absolute left-0 z-10 h-full w-12 bg-black/60 flex items-center justify-center text-white hover:bg-black transition-colors"
+               className="absolute left-0 z-10 h-full w-12 bg-black/20 flex items-center justify-center text-bento-ink hover:bg-black/40 transition-colors"
              >
                <ChevronLeft size={24} />
              </button>
              
              <div 
                ref={categoryScrollRef}
-               className="flex h-full overflow-x-auto custom-scrollbar-hide scroll-smooth flex-1 items-center px-12 gap-px bg-[#111]"
+               className="flex h-full overflow-x-auto custom-scrollbar-hide scroll-smooth flex-1 items-center px-12 gap-px bg-bento-bg"
              >
                 <button 
                   onClick={() => setSelectedCategory('all')}
-                  className={`flex-shrink-0 min-w-[120px] h-full flex flex-col items-center justify-center gap-1 border-r border-white/5 uppercase text-[9px] font-black transition-all ${selectedCategory === 'all' ? 'bg-amber-600 text-black' : 'text-stone-500 hover:bg-white/5'}`}
+                  className={`flex-shrink-0 min-w-[120px] h-full flex flex-col items-center justify-center gap-1 border-r border-bento-card-border uppercase text-[9px] font-black transition-all ${selectedCategory === 'all' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'text-stone-500 hover:bg-bento-card-bg'}`}
                 >
                   <LayoutGrid size={16} />
                   {t('pos_all')}
@@ -499,7 +521,7 @@ export default function CashierDashboard() {
                     <button 
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex-shrink-0 min-w-[140px] h-full flex flex-col items-center justify-center gap-1 border-r border-white/5 uppercase text-[9px] font-black transition-all ${selectedCategory === cat.id ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-white/5'}`}
+                      className={`flex-shrink-0 min-w-[140px] h-full flex flex-col items-center justify-center gap-1 border-r border-bento-card-border uppercase text-[9px] font-black transition-all ${selectedCategory === cat.id ? 'bg-bento-card-bg text-bento-ink border-b-2 border-amber-500' : 'text-stone-500 hover:bg-bento-card-bg'}`}
                     >
                       <Icon size={16} />
                       {cat.name}
@@ -510,57 +532,102 @@ export default function CashierDashboard() {
 
              <button 
                onClick={() => scrollCategories('right')}
-               className="absolute right-0 z-10 h-full w-12 bg-black/60 flex items-center justify-center text-white hover:bg-black transition-colors"
+               className="absolute right-0 z-10 h-full w-12 bg-black/20 flex items-center justify-center text-bento-ink hover:bg-black/40 transition-colors"
              >
                <ChevronRight size={24} />
              </button>
           </div>
         </div>
 
-        {/* Right Side: Virtual Ticket (Specific fixed width as in image) */}
-        <div className="w-[300px] md:w-[350px] bg-[#E5E7EB] text-[#111] flex flex-col shadow-2xl relative border-l border-white/10">
+        {/* Right Side: Virtual Ticket */}
+        <div className="w-[300px] md:w-[350px] bg-bento-card-bg text-bento-ink flex flex-col shadow-2xl relative border-l border-bento-card-border overflow-hidden">
+           {/* Order Queue Header */}
+           <div className="h-20 bg-stone-100 dark:bg-stone-900 border-b border-bento-card-border flex items-center px-4 gap-2 overflow-x-auto custom-scrollbar-hide shrink-0">
+              <button 
+                onClick={() => setSelectedOrder(null)}
+                className={`shrink-0 h-14 px-3 rounded-xl flex items-center gap-2 transition-all border ${!selectedOrder ? 'bg-amber-500 border-amber-600 text-stone-900 shadow-md' : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-400'}`}
+              >
+                <div className="flex flex-col items-center">
+                  <Plus size={14} />
+                  <span className="text-[10px] font-black uppercase">POS</span>
+                </div>
+              </button>
+              
+              {unpaidOrders.map(order => (
+                <button 
+                  key={order.id}
+                  onClick={() => {
+                    setSelectedOrder(order);
+                    setCart([]); 
+                  }}
+                  className={`shrink-0 h-14 px-3 rounded-xl flex flex-col justify-center gap-0.5 transition-all border relative ${selectedOrder?.id === order.id ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-500 text-amber-600' : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-400'}`}
+                >
+                  <span className="text-[10px] font-black uppercase tracking-tighter">#{order.id.slice(-4).toUpperCase()}</span>
+                  <span className="text-[8px] font-bold opacity-60 truncate w-16">{order.customerName}</span>
+                </button>
+              ))}
+           </div>
            {/* Ticket Content */}
            <div className="flex-1 flex flex-col overflow-hidden">
              <div className="p-4 border-b border-gray-300 flex items-center justify-between bg-gray-200">
-                <span className="text-[11px] font-black uppercase tracking-widest text-stone-600">{t('pos_current_ticket')}</span>
+                <div className="flex flex-col">
+                   <span className="text-[11px] font-black uppercase tracking-widest text-stone-600">
+                     {selectedOrder ? `${t('pos_order')} #${selectedOrder.id.slice(-6).toUpperCase()}` : t('pos_current_ticket')}
+                   </span>
+                   {selectedOrder && (
+                     <span className="text-[9px] font-bold text-stone-400 truncate w-32 uppercase leading-none">{selectedOrder.customerName}</span>
+                   )}
+                </div>
                 <div className="flex gap-2">
-                   <button 
-                     onClick={() => setDeliveryType(prev => prev === 'dine-in' ? 'takeaway' : 'dine-in')}
-                     className="px-3 py-1 bg-stone-800 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg"
-                   >
-                     {deliveryType === 'dine-in' ? t('pos_dine_in') : t('pos_takeaway')}
-                   </button>
+                   {!selectedOrder && (
+                     <button 
+                       onClick={() => setDeliveryType(prev => prev === 'dine-in' ? 'takeaway' : 'dine-in')}
+                       className="px-3 py-1 bg-stone-800 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg"
+                     >
+                       {deliveryType === 'dine-in' ? t('pos_dine_in') : t('pos_takeaway')}
+                     </button>
+                   )}
                    <button 
                       onClick={() => {
-                        if (cart.length === 0) return;
-                        if (confirm(t('pos_confirm_cancel'))) {
-                           setCart([]);
-                           toast.success(t('pos_cancel_ticket'));
+                        if (selectedOrder) {
+                          setSelectedOrder(null);
+                        } else {
+                          if (cart.length === 0) return;
+                          if (confirm(t('pos_confirm_cancel'))) {
+                             setCart([]);
+                             toast.success(t('pos_cancel_ticket'));
+                          }
                         }
                       }}
                       className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
                    >
-                      <Trash2 size={18} />
+                      {selectedOrder ? <X size={18} /> : <Trash2 size={18} />}
                    </button>
                 </div>
              </div>
 
              <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {cart.map(item => (
-                  <div key={item.productId} className="flex items-center justify-between p-4 border-b border-gray-200 bg-white/50 group hover:bg-white transition-colors">
+                {(selectedOrder ? selectedOrder.items : cart).map((item, idx) => (
+                  <div key={selectedOrder ? `ext-${idx}` : item.productId} className="flex items-center justify-between p-4 border-b border-gray-200 bg-white/50 group hover:bg-white transition-colors">
                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-center gap-1">
-                           <button onClick={() => updateQuantity(item.productId, 1)} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-green-600 transition-colors"><Plus size={14} /></button>
-                           <span className="font-black text-sm tabular-nums">{item.quantity}</span>
-                           <button onClick={() => updateQuantity(item.productId, -1)} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-red-600 transition-colors"><Minus size={14} /></button>
-                        </div>
+                        {!selectedOrder ? (
+                          <div className="flex flex-col items-center gap-1">
+                             <button onClick={() => updateQuantity(item.productId, 1)} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-green-600 transition-colors"><Plus size={14} /></button>
+                             <span className="font-black text-sm tabular-nums">{item.quantity}</span>
+                             <button onClick={() => updateQuantity(item.productId, -1)} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-red-600 transition-colors"><Minus size={14} /></button>
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 font-black text-sm">
+                             {item.quantity}
+                          </div>
+                        )}
                         <span className="text-[11px] font-bold uppercase tracking-tight max-w-[180px] leading-tight text-stone-800">{item.name}</span>
                      </div>
                      <span className="font-black tabular-nums text-stone-900">{(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
                 
-                {cart.length === 0 && (
+                {(!selectedOrder && cart.length === 0) && (
                    <div className="h-full flex flex-col items-center justify-center opacity-40 py-20 grayscale">
                       <Calculator size={64} className="text-gray-400 mb-4" />
                       <p className="font-black uppercase tracking-[0.2em] text-[10px] text-gray-500">{t('pos_ready_for_order')}</p>
@@ -573,47 +640,57 @@ export default function CashierDashboard() {
            {/* Totals & Payments Section */}
            <div className="flex flex-col">
               {/* Total Display (Dark Blue-Gray) */}
-              <div className="bg-[#1D3244] p-6 flex justify-between items-end border-t border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+              <div className="bg-[#1D3244] p-6 flex justify-between items-end border-t border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] shrink-0">
                  <span className="text-[10px] font-black uppercase text-white/50 tracking-widest">{t('pos_total_price')}</span>
                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">{totalPrice.toFixed(2)}</span>
+                    <span className="text-5xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">
+                      {(selectedOrder ? selectedOrder.total : totalPrice).toFixed(2)}
+                    </span>
                     <span className="text-sm font-bold text-white/60">MAD</span>
                  </div>
               </div>
 
               {/* Payment Buttons (Large blocks as in image) */}
-              <div className="h-32 grid grid-cols-3 gap-px bg-[#111] p-px border-t border-white/5">
+              <div className="h-32 grid grid-cols-3 gap-px bg-[#111] p-px border-t border-white/5 shrink-0">
                  <button 
-                   onClick={() => handleCheckout('cash')}
-                   disabled={cart.length === 0}
+                   onClick={() => selectedOrder ? handleMarkPaid(selectedOrder, 'cash') : handleCheckout('cash')}
+                   disabled={!selectedOrder && cart.length === 0}
                    className="bg-[#22C55E] hover:brightness-110 active:brightness-90 transition-all flex flex-col items-center justify-center gap-2 text-white font-black text-[11px] uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
                  >
                     <Banknote size={24} /> {t('pos_cash')}
                  </button>
                  <button 
-                   onClick={() => handleCheckout('card')}
-                   disabled={cart.length === 0}
+                   onClick={() => selectedOrder ? handleMarkPaid(selectedOrder, 'card') : handleCheckout('card')}
+                   disabled={!selectedOrder && cart.length === 0}
                    className="bg-[#3B82F6] hover:brightness-110 active:brightness-90 transition-all flex flex-col items-center justify-center gap-2 text-white font-black text-[11px] uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
                  >
                     <CreditCard size={24} /> {t('pos_card')}
                  </button>
                  <button 
                    onClick={() => {
-                      if(cart.length === 0) return;
+                      const displayOrder = selectedOrder || {
+                        id: "PROV-" + Math.floor(Math.random()*1000),
+                        items: cart,
+                        total: totalPrice,
+                        customerName: 'Passage',
+                        deliveryType
+                      };
+                      
                       const r = generateThermalReceipt({
                          restaurantName: "Cappuccino 7",
-                         orderId: "PROV-" + Math.floor(Math.random()*1000),
-                         items: cart,
-                         total: totalPrice,
+                         orderId: displayOrder.id,
+                         items: displayOrder.items,
+                         total: displayOrder.total,
                          cashierName: activeVendeur,
                          paymentMethod: 'PROVISOIRE',
                          date: new Date(),
-                         deliveryType
+                         deliveryType: displayOrder.deliveryType || deliveryType,
+                         customerName: displayOrder.customerName
                       });
                       printToThermalPrinter(r);
                       toast.success(t('pos_provisional_printed'));
                    }}
-                   disabled={cart.length === 0}
+                   disabled={!selectedOrder && cart.length === 0}
                    className="bg-[#F59E0B] hover:brightness-110 active:brightness-90 transition-all flex flex-col items-center justify-center gap-2 text-white font-black text-[11px] uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
                  >
                     <Printer size={24} /> {t('pos_print_note')}
@@ -627,31 +704,31 @@ export default function CashierDashboard() {
       <AnimatePresence>
         {showClosureModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-8">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-[#1a1a1a] rounded-[2rem] w-full max-w-xl overflow-hidden border border-white/10 shadow-2xl">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-bento-card-bg rounded-[2rem] w-full max-w-xl overflow-hidden border border-bento-card-border shadow-2xl">
                <div className="bg-red-700 p-8 text-white">
                  <h2 className="text-3xl font-black uppercase italic tracking-tighter">{t('pos_session_closure')}</h2>
                </div>
                <div className="p-8 space-y-6">
                   <div className="grid grid-cols-2 gap-4">
-                     <div className="bg-stone-900 p-6 rounded-2xl border border-white/5">
+                     <div className="bg-bento-bg p-6 rounded-2xl border border-bento-card-border">
                         <span className="text-[10px] text-stone-500 font-bold uppercase block mb-1">{t('pos_total_sales')}</span>
-                        <span className="text-3xl font-black text-white">{closureStats.total.toFixed(2)} MAD</span>
+                        <span className="text-3xl font-black text-bento-ink">{closureStats.total.toFixed(2)} MAD</span>
                      </div>
-                     <div className="bg-stone-900 p-6 rounded-2xl border border-white/5">
+                     <div className="bg-bento-bg p-6 rounded-2xl border border-bento-card-border">
                         <span className="text-[10px] text-stone-500 font-bold uppercase block mb-1">{t('pos_orders_count')}</span>
                         <span className="text-3xl font-black text-amber-500">{closureStats.count}</span>
                      </div>
-                     <div className="bg-stone-900 p-6 rounded-2xl border border-white/5">
+                     <div className="bg-bento-bg p-6 rounded-2xl border border-bento-card-border">
                         <span className="text-[10px] text-stone-500 font-bold uppercase block mb-1">{t('pos_cash_rev')}</span>
                         <span className="text-3xl font-black text-green-500">{closureStats.cash.toFixed(2)}</span>
                      </div>
-                     <div className="bg-stone-900 p-6 rounded-2xl border border-white/5">
+                     <div className="bg-bento-bg p-6 rounded-2xl border border-bento-card-border">
                         <span className="text-[10px] text-stone-500 font-bold uppercase block mb-1">{t('pos_card_rev')}</span>
                         <span className="text-3xl font-black text-blue-500">{closureStats.card.toFixed(2)}</span>
                      </div>
                   </div>
                   <div className="flex gap-4">
-                     <button onClick={() => setShowClosureModal(false)} className="flex-1 py-4 rounded-xl bg-stone-800 text-stone-400 font-black uppercase text-[11px] hover:bg-stone-700 transition-colors">{t('cancel')}</button>
+                     <button onClick={() => setShowClosureModal(false)} className="flex-1 py-4 rounded-xl bg-stone-500/10 text-stone-500 font-black uppercase text-[11px] hover:bg-stone-500/20 transition-colors">{t('cancel')}</button>
                      <button 
                        onClick={() => {
                          toast.success('Clôture validée - Session terminée');
@@ -670,18 +747,18 @@ export default function CashierDashboard() {
 
       <AnimatePresence>
         {showJournalModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-[#0A0A0A] flex flex-col p-8">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-bento-bg flex flex-col p-8">
              <header className="flex justify-between items-center mb-10 max-w-7xl mx-auto w-full px-4">
                 <div className="flex items-center gap-6">
                    <div className="p-6 bg-amber-600 rounded-3xl text-stone-950 shadow-2xl">
                       <History size={40} />
                    </div>
-                   <h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">{t('pos_sales_journal')}</h2>
+                   <h2 className="text-5xl font-black uppercase italic tracking-tighter text-bento-ink">{t('pos_sales_journal')}</h2>
                 </div>
-                <button onClick={() => setShowJournalModal(false)} className="bg-white/10 p-4 rounded-full text-white hover:bg-white/20 transition-all"><X size={32} /></button>
+                <button onClick={() => setShowJournalModal(false)} className="bg-stone-500/10 p-4 rounded-full text-bento-ink hover:bg-stone-500/20 transition-all"><X size={32} /></button>
              </header>
-             <div className="flex-1 bg-stone-900/50 rounded-[3rem] border border-white/5 overflow-hidden flex flex-col max-w-7xl mx-auto w-full shadow-2xl">
-                <div className="p-8 border-b border-white/5 grid grid-cols-5 text-[10px] font-black uppercase tracking-widest text-stone-500">
+             <div className="flex-1 bg-bento-card-bg rounded-[3rem] border border-bento-card-border overflow-hidden flex flex-col max-w-7xl mx-auto w-full shadow-2xl">
+                <div className="p-8 border-b border-bento-card-border grid grid-cols-5 text-[10px] font-black uppercase tracking-widest text-stone-500">
                    <span className="pl-6">{t('pos_time')}</span>
                    <span>{t('pos_seller_id')}</span>
                    <span>{t('pos_payment_status')}</span>
@@ -690,26 +767,26 @@ export default function CashierDashboard() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
                    {journalOrders.map(order => (
-                     <div key={order.id} className="bg-stone-900/80 border border-white/5 p-6 rounded-2xl grid grid-cols-5 items-center hover:bg-white/[0.02] transition-colors group">
+                     <div key={order.id} className="bg-bento-bg border border-bento-card-border p-6 rounded-2xl grid grid-cols-5 items-center hover:bg-stone-500/5 transition-colors group">
                         <span className="pl-6 text-stone-500 font-bold tabular-nums flex items-center gap-3">
                            <Clock size={14} className="opacity-40" />
                            {order.createdAt instanceof Timestamp ? format(order.createdAt.toDate(), 'HH:mm:ss') : 'LIVE'}
                         </span>
                         <div>
-                           <div className="text-white font-black uppercase text-sm italic group-hover:text-amber-500 transition-colors">#{order.id.slice(-6).toUpperCase()}</div>
-                           <div className="text-[9px] text-stone-600 font-bold uppercase tracking-widest mt-1">{order.vendeur}</div>
+                           <div className="text-bento-ink font-black uppercase text-sm italic group-hover:text-amber-500 transition-colors">#{order.id.slice(-6).toUpperCase()}</div>
+                           <div className="text-[9px] text-stone-500 font-bold uppercase tracking-widest mt-1">{order.vendeur}</div>
                         </div>
                         <div className="flex gap-2">
                            <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${order.paymentMethod === 'cash' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}>
-                               {order.paymentMethod}
+                                {order.paymentMethod}
                            </span>
                            <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest self-center opacity-40">{order.deliveryType}</span>
                         </div>
-                        <span className="text-right pr-6 text-2xl font-black text-white tabular-nums group-hover:scale-110 transition-transform origin-right">{order.total.toFixed(2)}</span>
+                        <span className="text-right pr-6 text-2xl font-black text-bento-ink tabular-nums group-hover:scale-110 transition-transform origin-right">{order.total.toFixed(2)}</span>
                         <div className="flex justify-center">
                            <button 
                              onClick={() => handlePrintOrder(order)}
-                             className="p-3 bg-stone-800 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-stone-950 transition-all shadow-lg"
+                             className="p-3 bg-bento-bg text-amber-500 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-lg"
                            >
                              <Printer size={18} />
                            </button>
@@ -730,10 +807,10 @@ export default function CashierDashboard() {
 
       <AnimatePresence>
         {showVendeurGrid && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[110] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-12">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[110] bg-bento-bg/98 backdrop-blur-3xl flex items-center justify-center p-12">
             <div className="w-full max-w-4xl">
                <div className="text-center mb-16">
-                  <h2 className="text-6xl font-black text-white uppercase italic tracking-tighter mb-4">{t('pos_identification')}</h2>
+                  <h2 className="text-6xl font-black text-bento-ink uppercase italic tracking-tighter mb-4">{t('pos_identification')}</h2>
                   <p className="text-stone-500 font-black uppercase tracking-[0.5em] text-[10px]">{t('pos_select_operator')}</p>
                </div>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -748,9 +825,9 @@ export default function CashierDashboard() {
                         setShowVendeurGrid(false);
                         toast.success(`Opérateur activé: ${staff.name}`);
                       }}
-                      className={`aspect-square rounded-[3rem] flex flex-col items-center justify-center gap-6 border-4 shadow-2xl transition-all relative overflow-hidden group ${activeVendeur === staff.name ? 'border-amber-500 bg-amber-500/10 text-amber-500' : 'border-white/5 bg-stone-900 text-stone-500 hover:border-white/10'}`}
+                      className={`aspect-square rounded-[3rem] flex flex-col items-center justify-center gap-6 border-4 shadow-2xl transition-all relative overflow-hidden group ${activeVendeur === staff.name ? 'border-amber-500 bg-amber-500/10 text-amber-500' : 'border-bento-card-border bg-bento-card-bg text-stone-500 hover:border-amber-500/30'}`}
                     >
-                       <div className={`p-6 rounded-[2rem] ${activeVendeur === staff.name ? 'bg-amber-600 text-stone-950 shadow-lg' : 'bg-white/5 shadow-xl group-hover:bg-white/10'}`}>
+                       <div className={`p-6 rounded-[2rem] ${activeVendeur === staff.name ? 'bg-amber-600 text-stone-950 shadow-lg' : 'bg-bento-bg shadow-xl group-hover:bg-bento-bg/80'}`}>
                           <User size={48} strokeWidth={1.5} />
                        </div>
                        <span className="font-black uppercase tracking-widest text-[12px]">{staff.name}</span>
@@ -768,15 +845,15 @@ export default function CashierDashboard() {
                       localStorage.setItem('pos_vendeur_name', 'CASHIER-01');
                       setShowVendeurGrid(false);
                     }}
-                    className="aspect-square rounded-[3rem] bg-stone-900 border-4 border-white/5 text-stone-500 flex flex-col items-center justify-center gap-6 hover:border-white/10 shadow-2xl transition-all group"
+                    className="aspect-square rounded-[3rem] bg-bento-card-bg border-4 border-bento-card-border text-stone-500 flex flex-col items-center justify-center gap-6 hover:border-amber-500/30 shadow-2xl transition-all group"
                   >
-                     <div className="p-6 rounded-[2rem] bg-white/5 shadow-xl group-hover:bg-white/10">
+                     <div className="p-6 rounded-[2rem] bg-bento-bg shadow-xl group-hover:bg-bento-bg/80">
                         <LayoutGrid size={48} strokeWidth={1.5} />
                      </div>
                      <span className="font-black uppercase tracking-widest text-[12px]">STANDARD-POS</span>
                   </motion.button>
                </div>
-               <button onClick={() => setShowVendeurGrid(false)} className="mt-20 mx-auto block w-16 h-16 bg-stone-900 border border-white/10 rounded-full flex items-center justify-center text-stone-500 hover:text-white transition-all shadow-xl"><X size={28} /></button>
+               <button onClick={() => setShowVendeurGrid(false)} className="mt-20 mx-auto block w-16 h-16 bg-bento-card-bg border border-bento-card-border rounded-full flex items-center justify-center text-stone-500 hover:text-bento-ink transition-all shadow-xl"><X size={28} /></button>
             </div>
           </motion.div>
         )}

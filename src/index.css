@@ -39,12 +39,12 @@
 
 @layer base {
   :root {
-    --bento-bg: #F5F2ED;
-    --bento-ink: #2D241E;
-    --bento-primary: #5A3E2B;
+    --bento-bg: #FFFFFF;
+    --bento-ink: #000000;
+    --bento-primary: #000000;
     --bento-accent: #D4A373;
     --bento-card-bg: #FFFFFF;
-    --bento-card-border: rgba(90, 62, 43, 0.1);
+    --bento-card-border: rgba(0, 0, 0, 0.1);
   }
 
   .dark {

@@ -154,7 +154,7 @@ export default function KitchenDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+      <div className="min-h-screen bg-bento-bg flex items-center justify-center">
         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
           <ChefHat size={48} className="text-blue-500" />
         </motion.div>
@@ -163,9 +163,9 @@ export default function KitchenDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white p-8">
+    <div className="min-h-screen bg-bento-bg text-bento-ink p-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-12 bg-stone-900 p-8 rounded-[3rem] border border-white/5 shadow-2xl">
+      <div className="flex justify-between items-center mb-12 bg-bento-card-bg p-8 rounded-[3rem] border border-bento-card-border shadow-2xl">
         <div className="flex items-center gap-6">
           <div className="p-4 bg-blue-500 rounded-3xl shadow-lg shadow-blue-500/20">
             <ChefHat size={32} className="text-white" />
@@ -177,14 +177,14 @@ export default function KitchenDashboard() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="bg-stone-800 px-6 py-3 rounded-2xl border border-white/10 flex items-center gap-3">
+          <div className="bg-bento-bg px-6 py-3 rounded-2xl border border-bento-card-border flex items-center gap-3">
              <ShoppingBag size={18} className="text-blue-400" />
              <span className="text-xl font-black">{orders.length}</span>
              <span className="text-[10px] font-black uppercase text-stone-500 tracking-widest">{t('active_orders')}</span>
           </div>
           <button 
             onClick={logout}
-            className="p-4 bg-stone-800 text-stone-400 rounded-2xl hover:bg-stone-700 hover:text-white transition-all"
+            className="p-4 bg-bento-bg text-stone-400 rounded-2xl hover:bg-stone-500/10 hover:text-bento-ink transition-all"
           >
             <LogOut size={20} />
           </button>
@@ -193,7 +193,7 @@ export default function KitchenDashboard() {
 
       {/* Orders Grid */}
       {orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-40 text-stone-700">
+        <div className="flex flex-col items-center justify-center py-40 text-stone-300">
            <ChefHat size={80} className="mb-6 opacity-10" />
            <p className="text-2xl font-black uppercase italic tracking-widest opacity-20">{t('no_active_orders')}</p>
         </div>
@@ -207,10 +207,10 @@ export default function KitchenDashboard() {
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                className={`bg-stone-900 rounded-[3rem] p-8 border ${
+                className={`bg-bento-card-bg rounded-[3rem] p-8 border ${
                   order.kitchenStatus === 'ready' ? 'border-green-500/30 bg-green-500/[0.02]' : 
-                  order.kitchenStatus === 'preparing' ? 'border-blue-500/30' : 'border-white/5'
-                } relative overflow-hidden`}
+                  order.kitchenStatus === 'preparing' ? 'border-blue-500/30' : 'border-bento-card-border'
+                } relative overflow-hidden shadow-lg`}
               >
                 {/* Timer Ribbon */}
                 <div className="absolute top-0 right-0 left-0 h-1.5 flex text-[0px]">
@@ -223,7 +223,7 @@ export default function KitchenDashboard() {
                 <div className="flex justify-between items-start mb-8">
                   <div>
                     <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-1">{t('client')}</p>
-                    <h3 className="text-2xl font-black text-white leading-none uppercase italic truncate max-w-[150px]">{order.customerName}</h3>
+                    <h3 className="text-2xl font-black text-bento-ink leading-none uppercase italic truncate max-w-[150px]">{order.customerName}</h3>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-1">{t('type')}</p>
@@ -236,16 +236,16 @@ export default function KitchenDashboard() {
                 </div>
 
                 {/* Items List - Only Kitchen Items */}
-                <div className="space-y-4 mb-8 bg-stone-950/50 p-6 rounded-[2rem] border border-white/5">
+                <div className="space-y-4 mb-8 bg-bento-bg p-6 rounded-[2rem] border border-bento-card-border text-bento-ink">
                   <p className="text-[10px] font-black text-stone-600 uppercase tracking-widest">{t('food_orders')}</p>
                   {order.items.filter((i: any) => i.system === 'kitchen' || i.system === 'both').map((item, idx) => (
                     <div key={idx} className="flex justify-between items-start group">
                       <div className="flex items-start gap-3">
-                        <span className="text-blue-400 font-black text-lg">x{item.quantity}</span>
+                        <span className="text-blue-500 font-black text-lg">x{item.quantity}</span>
                         <div>
-                          <p className="font-black text-white uppercase text-sm leading-tight">{t(`products.${item.name}`, item.name)}</p>
+                          <p className="font-black text-bento-ink uppercase text-sm leading-tight">{t(`products.${item.name}`, item.name)}</p>
                           {item.customization && (
-                            <p className="text-[10px] font-bold text-amber-500/60 uppercase tracking-tighter mt-0.5 italic">
+                            <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-tighter mt-0.5 italic">
                               "{item.customization}"
                             </p>
                           )}
@@ -256,7 +256,7 @@ export default function KitchenDashboard() {
                 </div>
 
                 {/* Info Bar */}
-                <div className="flex items-center justify-between py-4 border-y border-white/5 mb-8">
+                <div className="flex items-center justify-between py-4 border-y border-bento-card-border mb-8">
                    <div className="flex items-center gap-2">
                      <Timer size={16} className="text-stone-500" />
                      <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">30 MIN LIMIT</span>
@@ -272,8 +272,8 @@ export default function KitchenDashboard() {
                     onClick={() => updateKitchenStatus(order, order.kitchenStatus === 'pending' ? 'preparing' : 'ready')}
                     className={`flex flex-col items-center gap-2 py-6 rounded-[2rem] transition-all ${
                       order.kitchenStatus === 'preparing' 
-                      ? 'bg-green-500 text-stone-900 shadow-lg shadow-green-500/20' 
-                      : 'bg-stone-800 text-stone-400 hover:bg-stone-700 hover:text-white'
+                      ? 'bg-green-500 text-stone-950 shadow-lg shadow-green-500/20' 
+                      : 'bg-stone-500/10 text-stone-500 hover:bg-stone-500/20 hover:text-bento-ink'
                     }`}
                   >
                     {order.kitchenStatus === 'preparing' ? <CheckCircle2 size={24} /> : <Soup size={24} />}
@@ -288,7 +288,7 @@ export default function KitchenDashboard() {
                     className={`flex flex-col items-center gap-2 py-6 rounded-[2rem] transition-all ${
                       order.kitchenStatus === 'ready'
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40'
-                      : 'bg-stone-800 text-stone-700 cursor-not-allowed'
+                      : 'bg-stone-500/10 text-stone-200 cursor-not-allowed opacity-50'
                     }`}
                   >
                     <CheckCircle2 size={24} />
@@ -298,9 +298,9 @@ export default function KitchenDashboard() {
 
                 {/* If there's persistent info like delivery notes */}
                 {order.deliveryNotes && (
-                  <div className="mt-6 p-4 bg-amber-500/5 rounded-2xl border border-amber-500/10 flex items-start gap-3">
+                  <div className="mt-6 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 flex items-start gap-3 text-bento-ink">
                      <AlertTriangle size={14} className="text-amber-500 mt-0.5" />
-                     <p className="text-[10px] font-bold text-amber-200/60 leading-tight italic truncate">"{order.deliveryNotes}"</p>
+                     <p className="text-[10px] font-bold text-amber-700 leading-tight italic truncate">"{order.deliveryNotes}"</p>
                   </div>
                 )}
               </motion.div>

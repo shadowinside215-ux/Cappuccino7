@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth, db, handleAuthError } from '../../lib/firebase';
+import { auth, db, handleAuthError, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -18,7 +18,7 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
+    if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com' && !auth.currentUser.isAnonymous) {
       navigate('/admin');
     }
   }, [navigate]);
@@ -43,8 +43,13 @@ export default function AdminLogin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isFirebaseAuthed && auth.currentUser === null) {
+    if (!isFirebaseAuthed && (auth.currentUser === null || auth.currentUser.isAnonymous)) {
       toast.error('Please verify your email identity first');
+      return;
+    }
+
+    if (!auth.currentUser?.email) {
+      toast.error('No verified email found. Please sign in with Google');
       return;
     }
 
@@ -55,22 +60,32 @@ export default function AdminLogin() {
       try {
         if (auth.currentUser) {
           // 1. Create admin document (bootstraps isAdmin() permission in rules)
-          await setDoc(doc(db, 'admins', auth.currentUser.uid), {
-            email: auth.currentUser.email,
-            registeredAt: new Date().toISOString(),
-            role: 'super_admin',
-            secret_key: 'admin2000'
-          }, { merge: true });
+          const adminPath = `admins/${auth.currentUser.uid}`;
+          try {
+            await setDoc(doc(db, 'admins', auth.currentUser.uid), {
+              email: auth.currentUser.email,
+              registeredAt: serverTimestamp(),
+              role: 'super_admin'
+            }, { merge: true });
+          } catch (err) {
+            console.error("Admin registration details:", err);
+            handleFirestoreError(err, OperationType.WRITE, adminPath);
+          }
 
           // 2. Sync isAdmin flag to user document for UI and persistent access
-          await setDoc(doc(db, 'users', auth.currentUser.uid), {
-            isAdmin: true,
-            updatedAt: serverTimestamp()
-          }, { merge: true });
+          const userPath = `users/${auth.currentUser.uid}`;
+          try {
+            await setDoc(doc(db, 'users', auth.currentUser.uid), {
+              isAdmin: true,
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+          } catch (err) {
+            handleFirestoreError(err, OperationType.WRITE, userPath);
+          }
         }
-      } catch (err) {
-        console.error("Admin registration failed during login:", err);
-        // We continue anyway as they have the session flag, but the DB might fail later
+      } catch (err: any) {
+        console.error("Admin registration details:", err.message);
+        toast.error('Admin permission sync failed, but proceeding with session...');
       }
 
       // Store a temporary session flag for admin mode
@@ -141,7 +156,7 @@ export default function AdminLogin() {
           </div>
 
           <AnimatePresence mode="wait">
-            {!isFirebaseAuthed && !auth.currentUser ? (
+            {!isFirebaseAuthed && (!auth.currentUser || auth.currentUser.isAnonymous) ? (
               <motion.div 
                 key="step1"
                 initial={{ opacity: 0, x: -20 }}

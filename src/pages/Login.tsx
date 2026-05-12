@@ -6,8 +6,8 @@ import {
   signInAnonymously,
   updateProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, googleProvider, db, handleAuthError } from '../lib/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, googleProvider, db, handleAuthError, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useBrandSettings } from '../lib/brand';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff } from 'lucide-react';
@@ -42,17 +42,22 @@ export default function Login() {
       const docSnap = await getDoc(userRef);
 
       if (!docSnap.exists()) {
-        await setDoc(userRef, {
-          uid: user.uid,
-          name: user.displayName || 'Guest User',
-          email: user.email,
-          points: 0,
-          coffeeCount: 0,
-          itemLoyalty: {},
-          isAdmin: false,
-          isAnonymous: false,
-          createdAt: new Date().toISOString()
-        });
+        const userPath = `users/${user.uid}`;
+        try {
+          await setDoc(userRef, {
+            uid: user.uid,
+            name: user.displayName || 'Guest User',
+            email: user.email,
+            points: 0,
+            coffeeCount: 0,
+            itemLoyalty: {},
+            isAdmin: false,
+            isAnonymous: false,
+            createdAt: serverTimestamp()
+          });
+        } catch (err) {
+          handleFirestoreError(err, OperationType.CREATE, userPath);
+        }
       }
 
       toast.success(t('welcome_back_msg', 'Welcome back!'));
@@ -114,18 +119,23 @@ export default function Login() {
         await updateProfile(user, { displayName: name });
         
         // Create profile
-        await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid,
-          name: name,
-          email: user.email,
-          phone: phone,
-          points: 0,
-          coffeeCount: 0,
-          itemLoyalty: {},
-          isAdmin: false,
-          isAnonymous: false,
-          createdAt: new Date().toISOString()
-        });
+        const userPath = `users/${user.uid}`;
+        try {
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            name: name,
+            email: user.email,
+            phone: phone,
+            points: 0,
+            coffeeCount: 0,
+            itemLoyalty: {},
+            isAdmin: false,
+            isAnonymous: false,
+            createdAt: serverTimestamp()
+          });
+        } catch (err) {
+          handleFirestoreError(err, OperationType.CREATE, userPath);
+        }
         
         toast.success('Account created successfully!');
       } else {
@@ -151,7 +161,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen group/login relative flex items-center justify-center p-6 bg-stone-900 overflow-hidden">
+    <div className="min-h-screen group/login relative flex items-center justify-center p-6 bg-bento-bg overflow-hidden">
       {/* Immersive Background */}
       <div className="fixed inset-0 z-0">
         {brand.loginBgUrl && (
@@ -164,8 +174,8 @@ export default function Login() {
             referrerPolicy="no-referrer"
           />
         )}
-        <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-900/40 to-transparent" />
+        <div className="absolute inset-0 bg-bento-bg/60 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-bento-bg via-bento-bg/40 to-transparent" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
@@ -178,7 +188,7 @@ export default function Login() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full space-y-10 flex flex-col items-center"
             >
-              <div className="w-40 h-40 bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-white/10 group-hover/login:scale-110 transition-transform duration-700">
+              <div className="w-40 h-40 bg-bento-card-bg rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-bento-card-border group-hover/login:scale-110 transition-transform duration-700">
                 <OptimizedImage 
                   src={brand.logoUrl} 
                   alt="Logo" 
@@ -189,7 +199,7 @@ export default function Login() {
               
               <div className="text-center space-y-4">
                 <h1 className="text-3xl sm:text-5xl font-black text-bento-primary tracking-tighter italic drop-shadow-sm uppercase">Cappuccino7</h1>
-                <p className="text-white/60 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
+                <p className="text-bento-ink/60 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
                   {t('premium_shared_moments')} <br />
                   {t('login_rewards_msg')}
                 </p>
@@ -199,7 +209,7 @@ export default function Login() {
                 <button
                   disabled={loading}
                   onClick={handleGoogleLogin}
-                  className="w-full flex items-center justify-center gap-4 bg-white text-stone-900 py-5 px-6 rounded-[2rem] shadow-2xl hover:bg-stone-50 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
+                  className="w-full flex items-center justify-center gap-4 bg-bento-primary text-bento-bg py-5 px-6 rounded-[2rem] shadow-2xl hover:opacity-90 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
                 >
                   <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
                   {t('continue_google')}
@@ -208,7 +218,7 @@ export default function Login() {
                 <button
                   disabled={loading}
                   onClick={() => setMode('email-login')}
-                  className="w-full flex items-center justify-center gap-4 bg-white/10 backdrop-blur-xl border border-white/10 text-white py-5 px-6 rounded-[2rem] shadow-xl active:scale-95 transition-all font-black uppercase text-xs tracking-widest hover:bg-white/20"
+                  className="w-full flex items-center justify-center gap-4 bg-bento-card-bg backdrop-blur-xl border border-bento-card-border text-bento-ink py-5 px-6 rounded-[2rem] shadow-xl active:scale-95 transition-all font-black uppercase text-xs tracking-widest hover:bg-bento-card-bg/20"
                 >
                   <Mail size={18} />
                   {t('email_login_btn')}
@@ -219,7 +229,7 @@ export default function Login() {
                     <div className="w-full border-t border-white/10"></div>
                   </div>
                   <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
-                    <span className="bg-transparent px-4 text-white/40 font-black">{t('or_separator')}</span>
+                    <span className="bg-transparent px-4 text-bento-ink/40 font-black">{t('or_separator')}</span>
                   </div>
                 </div>
 
@@ -242,16 +252,16 @@ export default function Login() {
             >
               <button 
                 onClick={() => setMode('initial')}
-                className="flex items-center gap-2 text-white/40 hover:text-white transition-colors font-black uppercase text-[10px] tracking-widest"
+                className="flex items-center gap-2 text-bento-ink/40 hover:text-bento-ink transition-colors font-black uppercase text-[10px] tracking-widest"
               >
                 <ChevronLeft size={16} /> {t('back_btn')}
               </button>
 
               <div className="space-y-2">
-                <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
+                <h2 className="text-3xl font-black text-bento-ink uppercase italic tracking-tight">
                   {mode === 'email-login' ? t('login') : t('join_us')}
                 </h2>
-                <p className="text-white/40 text-xs font-bold uppercase tracking-widest">
+                <p className="text-bento-ink/40 text-xs font-bold uppercase tracking-widest">
                   {mode === 'email-login' ? t('enter_credentials') : t('create_your_account')}
                 </p>
               </div>

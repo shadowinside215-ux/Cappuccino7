@@ -98,7 +98,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Auto-register super admin
     const initializeAdmin = async () => {
-      if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
+      if (auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
         try {
           // 1. Auto-register admin record
           const adminRef = doc(db, 'admins', auth.currentUser.uid);
@@ -106,10 +106,18 @@ export default function AdminDashboard() {
           if (!adminDoc.exists()) {
             await setDoc(adminRef, {
               email: auth.currentUser.email,
-              registeredAt: new Date().toISOString(),
+              registeredAt: serverTimestamp(),
               role: 'super_admin'
-            });
+            }, { merge: true });
           }
+
+          // 2. Sync to user profile
+          const userRef = doc(db, 'users', auth.currentUser.uid);
+          await setDoc(userRef, { 
+            isAdmin: true,
+            updatedAt: serverTimestamp() 
+          }, { merge: true });
+
         } catch (err) {
           console.error("Admin initialization failed:", err);
         }
@@ -120,17 +128,20 @@ export default function AdminDashboard() {
 
   const registerAdmin = async () => {
     // Keep the manual button for robustness
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || auth.currentUser.isAnonymous) {
+      toast.error('Google identity required for admin registration');
+      return;
+    }
     setIsRegisteringAdmin(true);
     try {
       await setDoc(doc(db, 'admins', auth.currentUser.uid), {
         email: auth.currentUser.email,
-        registeredAt: new Date().toISOString(),
+        registeredAt: serverTimestamp(),
         role: 'super_admin'
-      });
+      }, { merge: true });
       toast.success('Admin Document Created in Firestore');
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'admins');
+      handleFirestoreError(err, OperationType.WRITE, `admins/${auth.currentUser.uid}`);
     } finally {
       setIsRegisteringAdmin(false);
     }
@@ -517,12 +528,12 @@ export default function AdminDashboard() {
   }, [auth.currentUser?.email]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-bento-bg min-h-screen p-4 md:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => navigate('/')}
-              className="p-3 bg-stone-100 dark:bg-stone-800 rounded-2xl text-stone-500 hover:text-bento-primary transition-colors"
+              className="p-3 bg-bento-card-bg rounded-2xl text-stone-500 hover:text-bento-primary transition-colors border border-bento-card-border"
               title="Exit Admin Console"
             >
               <LogOut size={24} />
@@ -563,16 +574,16 @@ export default function AdminDashboard() {
 
       {/* Stats Grid - Bento Style */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card !p-6 lg:col-span-1 border-t-4 border-amber-400">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl w-fit mb-4">
+          <div className="card !p-6 lg:col-span-1 border-t-4 border-amber-400 bg-bento-card-bg">
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-2xl w-fit mb-4">
               <ShoppingBag size={20} />
             </div>
-            <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.totalOrders}</p>
+            <p className="text-3xl md:text-4xl font-black text-bento-ink mb-1">{stats.totalOrders}</p>
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('orders_today')}</p>
           </div>
 
-          <div className="card !p-6 lg:col-span-1 relative group overflow-hidden border-t-4 border-green-400">
-            <div className="p-3 bg-green-50 text-green-600 rounded-2xl w-fit mb-4">
+          <div className="card !p-6 lg:col-span-1 relative group overflow-hidden border-t-4 border-green-400 bg-bento-card-bg">
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-2xl w-fit mb-4">
               <TrendingUp size={20} />
             </div>
             {revError ? (
@@ -580,21 +591,21 @@ export default function AdminDashboard() {
                 <p className="text-red-500 text-[10px] font-black uppercase tracking-widest">{t('access_denied')}</p>
                 <button 
                   onClick={() => navigate('/admin/login')}
-                  className="text-stone-900 text-[10px] font-black underline decoration-amber-400 underline-offset-4 text-left"
+                  className="text-bento-ink text-[10px] font-black underline decoration-amber-400 underline-offset-4 text-left"
                 >
                   {t('re_authenticate')}
                 </button>
               </div>
             ) : (
               <>
-                <p className="text-3xl md:text-4xl font-black text-stone-900 mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
+                <p className="text-3xl md:text-4xl font-black text-bento-ink mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_mad')}</p>
               </>
             )}
             
             <button 
               onClick={resetTodayRevenue}
-              className="absolute top-4 right-4 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
+              className="absolute top-4 right-4 p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
               title="Reset Today's Revenue"
             >
               <X size={16} />
@@ -618,7 +629,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Weekly Revenue Chart-like View */}
-      <div className="card !p-4 md:!p-8">
+      <div className="card !p-4 md:!p-8 bg-bento-card-bg border-bento-card-border">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h3 className="text-xl md:text-2xl font-black text-bento-primary uppercase italic tracking-tighter">{t('weekly_performance')}</h3>
@@ -627,7 +638,7 @@ export default function AdminDashboard() {
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <button 
               onClick={resetWeeklyRevenue}
-              className="flex-1 sm:flex-none px-3 py-2 bg-red-50 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all border border-red-100"
+              className="flex-1 sm:flex-none px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
             >
               Reset Weekly
             </button>
@@ -647,25 +658,25 @@ export default function AdminDashboard() {
                    toast.error('Failed to clear revenue', { id: toastId });
                 }
               }}
-              className="flex-1 sm:flex-none px-3 py-2 bg-stone-900 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all"
+              className="flex-1 sm:flex-none px-3 py-2 bg-bento-primary text-bento-bg text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all shadow-lg"
             >
               Reset All Rev
             </button>
-            <History className="hidden sm:block text-stone-200" size={32} />
+            <History className="hidden sm:block text-stone-300 dark:text-stone-700" size={32} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
            <button 
              onClick={() => navigate('/admin/stats')}
-             className="bg-stone-900 text-white p-8 rounded-3xl flex items-center justify-between group hover:bg-stone-800 transition-all shadow-xl"
+             className="bg-bento-card-bg text-bento-ink p-8 rounded-3xl flex items-center justify-between group hover:bg-bento-card-bg/90 transition-all shadow-xl border border-bento-card-border"
            >
              <div className="text-left">
                <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">{t('deep_analytics')}</span>
                <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">{t('view_all_stats')}</h4>
                <p className="text-xs opacity-60 mt-2">{t('revenue_orders_monthly')}</p>
              </div>
-             <div className="p-4 bg-white/10 rounded-2xl group-hover:bg-amber-400 group-hover:text-stone-900 transition-all">
+             <div className="p-4 bg-bento-primary/10 text-bento-primary rounded-2xl group-hover:bg-bento-primary group-hover:text-bento-bg transition-all">
                <TrendingUp size={28} />
              </div>
            </button>
@@ -697,7 +708,7 @@ export default function AdminDashboard() {
             return (
               <div key={dateStr} className="flex flex-col items-center gap-3 group h-full justify-end">
                 <div className="relative w-full flex flex-col items-center justify-end h-full">
-                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-all bg-stone-900 text-white text-[8px] md:text-[10px] font-black px-2 py-1 rounded-lg z-10 whitespace-nowrap">
+                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-all bg-bento-card-bg text-bento-ink text-[8px] md:text-[10px] font-black px-2 py-1 rounded-lg z-10 whitespace-nowrap shadow-xl border border-bento-card-border">
                     {amount} MAD
                   </div>
                   <motion.div 
@@ -706,7 +717,7 @@ export default function AdminDashboard() {
                     className={`w-full max-w-[40px] rounded-t-lg md:rounded-t-xl transition-all ${
                       dateStr === new Date().toISOString().split('T')[0] 
                         ? 'bg-bento-accent shadow-[0_0_15px_rgba(251,191,36,0.5)]' 
-                        : 'bg-stone-100 group-hover:bg-stone-200'
+                        : 'bg-bento-card-bg/20 group-hover:bg-bento-card-bg/40'
                     }`}
                   />
                 </div>
@@ -785,9 +796,9 @@ export default function AdminDashboard() {
               .length;
 
             return (
-              <div key={user.uid} className="card !p-5 !bg-[#FDF8F3] flex flex-col sm:flex-row items-center gap-6 group hover:border-bento-accent/20 transition-all">
+              <div key={user.uid} className="card !p-5 bg-bento-card-bg border-bento-card-border flex flex-col sm:flex-row items-center gap-6 group hover:border-bento-accent/20 transition-all">
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400 group-hover:bg-bento-accent/10 group-hover:text-bento-primary transition-all">
+                  <div className="w-12 h-12 bg-bento-bg rounded-2xl flex items-center justify-center text-stone-400 group-hover:bg-bento-accent/10 group-hover:text-bento-primary transition-all">
                     {readyRewards > 0 ? <Gift className="text-bento-accent animate-bounce" size={24} /> : <Users size={24} />}
                   </div>
                   <div>

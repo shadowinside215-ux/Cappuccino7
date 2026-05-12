@@ -14,7 +14,7 @@ service cloud.firestore {
     function isAdmin() { 
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (request.auth.token.get('email', '') == 'dragonballsam86@gmail.com')
+        (request.auth.token.email == 'dragonballsam86@gmail.com' && request.auth.token.email_verified == true)
       );
     }
     
@@ -86,7 +86,7 @@ service cloud.firestore {
              (data.get('isCashier', false) is bool) &&
              (data.get('isDriver', false) is bool) &&
              (data.get('isAdmin', false) is bool) &&
-             (data.get('createdAt', request.time) is timestamp);
+             (data.get('createdAt', request.time) is timestamp || data.get('createdAt', '') is string);
     }
 
     match /users/{userId} {
@@ -96,7 +96,7 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isAdmin() || (
         isSignedIn() && isOwner(userId) && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'isKitchen', 'isBarman', 'isDriver', 'isCashier', 'address', 'email', 'createdAt'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'isKitchen', 'isBarman', 'isDriver', 'isCashier', 'isAdmin', 'address', 'email', 'createdAt', 'updatedAt'])
       ) || (
         isStaff() && 
         incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty'])
@@ -105,7 +105,10 @@ service cloud.firestore {
     }
 
     // --- Role Collections ---
-    match /admins/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /admins/{id} { 
+      allow read: if isSignedIn(); 
+      allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid && request.auth.token.email == 'dragonballsam86@gmail.com' && request.auth.token.email_verified == true); 
+    }
     match /waiters/{id} { allow read: if isSignedIn(); allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid); }
     match /kitchen/{id} { allow read: if isSignedIn(); allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid); }
     match /barman/{id} { allow read: if isSignedIn(); allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid); }
@@ -134,7 +137,7 @@ service cloud.firestore {
       return (data.userId == request.auth.uid || isAdmin() || isCashier()) &&
              data.total is number &&
              data.items is list &&
-             (data.status == 'pending' || data.status == 'accepted');
+             (data.status == 'pending' || data.status == 'accepted' || ((isAdmin() || isCashier()) && data.status == 'delivered'));
     }
 
     match /orders/{orderId} {
@@ -157,15 +160,27 @@ service cloud.firestore {
 
     // --- Daily Revenue & Stats ---
     match /dailyRevenue/{date} {
-      allow read: if isAdmin();
-      allow create: if isSignedIn() && (isStaff() || (incoming().keys().hasAll(['amount', 'lastUpdated']) && incoming().amount >= 0));
-      allow update: if isSignedIn() && (isStaff() || (incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'lastUpdated', 'orderCount']) && incoming().amount >= existing().amount));
+      allow read: if isStaff();
+      allow write: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    match /weeklyRevenue/{id} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    match /monthlyRevenue/{id} {
+      allow read: if isStaff();
+      allow write: if isStaff();
       allow delete: if isAdmin();
     }
 
     match /stats/{date} {
-      allow read: if isAdmin() || isCashier();
-      allow write: if isAdmin() || isCashier();
+      allow read: if isStaff();
+      allow write: if isStaff();
+      allow delete: if isAdmin();
     }
   }
 }

@@ -238,11 +238,11 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 40 }}
               transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
-              className="relative w-full max-w-lg bg-[#1A120B] rounded-[3rem] overflow-y-auto max-h-[90vh] custom-scrollbar shadow-2xl border border-white/10"
+              className="relative w-full max-w-lg bg-bento-card-bg rounded-[3rem] overflow-y-auto max-h-[90vh] custom-scrollbar shadow-2xl border border-bento-card-border"
             >
               <button 
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-6 right-6 z-10 w-10 h-10 bg-black/40 backdrop-blur-xl rounded-full flex items-center justify-center text-white hover:bg-white hover:text-stone-900 transition-all active:scale-90 border border-white/10"
+                className="absolute top-6 right-6 z-10 w-10 h-10 bg-bento-bg/40 backdrop-blur-xl rounded-full flex items-center justify-center text-bento-ink hover:bg-bento-ink hover:text-bento-bg transition-all active:scale-90 border border-bento-card-border"
               >
                 <X size={20} />
               </button>
@@ -260,12 +260,12 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               <div className="p-10 space-y-8 pb-12">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">
+                    <h2 className="text-4xl font-black text-bento-ink italic uppercase tracking-tighter">
                       {t(`products.${selectedProduct.name}`, selectedProduct.name)}
                     </h2>
                     <span className="text-2xl font-black text-amber-400 italic">{selectedProduct.price} DH</span>
                   </div>
-                  <p className="text-white/40 text-sm font-medium leading-relaxed italic">
+                  <p className="text-bento-ink/40 text-sm font-medium leading-relaxed italic">
                     {t(`descriptions.${selectedProduct.name}`, selectedProduct.description)}
                   </p>
                 </div>
@@ -299,11 +299,11 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                                   className={`w-full flex items-center justify-between px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all border ${
                                     selectedDrink === drink.name 
                                       ? 'bg-amber-400 text-stone-900 border-amber-400 shadow-xl shadow-amber-400/20' 
-                                      : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
+                                      : 'bg-bento-bg/5 text-bento-ink/50 border-bento-card-border hover:border-bento-accent/20'
                                   }`}
                                 >
                                   <span>{t(`products.${drink.name}`, drink.name)}</span>
-                                  <div className={`w-2 h-2 rounded-full ${selectedDrink === drink.name ? 'bg-stone-900' : 'bg-white/20'}`} />
+                                  <div className={`w-2 h-2 rounded-full ${selectedDrink === drink.name ? 'bg-stone-900' : 'bg-bento-ink/20'}`} />
                                 </button>
                               ))}
                           </div>
@@ -428,7 +428,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         </div>
       )}
       {/* Hero Section */}
-      <header className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] min-h-[500px] md:min-h-[650px] flex flex-col justify-end p-8 md:p-16 mb-12 md:mb-16 group/hero shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] bg-stone-900">
+      <header className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] min-h-[500px] md:min-h-[650px] flex flex-col justify-end p-8 md:p-16 mb-12 md:mb-16 group/hero shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] bg-bento-bg">
         {/* Background Image/Overlay */}
         <div className="absolute inset-0 z-0">
           {brandSettings.heroImageUrl && (
@@ -441,8 +441,8 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               referrerPolicy="no-referrer"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-stone-950/50 to-transparent md:from-stone-950/70" />
+          <div className="absolute inset-0 bg-gradient-to-t from-bento-bg via-bento-bg/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-bento-bg/50 to-transparent md:from-bento-bg/70" />
         </div>
 
         <div className="relative z-10 space-y-10 md:max-w-5xl">
@@ -541,13 +541,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative bg-gradient-to-br from-[#1a120b] to-[#2a1d12] rounded-[3rem] p-8 md:p-14 overflow-hidden border border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] group cursor-default ring-1 ring-white/10"
+          className="relative bg-bento-card-bg rounded-[3rem] p-8 md:p-14 overflow-hidden border border-bento-card-border shadow-2xl group cursor-default ring-1 ring-bento-card-border"
         >
           {/* Internal Header Requested by User - Coffee Style */}
-          <div className="absolute top-0 left-0 right-0 bg-stone-950/20 backdrop-blur-sm px-8 py-4 border-b border-white/5 flex items-center justify-between z-20">
+          <div className="absolute top-0 left-0 right-0 bg-bento-bg/20 backdrop-blur-sm px-8 py-4 border-b border-bento-card-border flex items-center justify-between z-20">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.8)]" />
-              <span className="text-[9px] font-black text-white/60 uppercase tracking-[0.3em] italic">
+              <span className="text-[9px] font-black text-bento-ink/60 uppercase tracking-[0.3em] italic">
                 {t('loyalty_badge')}
               </span>
             </div>
@@ -793,7 +793,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         transition={{ delay: idx * 0.05, duration: 0.5 }}
                         key={product.id}
                         onClick={() => setSelectedProduct(product)}
-                        className="group relative bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-hidden hover:bg-white/10 transition-all duration-500 cursor-pointer shadow-2xl"
+                        className="group relative bg-bento-card-bg/5 backdrop-blur-3xl rounded-[2.5rem] border border-bento-card-border overflow-hidden hover:bg-bento-card-bg/10 transition-all duration-500 cursor-pointer shadow-2xl"
                       >
                     <div className="flex flex-col sm:flex-row h-full">
                       <div className="sm:w-2/5 aspect-square relative overflow-hidden">
@@ -807,7 +807,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         
                         <div className="absolute top-4 left-4">
-                          <div className="bg-white/10 backdrop-blur-xl px-3 py-1.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest ring-1 ring-white/20 shadow-2xl">
+                          <div className="bg-bento-card-bg/10 backdrop-blur-xl px-3 py-1.5 rounded-xl text-[10px] font-black text-bento-ink uppercase tracking-widest ring-1 ring-bento-card-border shadow-2xl">
                             {product.price} DH
                           </div>
                         </div>
@@ -826,10 +826,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
                       <div className="flex-1 p-8 flex flex-col justify-between">
                         <div className="space-y-3">
-                          <h3 className="text-2xl font-black text-white uppercase tracking-tight italic group-hover:text-amber-200 transition-colors">
+                          <h3 className="text-2xl font-black text-bento-ink uppercase tracking-tight italic group-hover:text-bento-primary transition-colors">
                             {t(`products.${product.name}`, product.name)}
                           </h3>
-                          <p className="text-white/40 text-xs font-medium leading-relaxed line-clamp-2 md:line-clamp-3 italic">
+                          <p className="text-bento-ink/40 text-xs font-medium leading-relaxed line-clamp-2 md:line-clamp-3 italic">
                             {t(`descriptions.${product.name}`, product.description || '')}
                           </p>
                         </div>
@@ -844,7 +844,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                                  addToCart(product);
                                }
                              }}
-                            className="bg-white text-stone-900 px-8 py-3.5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-2xl"
+                            className="bg-bento-primary text-bento-bg px-8 py-3.5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-2xl"
                            >
                             {t('add_to_cart')}
                           </button>

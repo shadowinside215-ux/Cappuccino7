@@ -113,10 +113,44 @@
         "type": "object",
         "properties": {
           "amount": { "type": "number" },
+          "orderCount": { "type": "number" },
           "lastUpdated": { "type": "string", "format": "date-time" }
         }
       },
       "description": "Daily revenue tracking"
+    },
+    "/weeklyRevenue/{id}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "number" },
+          "orderCount": { "type": "number" },
+          "lastUpdated": { "type": "string", "format": "date-time" }
+        }
+      },
+      "description": "Weekly revenue tracking"
+    },
+    "/monthlyRevenue/{id}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "number" },
+          "orderCount": { "type": "number" },
+          "lastUpdated": { "type": "string", "format": "date-time" }
+        }
+      },
+      "description": "Monthly revenue tracking"
+    },
+    "/stats/{date}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "revenue": { "type": "number" },
+          "orders": { "type": "number" },
+          "lastUpdated": { "type": "string", "format": "date-time" }
+        }
+      },
+      "description": "Legacy daily statistics tracking"
     }
   }
 }
