@@ -104,7 +104,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
   useEffect(() => {
     if (userProfile && (userProfile.coffeeCount || 0) >= 10) {
-      toast('☕ Free Coffee Reward Available!', {
+      toast(t('free_coffee_available'), {
         icon: '🎁',
         duration: 5000,
         style: {
@@ -170,7 +170,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       });
     }
     localStorage.setItem('cart', JSON.stringify(cart));
-    toast.success(`Added ${product.name} to cart`);
+    toast.success(t('added_to_cart', { name: product.name }));
     window.dispatchEvent(new Event('cartUpdated'));
     navigate('/cart');
   };
@@ -190,23 +190,32 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
   const getTranslatedCategory = (catName: string) => {
     const name = catName.toLowerCase();
-    if (name.includes('drinks') || name.includes('jus')) return t('categories.hot_drinks', 'Hot Drinks');
-    if (name === 'crepes_desserts') return t('categories.crepes_desserts');
+    if (name.includes('breakfast')) return t('categories.breakfast');
+    if (name.includes('brunch')) return t('categories.brunch');
+    if (name.includes('coffee')) return t('categories.coffee');
+    if (name.includes('tea')) return t('categories.tea');
+    if (name.includes('jus') || name.includes('juice')) return t('categories.jus');
+    if (name.includes('hot drinks')) return t('categories.hot_drinks');
+    if (name.includes('hot beverages')) return t('categories.hot_beverages');
+    if (name.includes('iced latte') || name.includes('iced latté')) return t('categories.iced_latte');
+    if (name.includes('ice tea')) return t('categories.ice_tea');
+    if (name.includes('frappuccino')) return t('categories.frappuccino');
+    if (name.includes('crepes_desserts') || name.includes('crêpes')) return t('categories.crepes_desserts');
     if (name.includes('fast food')) return t('categories.fast_food');
     if (name.includes('healthy')) return t('categories.healthy');
     if (name.includes('desserts')) return t('categories.desserts');
     if (name.includes('ice cream')) return t('categories.ice_cream');
     if (name.includes('signature')) return t('categories.signature');
     if (name.includes('extra')) return t('categories.extras');
-    if (name.includes('coffee')) return t('categories.coffee');
-    if (name.includes('tea')) return t('categories.tea');
-    if (name.includes('hot drinks')) return t('categories.special_hot');
-    if (name.includes('iced latté')) return t('categories.iced_latte');
-    if (name.includes('ice tea')) return t('categories.ice_tea');
-    if (name.includes('jus')) return t('categories.jus');
-    if (name.includes('frappuccino')) return t('categories.frappuccino');
     if (name.includes('salades')) return t('categories.salades');
-    return catName;
+    if (name.includes('burgers')) return t('categories.burgers');
+    if (name.includes('sandwiches')) return t('categories.sandwiches');
+    if (name.includes('pizza')) return t('categories.pizza');
+    if (name.includes('plats gourmands') || name.includes('artisan plates')) return t('categories.plats gourmands');
+    if (name.includes('pâtes') || name.includes('pasta')) return t('categories.pâtes');
+    
+    // Fallback to trying to find the key directly
+    return t(`categories.${name}`, catName);
   };
 
   if (loading) return <div className="text-center py-20 italic text-stone-400">...</div>;
@@ -370,7 +379,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   </div>
                   <div className="bg-white/5 p-4 rounded-3xl border border-white/5 space-y-1">
                     <p className="text-[9px] font-black uppercase text-white/30 tracking-widest italic">{t('wait_time')}</p>
-                    <p className="text-sm font-bold text-white">~12 Mins <span className="text-[10px] text-white/20 font-medium">{t('avg')}</span></p>
+                    <p className="text-sm font-bold text-white">~12 {t('mins_short', 'Mins')} <span className="text-[10px] text-white/20 font-medium">{t('avg')}</span></p>
                   </div>
                 </div>
 
@@ -419,7 +428,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         </div>
       )}
       {/* Hero Section */}
-      <header className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] min-h-[600px] md:min-h-[850px] flex flex-col justify-end p-8 md:p-20 mb-16 md:mb-24 group/hero shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] bg-stone-900">
+      <header className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] min-h-[500px] md:min-h-[650px] flex flex-col justify-end p-8 md:p-16 mb-12 md:mb-16 group/hero shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] bg-stone-900">
         {/* Background Image/Overlay */}
         <div className="absolute inset-0 z-0">
           {brandSettings.heroImageUrl && (
@@ -450,7 +459,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               <div className="flex items-center gap-2 text-white bg-white/10 backdrop-blur-2xl w-fit px-4 md:px-5 py-2 md:py-2.5 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest ring-1 ring-white/20">
                 <span className="text-amber-400">★ 4.9</span>
                 <span className="opacity-40">|</span>
-                <span>3.2k {t('order_history')}</span>
+                <span>{t('premium_selection')}</span>
               </div>
               <div className="flex items-center gap-2 text-white bg-white/10 backdrop-blur-2xl w-fit px-4 md:px-5 py-2 md:py-2.5 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest ring-1 ring-white/20">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />

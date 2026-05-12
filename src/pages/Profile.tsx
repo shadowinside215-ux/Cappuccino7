@@ -73,23 +73,29 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
 
   const handleLogout = async () => {
     await auth.signOut();
+    // Clear staff markers
+    localStorage.removeItem('waiter_session_active');
+    localStorage.removeItem('kitchen_session_active');
+    localStorage.removeItem('barman_session_active');
+    localStorage.removeItem('cashier_session_active');
+    sessionStorage.removeItem('admin_mode');
+    
     toast.success('Session ended');
     navigate('/login');
   };
 
   if (isGuest) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center space-y-8 px-6 text-center relative overflow-hidden">
         {brand.profileBgUrl && (
-          <div className="fixed inset-0 z-0">
+          <div className="fixed inset-0 z-0 h-screen w-screen">
             <OptimizedImage 
               priority
               src={brand.profileBgUrl} 
               containerClassName="w-full h-full"
               className="w-full h-full object-cover" 
               alt=""
-              showOverlay={true}
-              overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
+              showOverlay={false}
             />
           </div>
         )}
@@ -128,18 +134,17 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   }
 
   return (
-    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative flex flex-col gap-10">
+    <div className="min-h-screen p-4 sm:p-8 relative flex flex-col gap-10">
       {/* Immersive Background */}
       {brand.profileBgUrl && (
-        <div className="fixed inset-0 z-0">
+        <div className="fixed inset-0 z-0 h-screen w-screen">
           <OptimizedImage 
             priority
             src={brand.profileBgUrl} 
             containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
             alt=""
-            showOverlay={true}
-            overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
+            showOverlay={false}
           />
         </div>
       )}
@@ -152,16 +157,26 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             transition={{ type: "spring", damping: 20, stiffness: 100 }}
             className="text-6xl md:text-8xl font-black text-white italic tracking-tighter uppercase drop-shadow-2xl"
           >
-            {t('my_account')}
+            {t('profile')}
           </motion.h1>
-          <motion.button 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={handleLogout}
-            className="p-4 bg-white/10 backdrop-blur-xl rounded-2xl text-white hover:bg-red-500/80 transition-all border border-white/10 shadow-xl active:scale-90"
-          >
-            <LogOut size={24} />
-          </motion.button>
+          <div className="flex gap-4">
+            <motion.button 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={() => navigate('/settings')}
+              className="p-4 bg-white/10 backdrop-blur-xl rounded-2xl text-white hover:bg-white/20 transition-all border border-white/10 shadow-xl active:scale-90"
+            >
+              <SettingsIcon size={24} />
+            </motion.button>
+            <motion.button 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={handleLogout}
+              className="p-4 bg-white/10 backdrop-blur-xl rounded-2xl text-white hover:bg-red-500/80 transition-all border border-white/10 shadow-xl active:scale-90"
+            >
+              <LogOut size={24} />
+            </motion.button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -243,12 +258,12 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                   transition={{ delay: 0.5 }}
                   className="text-4xl font-black text-white tracking-tighter"
                 >
-                  PREMIUM
+                  {t('premium_status')}
                 </motion.p>
               </div>
               <div className="text-center">
                 <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">{t('status')}</p>
-                <p className="text-4xl font-black text-amber-400 tracking-tighter">GOLD</p>
+                <p className="text-4xl font-black text-amber-400 tracking-tighter">{t('gold_status')}</p>
               </div>
             </div>
           </motion.div>
@@ -266,8 +281,8 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                     <Coffee size={28} className="text-amber-400" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight italic">Coffee Club</h3>
-                    <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Exclusive Membership Rewards</p>
+                    <h3 className="text-2xl font-black uppercase tracking-tight italic">{t('coffee_club')}</h3>
+                    <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">{t('exclusive_membership_rewards')}</p>
                   </div>
                 </div>
                 <div className="flex items-end gap-8">
@@ -312,12 +327,12 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                     <Star size={40} className="fill-amber-400" />
                   </div>
                   <div className="text-stone-900">
-                    <h3 className="text-3xl font-black uppercase tracking-tight italic leading-tight">Love the food?</h3>
-                    <p className="text-xs font-black uppercase tracking-[0.2em] opacity-60">Rate us on Google Maps</p>
+                    <h3 className="text-3xl font-black uppercase tracking-tight italic leading-tight">{t('love_food_q')}</h3>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] opacity-60">{t('rate_google_maps')}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 bg-stone-900 text-white px-8 py-5 rounded-[1.5rem] font-black uppercase text-xs tracking-widest group-hover:px-10 transition-all">
-                  Rate Us Now
+                  {t('rate_us_now')}
                   <ChevronRight size={18} />
                 </div>
               </motion.div>
@@ -397,7 +412,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                           ))}
                         </div>
                         <div className="flex justify-between items-center">
-                          <p className={`text-[9px] font-black uppercase tracking-widest italic font-mono ${isGoldState ? 'text-stone-900' : 'text-white/20'}`}>Artisan Stamp Card</p>
+                          <p className={`text-[9px] font-black uppercase tracking-widest italic font-mono ${isGoldState ? 'text-stone-900' : 'text-white/20'}`}>{t('artisan_stamp_card')}</p>
                           {isGoldState && <span className="text-xl font-black text-stone-950">12</span>}
                         </div>
                       </div>

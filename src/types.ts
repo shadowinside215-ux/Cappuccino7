@@ -59,6 +59,7 @@ export interface Order {
   status: OrderStatus;
   kitchenStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
   barmanStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
+  isPaid?: boolean;
   isPOS?: boolean;
   paymentMethod?: 'cash' | 'card' | 'online' | 'PROVISOIRE';
   vendeur?: string;

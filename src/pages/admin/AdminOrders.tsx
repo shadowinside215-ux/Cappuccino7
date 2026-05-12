@@ -161,7 +161,7 @@ export default function AdminOrders() {
                         'bg-stone-100 border-stone-200 text-stone-500'
                       }`}>
                         <ChefHat size={14} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Kitchen: {order.kitchenStatus}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{t('kitchen', 'Kitchen')}: {t(`status.${order.kitchenStatus}`, order.kitchenStatus)}</span>
                       </div>
                     )}
                     {order.barmanStatus && (
@@ -172,7 +172,7 @@ export default function AdminOrders() {
                         'bg-stone-100 border-stone-200 text-stone-500'
                       }`}>
                         <Coffee size={14} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Barman: {order.barmanStatus}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{t('barman', 'Barman')}: {t(`status.${order.barmanStatus}`, order.barmanStatus)}</span>
                       </div>
                     )}
                   </div>

@@ -13,11 +13,13 @@ import { useNavigate } from 'react-router-dom';
 import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import OptimizedImage from '../components/ui/OptimizedImage';
 
 type AuthMode = 'initial' | 'email-login' | 'email-signup';
 
 export default function Login() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>('initial');
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ export default function Login() {
         });
       }
 
-      toast.success('Welcome back!');
+      toast.success(t('welcome_back_msg', 'Welcome back!'));
       navigate('/');
     } catch (error: any) {
       const message = handleAuthError(error);
@@ -89,11 +91,11 @@ export default function Login() {
     setLoading(true);
     try {
       await signInAnonymously(auth);
-      toast.success('Browsing as guest');
+      toast.success(t('browsing_as_guest', 'Browsing as guest'));
       navigate('/');
     } catch (error) {
       console.error(error);
-      toast.error('Guest access failed.');
+      toast.error(t('guest_access_failed', 'Guest access failed.'));
     } finally {
       setLoading(false);
     }
@@ -106,7 +108,7 @@ export default function Login() {
     try {
       if (mode === 'email-signup') {
         if (!name) throw new Error('Please enter your name');
-        const result = await createUserWithEmailAndPassword(auth, email, password);
+        const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
         const user = result.user;
         
         await updateProfile(user, { displayName: name });
@@ -128,7 +130,15 @@ export default function Login() {
         toast.success('Account created successfully!');
       } else {
         // Standard email login
-        await signInWithEmailAndPassword(auth, email, password);
+        // Check if it's a staff username mistakenly entered here
+        const staffUsernames = ['admin', 'waiter', 'kitchen', 'barman', 'cashier'];
+        if (staffUsernames.includes(email.toLowerCase().trim())) {
+          toast.error(`'${email}' is a staff ID. Please use the specific access links at the bottom of the home page.`);
+          setLoading(false);
+          return;
+        }
+
+        await signInWithEmailAndPassword(auth, email.trim(), password);
         toast.success('Welcome back!');
       }
       navigate('/');
@@ -180,8 +190,8 @@ export default function Login() {
               <div className="text-center space-y-4">
                 <h1 className="text-3xl sm:text-5xl font-black text-bento-primary tracking-tighter italic drop-shadow-sm uppercase">Cappuccino7</h1>
                 <p className="text-white/60 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
-                  Premium coffee, shared moments. <br />
-                  Login to earn exclusive rewards.
+                  {t('premium_shared_moments')} <br />
+                  {t('login_rewards_msg')}
                 </p>
               </div>
 
@@ -192,7 +202,7 @@ export default function Login() {
                   className="w-full flex items-center justify-center gap-4 bg-white text-stone-900 py-5 px-6 rounded-[2rem] shadow-2xl hover:bg-stone-50 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
                 >
                   <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                  Continue with Google
+                  {t('continue_google')}
                 </button>
 
                 <button
@@ -201,7 +211,7 @@ export default function Login() {
                   className="w-full flex items-center justify-center gap-4 bg-white/10 backdrop-blur-xl border border-white/10 text-white py-5 px-6 rounded-[2rem] shadow-xl active:scale-95 transition-all font-black uppercase text-xs tracking-widest hover:bg-white/20"
                 >
                   <Mail size={18} />
-                  Login with Email
+                  {t('email_login_btn')}
                 </button>
 
                 <div className="relative py-4">
@@ -209,7 +219,7 @@ export default function Login() {
                     <div className="w-full border-t border-white/10"></div>
                   </div>
                   <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
-                    <span className="bg-transparent px-4 text-white/40 font-black">Or</span>
+                    <span className="bg-transparent px-4 text-white/40 font-black">{t('or_separator')}</span>
                   </div>
                 </div>
 
@@ -218,7 +228,7 @@ export default function Login() {
                   onClick={handleGuestAccess}
                   className="w-full flex items-center justify-center gap-4 bg-transparent text-white/60 border border-white/5 py-5 px-6 rounded-[2rem] hover:bg-white/5 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
                 >
-                  Continue as Guest
+                  {t('continue_guest')}
                 </button>
               </div>
             </motion.div>
@@ -234,22 +244,22 @@ export default function Login() {
                 onClick={() => setMode('initial')}
                 className="flex items-center gap-2 text-white/40 hover:text-white transition-colors font-black uppercase text-[10px] tracking-widest"
               >
-                <ChevronLeft size={16} /> Back
+                <ChevronLeft size={16} /> {t('back_btn')}
               </button>
 
               <div className="space-y-2">
                 <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
-                  {mode === 'email-login' ? 'Login' : 'Join Us'}
+                  {mode === 'email-login' ? t('login') : t('join_us')}
                 </h2>
                 <p className="text-white/40 text-xs font-bold uppercase tracking-widest">
-                  {mode === 'email-login' ? 'Enter credentials' : 'Create your account'}
+                  {mode === 'email-login' ? t('enter_credentials') : t('create_your_account')}
                 </p>
               </div>
 
               <form onSubmit={handleEmailAuth} className="space-y-6">
                 {mode === 'email-signup' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Full Name</label>
+                    <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('full_name_label')}</label>
                     <div className="relative">
                       <User className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
                       <input
@@ -266,7 +276,7 @@ export default function Login() {
 
                 {mode === 'email-signup' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Phone Number (Optional)</label>
+                    <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('phone_number_optional')}</label>
                     <div className="relative">
                       <div className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40 font-black text-xs">📞</div>
                       <input
@@ -281,22 +291,22 @@ export default function Login() {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Email or Username</label>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('email_address')}</label>
                   <div className="relative">
                     <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
                     <input
-                      type="text"
+                      type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin or email"
+                      placeholder="your@email.com"
                       className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">Password</label>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('password_label')}</label>
                   <div className="relative">
                     <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
                     <input
@@ -323,7 +333,7 @@ export default function Login() {
                   disabled={loading}
                   className="w-full bg-white text-stone-900 py-6 px-6 rounded-[2.5rem] shadow-2xl active:scale-95 transition-all font-black uppercase text-sm tracking-widest disabled:opacity-50 flex items-center justify-center gap-3"
                 >
-                  {loading ? 'Processing...' : mode === 'email-login' ? 'Sign In' : 'Register'}
+                  {loading ? t('processing') : mode === 'email-login' ? t('sign_in_btn') : t('register_btn')}
                   <ArrowRight size={20} />
                 </button>
               </form>
@@ -333,7 +343,7 @@ export default function Login() {
                   onClick={() => setMode(mode === 'email-login' ? 'email-signup' : 'email-login')}
                   className="text-white/40 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
                 >
-                  {mode === 'email-login' ? "New Here? Create Account" : "Already an owner? Sign In"}
+                  {mode === 'email-login' ? t('new_here_create') : t('already_owner_sign_in')}
                 </button>
               </div>
             </motion.div>

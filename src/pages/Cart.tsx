@@ -250,11 +250,12 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
 
       const orderData = {
         userId: auth.currentUser.uid,
-        customerName: userProfile?.name || auth.currentUser.displayName || (isGuest ? 'Guest' : 'Customer'),
+        customerName: userProfile?.name || auth.currentUser.displayName || (isGuest ? t('guest', 'Guest') : t('customer', 'Customer')),
         customerPhone: phone || userProfile?.phone || '',
         items: itemsWithMetadata,
         total: total,
         status: 'pending' as OrderStatus,
+        isPaid: false, // MANDATORY: Revenue is only counted on Pay in POS/Cashier
         kitchenStatus: hasKitchenItems ? 'pending' : 'completed',
         barmanStatus: hasBarmanItems ? 'pending' : 'completed',
         deliveryType,
@@ -274,19 +275,8 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
       
-      // Update Daily Revenue on confirmation (MAD Today Revenue)
-      const today = new Date().toISOString().split('T')[0];
-      const revRef = doc(db, 'dailyRevenue', today);
-      try {
-        await setDoc(revRef, {
-          amount: increment(total),
-          orderCount: increment(1),
-          lastUpdated: serverTimestamp()
-        }, { merge: true });
-      } catch (revErr) {
-        console.warn("Daily revenue update failed:", revErr);
-        // We don't fail the whole order if revenue update fails
-      }
+      // Removed: Automatic revenue addition on client confirmation.
+      // Revenue MUST only be added when cashier confirms payment.
       
       // Update User Profile with new point system
       if (!isGuest) {
@@ -350,9 +340,9 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
 
   if (items.length === 0) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center space-y-8 px-6 text-center relative overflow-hidden">
         {brand.cartBgUrl && (
-          <div className="fixed inset-0 z-0">
+          <div className="fixed inset-0 z-0 h-screen w-screen">
             <OptimizedImage 
               priority
               src={brand.cartBgUrl} 
@@ -383,18 +373,17 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   }
 
   return (
-    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative flex flex-col gap-10">
+    <div className="min-h-screen p-4 sm:p-8 relative flex flex-col gap-10">
       {/* Immersive Background */}
       {brand.cartBgUrl && (
-        <div className="fixed inset-0 z-0">
+        <div className="fixed inset-0 z-0 h-screen w-screen">
           <OptimizedImage 
             priority
             src={brand.cartBgUrl} 
             containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
             alt=""
-            showOverlay={true}
-            overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
+            showOverlay={false}
           />
         </div>
       )}

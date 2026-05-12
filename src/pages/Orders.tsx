@@ -23,7 +23,7 @@ const StatusIcon = ({ status }: { status: string }) => {
 };
 
 export default function Orders() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { settings: brand } = useBrandSettings();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,39 +54,38 @@ export default function Orders() {
 
   if (loading) return <div className="text-center py-20 flex items-center justify-center gap-2">
     <div className="w-5 h-5 border-2 border-bento-primary border-t-transparent rounded-full animate-spin" />
-    <span>Loading...</span>
+    <span>{t('loading')}</span>
   </div>;
 
   if (isGuest) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 px-6 text-center -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 relative overflow-hidden">
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center space-y-8 px-6 text-center relative overflow-hidden">
         {brand.ordersBgUrl && (
-          <div className="fixed inset-0 z-0">
+          <div className="fixed inset-0 z-0 h-screen w-screen">
             <OptimizedImage 
               priority
               src={brand.ordersBgUrl} 
               containerClassName="w-full h-full"
               className="w-full h-full object-cover" 
               alt=""
-              showOverlay={true}
-              overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
+              showOverlay={false}
             />
           </div>
         )}
         
         <div className="relative z-10 flex flex-col items-center">
-          <div className="p-8 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-6 ring-1 ring-white/20">
-            <Truck size={48} className="text-white/40" />
+          <div className="p-8 bg-stone-900/40 backdrop-blur-xl rounded-[2.5rem] mb-6 ring-1 ring-white/10 group">
+            <Clock size={48} className="text-white/20" strokeWidth={1.5} />
           </div>
-          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">Order History</h2>
-          <p className="text-white/60 mb-8 font-medium max-w-xs">
-            Sign in to track your artisan selections and loyalty points.
+          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">{t('orders')}</h2>
+          <p className="text-white/40 mb-8 font-medium max-w-xs leading-relaxed text-sm">
+            {t('track_orders_msg')}
           </p>
           <button 
             onClick={() => navigate('/login')}
-            className="bg-white text-bento-primary px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all"
+            className="group flex items-center gap-3 bg-white text-stone-900 px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl active:scale-95 transition-all hover:bg-amber-500 hover:text-stone-900"
           >
-            Access History
+            {t('login')}
           </button>
         </div>
       </div>
@@ -94,18 +93,17 @@ export default function Orders() {
   }
 
   return (
-    <div className="min-h-screen -mx-4 -mt-8 sm:-mx-8 sm:-mt-12 p-4 sm:p-8 relative flex flex-col gap-10">
+    <div className="min-h-screen p-4 sm:p-8 relative flex flex-col gap-10">
       {/* Immersive Background */}
       {brand.ordersBgUrl && (
-        <div className="fixed inset-0 z-0">
+        <div className="fixed inset-0 z-0 h-screen w-screen">
           <OptimizedImage 
             priority
             src={brand.ordersBgUrl} 
             containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
             alt=""
-            showOverlay={true}
-            overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
+            showOverlay={false}
           />
         </div>
       )}
@@ -117,7 +115,7 @@ export default function Orders() {
           transition={{ type: "spring", damping: 20, stiffness: 100 }}
           className="text-5xl md:text-7xl font-black text-bento-primary italic tracking-tighter uppercase drop-shadow-lg"
         >
-          {t('order_history')}
+          {t('orders')}
         </motion.h1>
 
         {orders.length === 0 ? (
@@ -148,7 +146,7 @@ export default function Orders() {
                         ? 'bg-green-500/20 text-green-400 ring-green-500/20' 
                         : 'bg-amber-500/20 text-amber-400 ring-amber-500/20 animate-pulse'
                       }`}>
-                        {order.status === 'delivered' ? 'Completed' : order.status}
+                        {t(`status_detail.${order.status}`, order.status)}
                       </span>
                       <OrderTimer 
                         createdAt={order.createdAt} 
@@ -158,7 +156,7 @@ export default function Orders() {
                       />
                     </div>
                     <p className="text-[10px] text-white/40 font-black uppercase tracking-widest font-mono">
-                      {order.createdAt?.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} at {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {order.createdAt?.toDate().toLocaleDateString(i18n.language, { month: 'long', day: 'numeric' })} {t('at', 'at')} {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                   <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 text-center min-w-[140px] group-hover:bg-white/10 transition-all">

@@ -186,9 +186,10 @@ export default function AdminDashboard() {
     // Total Users Listener
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const allUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-      const clientsOnly = allUsers.filter(u => !u.isAdmin && !u.isWaiter && !u.isDriver);
-      setUsers(clientsOnly);
-      setStats(prev => ({ ...prev, totalUsers: clientsOnly.length }));
+      // Show staff and waiters instead of just ordinary clients
+      const staffAndWaiters = allUsers.filter(u => u.isAdmin || u.isWaiter || u.isKitchen || u.isBarman || u.isCashier || u.isDriver);
+      setUsers(allUsers); 
+      setStats(prev => ({ ...prev, totalUsers: staffAndWaiters.length }));
     });
 
     // Total Items Listener
@@ -529,7 +530,7 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] pl-1">{t('admin_overview')}</p>
-                {isCreator && <span className="bg-amber-400 text-stone-900 text-[8px] font-black px-2 py-0.5 rounded-full uppercase italic">Super Admin</span>}
+                {isCreator && <span className="bg-amber-400 text-stone-900 text-[8px] font-black px-2 py-0.5 rounded-full uppercase italic">{t('super_admin')}</span>}
               </div>
               <h1 className="text-4xl font-bold text-bento-primary">{t('admin_dashboard')}</h1>
             </div>
@@ -620,8 +621,8 @@ export default function AdminDashboard() {
       <div className="card !p-4 md:!p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h3 className="text-xl md:text-2xl font-black text-bento-primary uppercase italic tracking-tighter">Weekly Performance</h3>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mt-1">Revenue per day of the week</p>
+            <h3 className="text-xl md:text-2xl font-black text-bento-primary uppercase italic tracking-tighter">{t('weekly_performance')}</h3>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mt-1">{t('revenue_per_day')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <button 

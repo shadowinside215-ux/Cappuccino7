@@ -37,6 +37,7 @@ import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  const { t } = useTranslation();
   const [isAdminDocument, setIsAdminDocument] = useState<boolean | null>(null);
   
   useEffect(() => {
@@ -59,7 +60,7 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
     checkAdmin();
   }, [userProfile]);
 
-  if (isAdminDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Checking permissions...</div>;
+  if (isAdminDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">{t('checking_permissions')}</div>;
 
   if (isAdminDocument || userProfile?.isAdmin) {
     return <>{children}</>;
@@ -69,6 +70,7 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
 };
 
 const WaiterGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  const { t } = useTranslation();
   const [isWaiterDocument, setIsWaiterDocument] = useState<boolean | null>(null);
   
   useEffect(() => {
@@ -93,7 +95,7 @@ const WaiterGuard = ({ userProfile, children }: { userProfile: UserProfile | nul
     checkWaiter();
   }, [userProfile]);
 
-  if (isWaiterDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Checking permissions...</div>;
+  if (isWaiterDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">{t('checking_permissions')}</div>;
 
   if (isWaiterDocument || userProfile?.isWaiter) {
     return <>{children}</>;
@@ -186,10 +188,20 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   const location = useLocation();
   const { t } = useTranslation();
 
-  const isWaiter = userProfile?.isWaiter || localStorage.getItem('waiter_session_active') === 'true';
-  const isCashier = location.pathname.startsWith('/cashier');
+  const isStaffRoute = location.pathname.startsWith('/waiter') || 
+                       location.pathname.startsWith('/kitchen') || 
+                       location.pathname.startsWith('/barman') || 
+                       location.pathname.startsWith('/cashier') ||
+                       location.pathname.startsWith('/admin');
+  
+  const isLoginPage = location.pathname === '/login' || 
+                      location.pathname === '/admin/login' || 
+                      location.pathname === '/waiter/login' || 
+                      location.pathname === '/kitchen/login' || 
+                      location.pathname === '/barman/login' || 
+                      location.pathname === '/cashier/login';
 
-  if (location.pathname === '/login' || isWaiter || isCashier) return null;
+  if (isLoginPage || isStaffRoute) return null;
 
   return (
     <nav className="fixed bottom-6 left-6 right-6 z-[60] lg:hidden">
@@ -255,14 +267,48 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const isWaiterInStorage = localStorage.getItem('waiter_session_active') === 'true';
   const isKitchenInStorage = localStorage.getItem('kitchen_session_active') === 'true';
   const isBarmanInStorage = localStorage.getItem('barman_session_active') === 'true';
-  const isCashier = userProfile?.isCashier || location.pathname.startsWith('/cashier');
-  const isStaffValue = userProfile?.isWaiter || userProfile?.isKitchen || userProfile?.isBarman || isCashier || isWaiterInStorage || isKitchenInStorage || isBarmanInStorage;
-  const isStaffView = isStaffValue || location.pathname.startsWith('/waiter') || location.pathname.startsWith('/kitchen') || location.pathname.startsWith('/barman') || location.pathname.startsWith('/cashier');
+  const isCashierInStorage = localStorage.getItem('cashier_session_active') === 'true';
+  
+  // Logic: Staff view is active IF we are on a staff route OR if the user is explicitly a staff member
+  const isStaffRoute = location.pathname.startsWith('/waiter') || 
+                       location.pathname.startsWith('/kitchen') || 
+                       location.pathname.startsWith('/barman') || 
+                       location.pathname.startsWith('/cashier') ||
+                       location.pathname.startsWith('/admin');
+
+  const isStaffUser = userProfile?.isWaiter || 
+                      userProfile?.isKitchen || 
+                      userProfile?.isBarman || 
+                      userProfile?.isCashier || 
+                      userProfile?.isAdmin ||
+                      isWaiterInStorage || 
+                      isKitchenInStorage || 
+                      isBarmanInStorage ||
+                      isCashierInStorage;
+
+  const isLoginPage = location.pathname === '/login' || 
+                      location.pathname === '/admin/login' || 
+                      location.pathname === '/waiter/login' || 
+                      location.pathname === '/kitchen/login' || 
+                      location.pathname === '/barman/login' || 
+                      location.pathname === '/cashier/login';
+
+  // The "oversized" layout should ONLY be for true staff dashboards or special full-screen pages
+  const isStaffView = isStaffRoute && !isLoginPage;
+
   const isWaiter = userProfile?.isWaiter || isWaiterInStorage;
-  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login' || location.pathname === '/waiter/login' || location.pathname === '/kitchen/login' || location.pathname === '/barman/login' || location.pathname === '/cashier/login';
 
   useEffect(() => {
-    if (!userProfile?.uid || isStaffValue) return;
+    if (!userProfile?.uid || isStaffUser) return;
+    
+    // Safety: If a normal user logs in, clear any lingering staff storage
+    if (userProfile && !userProfile.isWaiter && !userProfile.isKitchen && !userProfile.isBarman && !userProfile.isCashier && !userProfile.isAdmin) {
+       localStorage.removeItem('waiter_session_active');
+       localStorage.removeItem('kitchen_session_active');
+       localStorage.removeItem('barman_session_active');
+       localStorage.removeItem('cashier_session_active');
+       sessionStorage.removeItem('admin_mode');
+    }
 
     const q = query(
       collection(db, 'orders'),
@@ -292,7 +338,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     });
 
     return () => unsubscribe();
-  }, [userProfile?.uid, isStaffValue]);
+  }, [userProfile?.uid, isStaffUser]);
 
   const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
   const isAdmin = userProfile?.isAdmin || isCreator;
@@ -389,7 +435,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   </div>
 
                   <div className="hidden lg:flex gap-1">
-                    {['en', 'fr'].map((lang) => (
+                    {['en', 'fr', 'ar', 'es'].map((lang) => (
                       <button
                         key={lang}
                         onClick={() => changeLanguage(lang)}
@@ -402,6 +448,12 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                         {lang.toUpperCase()}
                       </button>
                     ))}
+                    <button 
+                      onClick={() => navigate('/settings')}
+                      className="ml-2 p-2 bg-stone-900 text-stone-400 border border-white/5 rounded-lg hover:text-white transition-colors"
+                    >
+                      <SettingsIcon size={16} />
+                    </button>
                   </div>
 
                   <button 
@@ -456,6 +508,9 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-900 text-white/70 font-bold text-lg">
                     <UserIcon /> <span>{t('profile')}</span>
                   </Link>
+                  <Link onClick={() => setIsMenuOpen(false)} to="/settings" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-900 text-white/70 font-bold text-lg">
+                    <SettingsIcon /> <span>{t('settings')}</span>
+                  </Link>
                   {isAdmin && (
                     <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-stone-900 text-white/70 font-bold text-lg">
                       <LayoutDashboard /> <span>{t('admin')}</span>
@@ -466,7 +521,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 <div className="mt-8 pt-8 border-t border-white/5">
                   <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-4">Choose Language</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {['en', 'fr'].map((lang) => (
+                    {['en', 'fr', 'ar', 'es'].map((lang) => (
                       <button
                         key={lang}
                         onClick={() => changeLanguage(lang)}
@@ -488,7 +543,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
           <Navbar userProfile={userProfile} />
           <ReviewPopup />
-          <main className={`transition-all duration-500 ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-4xl mx-auto px-6 py-10 pt-24 lg:pt-10'}`}>
+          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl mx-auto px-6 pb-24 pt-24 lg:pt-10'}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
@@ -525,9 +580,9 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             </AnimatePresence>
           </main>
 
-          {!isStaffView && !isLoginPage && (
-            <footer className="max-w-4xl mx-auto px-6 pb-32 sm:pb-16 text-center space-y-4">
-              <div className="flex justify-center gap-10 flex-wrap py-10">
+          {isLoginPage && !isStaffView && (
+            <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
+              <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-white/5 bg-black/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
                 {[
                   { to: "/admin/login", label: t('admin_access') },
                   { to: "/waiter/login", label: t('waiter_access') },
@@ -538,9 +593,10 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Link 
                     key={link.to}
                     to={link.to} 
-                    className="text-[10px] font-black uppercase tracking-[0.4em] text-stone-500 hover:text-white transition-colors"
+                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-white/50 hover:text-white transition-all flex items-center gap-2 group"
                   >
-                    • {link.label}
+                    <span className="w-1 h-1 bg-amber-500/40 group-hover:bg-amber-500 rounded-full transition-colors" />
+                    {link.label}
                   </Link>
                 ))}
               </div>
@@ -574,6 +630,16 @@ export default function App() {
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      
+      // Clear staff markers on logout to prevent layout/UI persistence bugs
+      if (!u) {
+        localStorage.removeItem('waiter_session_active');
+        localStorage.removeItem('kitchen_session_active');
+        localStorage.removeItem('barman_session_active');
+        localStorage.removeItem('cashier_session_active');
+        sessionStorage.removeItem('admin_mode');
+      }
+
       if (unsubscribeProfile) {
         unsubscribeProfile();
         unsubscribeProfile = null;

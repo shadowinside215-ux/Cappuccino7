@@ -50,8 +50,8 @@ export function handleAuthError(error: any) {
   if (error.code === 'auth/too-many-requests') {
     return 'Too many failed attempts. Please try again later.';
   }
-  if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-    return 'Invalid email or password. Please check your credentials and try again.';
+  if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-email') {
+    return 'Invalid email or password. If you are a staff member, please use the specific access links at the bottom of the home page.';
   }
   return error.message || 'Authentication failed. Please try again.';
 }

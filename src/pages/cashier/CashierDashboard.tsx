@@ -65,15 +65,17 @@ const CATEGORY_ICONS: Record<string, any> = {
 export default function CashierDashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [view, setView] = useState<'pos' | 'pending'>('pos');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [deliveryType, setDeliveryType] = useState<'dine-in' | 'takeaway'>('dine-in');
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
+  const [unpaidOrders, setUnpaidOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const { settings: brand } = useBrandSettings();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const cartEndRef = useRef<HTMLDivElement>(null);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
@@ -142,11 +144,24 @@ export default function CashierDashboard() {
       console.warn('Journal listener limited:', error.message);
     });
 
+    // Load Unpaid Orders
+    const qUnpaid = query(
+      collection(db, 'orders'),
+      where('isPaid', '==', false),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubUnpaid = onSnapshot(qUnpaid, (snap) => {
+      setUnpaidOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+    }, (error) => {
+      console.warn('Unpaid listener error:', error.message);
+    });
+
     return () => {
       unsubCat();
       unsubProd();
       unsubOrders();
       unsubJournal();
+      unsubUnpaid();
     };
   }, []);
 
@@ -224,12 +239,13 @@ export default function CashierDashboard() {
         vendeur: activeVendeur,
         items: itemsWithMetadata,
         total: totalPrice,
-        status: 'accepted',
+        status: 'delivered', // POS orders are usually delivered immediately
         kitchenStatus: hasKitchenItems ? 'pending' : 'completed',
         barmanStatus: hasBarmanItems ? 'pending' : 'completed',
         deliveryType: deliveryType,
         paymentMethod,
         isPOS: true,
+        isPaid: false, // Will be marked paid below
         createdAt: serverTimestamp(),
         pointsEarned: Math.floor(totalPrice / 10),
         prepTime: 20
@@ -237,13 +253,9 @@ export default function CashierDashboard() {
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);
       
-      const today = new Date().toISOString().split('T')[0];
-      const statsRef = doc(db, 'stats', today);
-      await setDoc(statsRef, {
-        revenue: increment(totalPrice),
-        orders: increment(1),
-        lastUpdated: serverTimestamp()
-      }, { merge: true });
+      // Update Stats rigorously
+      const { addOrderToStats } = await import('../../lib/stats');
+      await addOrderToStats(docRef.id, totalPrice);
 
       const receipt = generateThermalReceipt({
         restaurantName: "Cappuccino 7",
@@ -284,6 +296,29 @@ export default function CashierDashboard() {
     toast.success(t('pos_provisional_printed'));
   };
 
+  const handleMarkPaid = async (order: Order, method: 'cash' | 'card') => {
+    setIsProcessing(true);
+    try {
+      const { addOrderToStats } = await import('../../lib/stats');
+      
+      // Update order with payment method first
+      await updateDoc(doc(db, 'orders', order.id), {
+        paymentMethod: method,
+        isPaid: true, // stats service will also do this but redundancy is safe
+        updatedAt: serverTimestamp()
+      });
+
+      await addOrderToStats(order.id, order.total);
+      
+      toast.success(t('pos_payment_confirmed'));
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to mark as paid');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const filteredProducts = products.filter(p => {
     const matchesCat = selectedCategory === 'all' || p.categoryId === selectedCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -306,31 +341,118 @@ export default function CashierDashboard() {
 
   return (
     <div className="h-screen bg-[#111] text-[#E0E0E0] flex flex-col font-mono overflow-hidden select-none">
-      {/* Utility Navigation - Integrated better or moved to bottom if needed, for now subtle at bottom or in categories */}
+      {/* View Switcher Tabs */}
+      <div className="h-14 bg-stone-900 border-b border-white/5 flex items-center px-4 gap-4">
+         <button 
+           onClick={() => setView('pos')}
+           className={`px-6 h-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${view === 'pos' ? 'border-amber-500 text-white' : 'border-transparent text-stone-500'}`}
+         >
+           Terminal POS
+         </button>
+         <button 
+           onClick={() => setView('pending')}
+           className={`px-6 h-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 relative ${view === 'pending' ? 'border-amber-500 text-white' : 'border-transparent text-stone-500'}`}
+         >
+           {t('pos_pending_payments')}
+           {unpaidOrders.length > 0 && (
+             <span className="absolute top-2 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center animate-pulse">
+               {unpaidOrders.length}
+             </span>
+           )}
+         </button>
+      </div>
       
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Side: Product Grid & Categories (Main View) */}
+        {/* Left Side: Product Grid or Pending View */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Product Grid Area - Using a more stable 6-col grid as per image */}
-          <div className="flex-1 overflow-y-auto bg-[#1A1A1A] custom-scrollbar">
-            <div className="grid grid-cols-6 border-b border-white/5">
-              {filteredProducts.map(product => (
-                <motion.button
-                  key={product.id}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => addToCart(product)}
-                  className="aspect-[4/3] bg-[#00ADC0] border border-black/10 flex flex-col items-center justify-center p-2 text-center group active:brightness-50 transition-all hover:brightness-110"
-                >
-                  <span className="text-[10px] md:text-[11px] font-black uppercase leading-none mb-2 text-white drop-shadow-sm line-clamp-2 px-1">{product.name}</span>
-                  <span className="text-[12px] md:text-[13px] font-black text-white/80 tabular-nums">{product.price.toFixed(2)}</span>
-                </motion.button>
-              ))}
+          {view === 'pos' ? (
+            <div className="flex-1 overflow-y-auto bg-[#1A1A1A] custom-scrollbar">
+              <div className="grid grid-cols-5 md:grid-cols-6 border-b border-white/5">
+                {filteredProducts.map(product => (
+                  <motion.button
+                    key={product.id}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => addToCart(product)}
+                    className="aspect-square bg-[#00ADC0] border border-black/10 flex flex-col items-center justify-center p-2 text-center group active:brightness-50 transition-all hover:brightness-110"
+                  >
+                    <span className="text-[9px] md:text-[10px] font-black uppercase leading-tight mb-2 text-white drop-shadow-sm line-clamp-2 px-1">{product.name}</span>
+                    <span className="text-[10px] md:text-[11px] font-black text-white/80 tabular-nums">{product.price.toFixed(2)}</span>
+                  </motion.button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto bg-[#111] p-6 space-y-4 custom-scrollbar">
+               <h2 className="text-2xl font-black uppercase italic tracking-tighter text-amber-500 mb-8">{t('pos_unpaid_orders')}</h2>
+               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {unpaidOrders.map(order => (
+                    <div key={order.id} className="bg-stone-900 border border-white/5 p-6 rounded-3xl flex flex-col justify-between group hover:border-amber-500/30 transition-all">
+                       <div className="flex justify-between items-start mb-6">
+                          <div>
+                             <div className="flex items-center gap-3 mb-1">
+                                <span className="text-xl font-black text-white uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
+                                <span className="px-2 py-0.5 bg-stone-800 text-stone-500 text-[8px] font-black uppercase rounded">{order.deliveryType}</span>
+                             </div>
+                             <p className="text-stone-400 font-bold text-[10px] uppercase">{order.customerName}</p>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-2xl font-black text-white tabular-nums">{order.total.toFixed(2)}</p>
+                             <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">MAD TOTAL</p>
+                          </div>
+                       </div>
+
+                       <div className="space-y-2 mb-6 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                          {order.items.map((item, i) => (
+                            <div key={i} className="flex justify-between text-[10px] font-bold text-stone-500">
+                               <span>{item.quantity}x {item.name}</span>
+                               <span>{item.price * item.quantity} MAD</span>
+                            </div>
+                          ))}
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-2 mt-auto">
+                          <button 
+                            onClick={() => handleMarkPaid(order, 'cash')}
+                            className="bg-green-600/20 text-green-500 border border-green-600/30 py-3 rounded-xl font-black uppercase text-[9px] hover:bg-green-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                          >
+                             <Banknote size={14} /> {t('pos_paid_cash')}
+                          </button>
+                          <button 
+                            onClick={() => handleMarkPaid(order, 'card')}
+                            className="bg-blue-600/20 text-blue-400 border border-blue-600/30 py-3 rounded-xl font-black uppercase text-[9px] hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                          >
+                             <CreditCard size={14} /> {t('pos_paid_card')}
+                          </button>
+                       </div>
+                    </div>
+                  ))}
+                  {unpaidOrders.length === 0 && (
+                    <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-20 bg-stone-900/50 rounded-[3rem] border-2 border-dashed border-white/5">
+                       <CheckCircle2 size={64} strokeWidth={1} />
+                       <p className="font-black uppercase tracking-[0.5em] text-[10px] mt-6">All Orders Settled</p>
+                    </div>
+                  )}
+               </div>
+            </div>
+          )}
 
           {/* Categories Bottom Bar - Matching the dark theme and size from image */}
           <div className="h-24 bg-[#111] border-t border-white/5 flex items-center relative">
              <div className="flex flex-col h-full bg-stone-900 border-r border-white/5 px-2 justify-center gap-1 z-20">
+                <div className="flex gap-1 mb-1">
+                   <button 
+                     onClick={() => i18n.changeLanguage('en')}
+                     className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-colors ${i18n.language === 'en' ? 'bg-amber-500 text-black' : 'bg-white/5 text-stone-500 hover:text-white'}`}
+                   >
+                     EN
+                   </button>
+                   <button 
+                     onClick={() => i18n.changeLanguage('fr')}
+                     className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-colors ${i18n.language === 'fr' ? 'bg-amber-500 text-black' : 'bg-white/5 text-stone-500 hover:text-white'}`}
+                   >
+                     FR
+                   </button>
+                </div>
                 <button 
                   onClick={() => setShowVendeurGrid(true)}
                   className="px-3 py-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg text-[8px] font-black uppercase"
@@ -396,7 +518,7 @@ export default function CashierDashboard() {
         </div>
 
         {/* Right Side: Virtual Ticket (Specific fixed width as in image) */}
-        <div className="w-[340px] md:w-[400px] bg-[#E5E7EB] text-[#111] flex flex-col shadow-2xl relative border-l border-white/10">
+        <div className="w-[300px] md:w-[350px] bg-[#E5E7EB] text-[#111] flex flex-col shadow-2xl relative border-l border-white/10">
            {/* Ticket Content */}
            <div className="flex-1 flex flex-col overflow-hidden">
              <div className="p-4 border-b border-gray-300 flex items-center justify-between bg-gray-200">

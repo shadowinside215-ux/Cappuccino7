@@ -33,6 +33,13 @@ export default function Settings({ theme, setTheme, userProfile }: SettingsProps
   const handleLogout = async () => {
     try {
       await auth.signOut();
+      // Clear staff markers
+      localStorage.removeItem('waiter_session_active');
+      localStorage.removeItem('kitchen_session_active');
+      localStorage.removeItem('barman_session_active');
+      localStorage.removeItem('cashier_session_active');
+      sessionStorage.removeItem('admin_mode');
+      
       navigate('/login');
       toast.success('Logged out successfully');
     } catch (error) {
@@ -108,7 +115,8 @@ export default function Settings({ theme, setTheme, userProfile }: SettingsProps
             {[
               { id: 'en', label: 'English', sub: 'USA / UK' },
               { id: 'fr', label: 'Français', sub: 'France' },
-              { id: 'ar', label: 'العربية', sub: 'المغرب' }
+              { id: 'ar', label: 'العربية', sub: 'المغرب' },
+              { id: 'es', label: 'Español', sub: 'España' }
             ].map((lang) => (
               <button
                 key={lang.id}
