@@ -351,7 +351,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                                 className={`px-4 py-6 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all border ${
                                   sugarPreference === pref.id 
                                     ? 'bg-amber-400 text-stone-900 border-amber-400 shadow-xl shadow-amber-400/20' 
-                                    : 'bg-white/5 text-white/40 border-white/10 hover:border-white/20'
+                                    : 'bg-bento-ink/5 text-bento-ink/40 border-bento-card-border hover:border-bento-accent/20'
                                 }`}
                               >
                                 {pref.id === 'With Sugar' ? '🍬 ' : '🚫 '}
@@ -360,9 +360,9 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                             ))}
                           </div>
 
-                          <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
-                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mb-2 italic">{t('summary')}</p>
-                            <p className="text-xs font-bold text-white flex items-center gap-2">
+                          <div className="bg-bento-ink/5 p-6 rounded-3xl border border-bento-card-border">
+                            <p className="text-[9px] font-black uppercase text-bento-ink/20 tracking-widest mb-2 italic">{t('summary')}</p>
+                            <p className="text-xs font-bold text-bento-ink flex items-center gap-2">
                               {t(`products.${selectedDrink}`, selectedDrink)} • {t(sugarPreference === 'With Sugar' ? 'with_sugar' : 'without_sugar')}
                             </p>
                           </div>
@@ -373,13 +373,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/5 p-4 rounded-3xl border border-white/5 space-y-1">
-                    <p className="text-[9px] font-black uppercase text-white/30 tracking-widest italic">{t('rating', 'Rating')}</p>
-                    <p className="text-sm font-bold text-white flex items-center gap-2">★ 4.9 <span className="text-[10px] text-white/20 font-medium">{t('excellent')}</span></p>
+                  <div className="bg-bento-ink/5 p-4 rounded-3xl border border-bento-card-border space-y-1 text-bento-ink">
+                    <p className="text-[9px] font-black uppercase text-bento-ink/30 tracking-widest italic">{t('rating', 'Rating')}</p>
+                    <p className="text-sm font-bold flex items-center gap-2">★ 4.9 <span className="text-[10px] text-bento-ink/20 font-medium">{t('excellent')}</span></p>
                   </div>
-                  <div className="bg-white/5 p-4 rounded-3xl border border-white/5 space-y-1">
-                    <p className="text-[9px] font-black uppercase text-white/30 tracking-widest italic">{t('wait_time')}</p>
-                    <p className="text-sm font-bold text-white">~12 {t('mins_short', 'Mins')} <span className="text-[10px] text-white/20 font-medium">{t('avg')}</span></p>
+                  <div className="bg-bento-ink/5 p-4 rounded-3xl border border-bento-card-border space-y-1 text-bento-ink">
+                    <p className="text-[9px] font-black uppercase text-bento-ink/30 tracking-widest italic">{t('wait_time')}</p>
+                    <p className="text-sm font-bold">~12 {t('mins_short', 'Mins')} <span className="text-[10px] text-bento-ink/20 font-medium">{t('avg')}</span></p>
                   </div>
                 </div>
 
@@ -397,8 +397,8 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   }}
                   className={`w-full py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-3 ${
                     (selectedProduct.categoryId === 'breakfast' && (!selectedDrink || !sugarPreference))
-                      ? 'bg-white/10 text-white/30 cursor-not-allowed'
-                      : 'bg-white text-stone-900 hover:scale-[1.02] active:scale-95'
+                      ? 'bg-bento-ink/10 text-bento-ink/30 cursor-not-allowed'
+                      : 'bg-bento-primary text-bento-bg hover:scale-[1.02] active:scale-95'
                   }`}
                 >
                   {loading ? '...' : t('confirm_and_add')} <Plus size={20} />
@@ -439,10 +439,11 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover/hero:scale-105"
               alt=""
               referrerPolicy="no-referrer"
+              showOverlay={false}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-bento-bg via-bento-bg/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-bento-bg/50 to-transparent md:from-bento-bg/70" />
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-stone-950/60 to-transparent md:from-stone-950/80" />
         </div>
 
         <div className="relative z-10 space-y-10 md:max-w-5xl">
@@ -452,7 +453,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
             className="flex flex-col gap-6"
           >
-            <h1 className="text-4xl md:text-6xl font-black italic text-bento-primary tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
+            <h1 className="text-4xl md:text-6xl font-black italic text-white tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
               {t('app_name')}
             </h1>
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -573,26 +574,26 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
               <div className="md:col-span-8 space-y-6">
-                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 backdrop-blur-md">
+                <div className="bg-bento-ink/5 p-6 rounded-3xl border border-bento-card-border backdrop-blur-md">
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
                       <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">1</div>
                       <p 
-                        className="text-white/80 text-sm leading-relaxed"
+                        className="text-bento-ink/80 text-sm leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: t('loyalty_step_1') }}
                       />
                     </div>
                     <div className="flex items-start gap-4">
                       <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">2</div>
                       <p 
-                        className="text-white/80 text-sm leading-relaxed"
+                        className="text-bento-ink/80 text-sm leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: t('loyalty_step_2') }}
                       />
                     </div>
                     <div className="flex items-start gap-4">
                       <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-[10px] font-black shrink-0 mt-0.5">3</div>
                       <p 
-                        className="text-white/80 text-sm leading-relaxed"
+                        className="text-bento-ink/80 text-sm leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: t('loyalty_step_3') }}
                       />
                     </div>
@@ -600,13 +601,13 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                   <div className="px-4 py-2 bg-stone-900/50 rounded-xl border border-white/5 flex items-center gap-2.5 transition-colors hover:border-amber-400/30">
+                   <div className="px-4 py-2 bg-bento-card-bg/50 rounded-xl border border-bento-card-border flex items-center gap-2.5 transition-colors hover:border-amber-400/30">
                       <Ticket size={14} className="text-amber-400" />
-                      <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">{t('automatic_rewards')}</span>
+                      <span className="text-[8px] font-black text-bento-ink/50 uppercase tracking-widest">{t('automatic_rewards')}</span>
                    </div>
-                   <div className="px-4 py-2 bg-stone-900/50 rounded-xl border border-white/5 flex items-center gap-2.5 transition-colors hover:border-amber-400/30">
+                   <div className="px-4 py-2 bg-bento-card-bg/50 rounded-xl border border-bento-card-border flex items-center gap-2.5 transition-colors hover:border-amber-400/30">
                       <Star size={14} className="text-amber-400" />
-                      <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">{t('vip_tiers')}</span>
+                      <span className="text-[8px] font-black text-bento-ink/50 uppercase tracking-widest">{t('vip_tiers')}</span>
                    </div>
                 </div>
               </div>
@@ -769,16 +770,16 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 className="space-y-12"
               >
               <div className="flex items-center gap-10">
-                <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter whitespace-nowrap pl-2">
+                <h2 className="text-3xl font-black text-amber-500 italic uppercase tracking-tighter whitespace-nowrap pl-2">
                   {getTranslatedCategory(cat.name)}
                 </h2>
-                <div className="h-px bg-white/10 w-full" />
+                <div className="h-px bg-bento-card-border w-full" />
               </div>
 
               {sectionOrder.map(secKey => (
                 <div key={secKey} className="space-y-8">
                   {secKey !== '_none' && (
-                    <div className="flex items-center gap-4 bg-white/5 w-fit px-6 py-2 rounded-full border border-white/5">
+                    <div className="flex items-center gap-4 bg-bento-ink/5 w-fit px-6 py-2 rounded-full border border-bento-card-border">
                       <span className="text-sm font-black text-amber-400 uppercase tracking-[0.2em] italic">
                         {t(`sections.${secKey}`, secKey)}
                       </span>

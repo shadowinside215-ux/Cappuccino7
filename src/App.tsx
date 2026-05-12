@@ -206,34 +206,34 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   return (
     <nav className="fixed bottom-6 left-6 right-6 z-[60] lg:hidden">
       <div className="max-w-md mx-auto bg-bento-card-bg/80 backdrop-blur-3xl border border-bento-card-border px-4 py-3 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] flex justify-around items-center relative">
-        <Link to="/" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/' ? 'text-bento-primary scale-110' : 'text-bento-ink/40'}`}>
+        <Link to="/" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/' ? 'text-amber-500 scale-110' : 'text-amber-500/40'}`}>
           <Coffee size={22} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
           <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('menu')}</span>
           {location.pathname === '/' && (
-            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-amber-500/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
           )}
         </Link>
-        <Link to="/cart" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/cart' ? 'text-white scale-110' : 'text-white/40'}`}>
+        <Link to="/cart" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/cart' ? 'text-amber-500 scale-110' : 'text-amber-500/40'}`}>
           <ShoppingCart size={22} strokeWidth={location.pathname === '/cart' ? 2.5 : 2} />
           <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('cart')}</span>
           {location.pathname === '/cart' && (
-            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-amber-500/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
           )}
         </Link>
         {auth.currentUser && !auth.currentUser.isAnonymous && (
-          <Link to="/orders" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/orders' ? 'text-white scale-110' : 'text-white/40'}`}>
+          <Link to="/orders" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/orders' ? 'text-amber-500 scale-110' : 'text-amber-500/40'}`}>
             <ListOrdered size={22} strokeWidth={location.pathname === '/orders' ? 2.5 : 2} />
             <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('orders')}</span>
             {location.pathname === '/orders' && (
-              <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+              <motion.div layoutId="nav-pill" className="absolute inset-0 bg-amber-500/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
             )}
           </Link>
         )}
-        <Link to="/profile" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/profile' ? 'text-white scale-110' : 'text-white/40'}`}>
+        <Link to="/profile" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/profile' ? 'text-amber-500 scale-110' : 'text-amber-500/40'}`}>
           <UserIcon size={22} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} />
           <span className="text-[8px] mt-1 font-black uppercase tracking-widest">{t('profile')}</span>
           {location.pathname === '/profile' && (
-            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+            <motion.div layoutId="nav-pill" className="absolute inset-0 bg-amber-500/10 rounded-2xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
           )}
         </Link>
       </div>
@@ -383,7 +383,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
               <div className="max-w-7xl mx-auto flex justify-between items-center bg-bento-card-bg/40 backdrop-blur-3xl border border-bento-card-border px-6 py-4 rounded-[2rem] shadow-2xl">
                 <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-2xl bg-bento-bg flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
                     <OptimizedImage 
                       priority
                       src={brand.logoUrl} 
@@ -393,41 +393,41 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  <span className="text-xl sm:text-2xl font-black italic text-white tracking-tighter uppercase drop-shadow-lg">{t('app_name')}</span>
+                  <span className="text-xl sm:text-2xl font-black italic text-amber-500 tracking-tighter uppercase drop-shadow-lg">{t('app_name')}</span>
                 </Link>
 
                 <div className="flex items-center gap-6">
                   <div className="hidden lg:flex items-center gap-2 pr-6">
-                    <Link to="/" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                    <Link to="/" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/' ? 'text-amber-500 font-bold' : 'text-amber-500/40 hover:text-amber-500'}`}>
                       <Coffee size={18} />
                       <span className="text-[10px] font-black uppercase tracking-widest">{t('menu')}</span>
                       {location.pathname === '/' && (
-                        <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                        <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-amber-500/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
                       )}
                     </Link>
-                    <Link to="/cart" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/cart' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                    <Link to="/cart" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/cart' ? 'text-amber-500 font-bold' : 'text-amber-500/40 hover:text-amber-500'}`}>
                       <ShoppingCart size={18} />
                       <span className="text-[10px] font-black uppercase tracking-widest">{t('cart')}</span>
                       {location.pathname === '/cart' && (
-                        <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                        <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-amber-500/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
                       )}
                     </Link>
-                    <Link to="/orders" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/orders' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                    <Link to="/orders" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/orders' ? 'text-amber-500 font-bold' : 'text-amber-500/40 hover:text-amber-500'}`}>
                       <ListOrdered size={18} />
                       <span className="text-[10px] font-black uppercase tracking-widest">{t('orders')}</span>
                       {location.pathname === '/orders' && (
-                        <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                        <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-amber-500/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
                       )}
                     </Link>
-                    <Link to="/profile" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/profile' ? 'text-white font-bold' : 'text-white/40 hover:text-white'}`}>
+                    <Link to="/profile" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all relative group ${location.pathname === '/profile' ? 'text-amber-500 font-bold' : 'text-amber-500/40 hover:text-amber-500'}`}>
                       <UserIcon size={18} />
                       <span className="text-[10px] font-black uppercase tracking-widest">{t('profile')}</span>
                       {location.pathname === '/profile' && (
-                        <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-white/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+                        <motion.div layoutId="nav-pill-desktop" className="absolute inset-0 bg-amber-500/10 rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
                       )}
                     </Link>
                     {isAdmin && (
-                      <Link to="/admin" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${location.pathname.startsWith('/admin') ? 'bg-amber-400 text-stone-900 font-bold' : 'text-white/40 hover:text-white'}`}>
+                      <Link to="/admin" className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${location.pathname.startsWith('/admin') ? 'bg-amber-500 text-stone-900 font-bold' : 'text-amber-500/40 hover:text-amber-500'}`}>
                         <LayoutDashboard size={18} />
                         <span className="text-[10px] font-black uppercase tracking-widest">{t('admin')}</span>
                       </Link>
@@ -593,7 +593,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Link 
                     key={link.to}
                     to={link.to} 
-                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-white/50 hover:text-white transition-all flex items-center gap-2 group"
+                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-amber-500/50 hover:text-amber-500 transition-all flex items-center gap-2 group"
                   >
                     <span className="w-1 h-1 bg-amber-500/40 group-hover:bg-amber-500 rounded-full transition-colors" />
                     {link.label}

@@ -350,20 +350,20 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               className="w-full h-full object-cover" 
               alt=""
               showOverlay={true}
-              overlayClassName="bg-stone-950/60 backdrop-blur-[2px]"
+              overlayClassName="bg-bento-bg/60 backdrop-blur-[2px]"
             />
           </div>
         )}
         
         <div className="relative z-10 flex flex-col items-center">
-          <div className="p-8 bg-white/10 backdrop-blur-xl rounded-full mb-6 ring-1 ring-white/20">
-            <Trash2 size={48} className="text-white/40" />
+          <div className="p-8 bg-bento-card-bg/20 backdrop-blur-xl rounded-full mb-6 ring-1 ring-bento-card-border">
+            <Trash2 size={48} className="text-bento-ink/40" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">{t('empty_cart')}</h2>
-          <p className="text-white/60 mb-8 font-medium">{t('empty_cart_msg')}</p>
+          <h2 className="text-3xl font-black text-bento-ink mb-2 uppercase italic tracking-tight">{t('empty_cart')}</h2>
+          <p className="text-bento-ink/60 mb-8 font-medium">{t('empty_cart_msg')}</p>
           <button 
             onClick={() => navigate('/')}
-            className="bg-white text-bento-primary px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all"
+            className="bg-bento-primary text-bento-bg px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all"
           >
             {t('browse_menu')}
           </button>
@@ -383,7 +383,8 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
             alt=""
-            showOverlay={false}
+            showOverlay={true}
+            overlayClassName="bg-bento-bg/60 backdrop-blur-[2px]"
           />
         </div>
       )}
@@ -393,7 +394,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 100 }}
-          className="text-5xl md:text-7xl font-black text-bento-primary italic tracking-tighter uppercase drop-shadow-lg"
+          className="text-5xl md:text-7xl font-black text-bento-ink italic tracking-tighter uppercase drop-shadow-lg"
         >
           {t('cart')}
         </motion.h1>
@@ -404,7 +405,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl"
+              className="bg-bento-card-bg/20 backdrop-blur-xl rounded-[2.5rem] border border-bento-card-border overflow-hidden shadow-2xl"
             >
               <div className="p-8 space-y-8">
                 <AnimatePresence mode="popLayout">
@@ -422,7 +423,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         <OptimizedImage 
                           src={item.image} 
                           fallbackSrc="https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=200"
-                          className="w-full h-full object-cover rounded-2xl border border-white/10 group-hover:scale-105 transition-transform"
+                          className="w-full h-full object-cover rounded-2xl border border-bento-card-border group-hover:scale-105 transition-transform"
                           alt={item.name}
                           showOverlay={false}
                         />
@@ -431,7 +432,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-black text-lg sm:text-xl text-white leading-tight uppercase tracking-tight">
+                        <h3 className="font-black text-lg sm:text-xl text-bento-ink leading-tight uppercase tracking-tight">
                           {t(`products.${item.name}`, item.name)}
                         </h3>
                         {item.customization && (
@@ -440,26 +441,26 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                           </p>
                         )}
                         <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-white/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Premium Selection</span>
+                          <span className="text-bento-ink/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Premium Selection</span>
                           {userProfile && !userProfile.isAnonymous && (
-                            <span className="text-[9px] sm:text-[10px] font-black bg-white/10 text-amber-400 px-2 py-0.5 rounded-lg uppercase tracking-tighter ring-1 ring-white/10">
+                            <span className="text-[9px] sm:text-[10px] font-black bg-bento-ink/10 text-amber-400 px-2 py-0.5 rounded-lg uppercase tracking-tighter ring-1 ring-bento-card-border">
                               Lvl {userProfile.itemLoyalty?.[item.productId] || 0}
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-3">
-                        <p className="font-black text-2xl text-white">{(item.price * item.quantity)} DH</p>
-                        <div className="flex items-center gap-4 bg-white/10 rounded-full px-4 py-2 ring-1 ring-white/10 backdrop-blur-md">
+                        <p className="font-black text-2xl text-bento-ink">{(item.price * item.quantity)} DH</p>
+                        <div className="flex items-center gap-4 bg-bento-ink/10 rounded-full px-4 py-2 ring-1 ring-bento-card-border backdrop-blur-md">
                           <button 
                             onClick={() => updateQuantity(item.productId, -1)}
-                            className="text-white/40 hover:text-white transition-colors"
+                            className="text-bento-ink/40 hover:text-bento-ink transition-colors"
                           >
                             <Minus size={16} />
                           </button>
                           <button 
                             onClick={() => updateQuantity(item.productId, 1)}
-                            className="text-white/40 hover:text-white transition-colors"
+                            className="text-bento-ink/40 hover:text-bento-ink transition-colors"
                           >
                             <Plus size={16} />
                           </button>
@@ -474,30 +475,30 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="p-8 bg-black/20 backdrop-blur-2xl border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-6"
+                className="p-8 bg-bento-card-bg/20 backdrop-blur-2xl border-t border-bento-card-border flex flex-col sm:flex-row justify-between items-center gap-6"
               >
                 <div>
-                  <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">{t('total_paid')}</p>
+                  <p className="text-[10px] font-black text-bento-ink/40 uppercase tracking-[0.3em] mb-1">{t('total_paid')}</p>
                   <motion.p 
                     key={total}
                     initial={{ scale: 1.1, color: "#fbbf24" }}
-                    animate={{ scale: 1, color: "#fff" }}
-                    className="text-5xl font-black text-white tracking-tighter tabular-nums"
+                    animate={{ scale: 1, color: "var(--bento-ink)" }}
+                    className="text-5xl font-black text-bento-ink tracking-tighter tabular-nums"
                   >
                     {total} DH
                   </motion.p>
                 </div>
-                <div className="text-center sm:text-right bg-white/5 px-6 py-3 rounded-2xl ring-1 ring-white/10">
+                <div className="flex justify-between items-center bg-bento-ink/5 px-6 py-3 rounded-2xl ring-1 ring-bento-card-border">
                   {auth.currentUser?.isAnonymous ? (
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-bento-ink">
                       <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">{t('loyalty_perk')}</p>
-                      <p className="text-[10px] font-bold text-white/60">Sign in to save points!</p>
+                      <p className="text-[10px] font-bold text-bento-ink/60">Sign in to save points!</p>
                     </div>
                   ) : (
-                    <>
-                      <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">{t('loyalty_perk')}</p>
+                    <div className="text-bento-ink sm:text-right">
+                      <p className="text-[10px] font-black text-bento-ink/40 uppercase tracking-[0.3em] mb-1">{t('loyalty_perk')}</p>
                       <p className="text-xl font-black text-amber-400">+{totalItems} {t('reward_points')}</p>
-                    </>
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -508,12 +509,12 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-white/5 backdrop-blur-3xl rounded-[2.5rem] p-4 border border-white/10 mb-8"
+              className="bg-bento-card-bg/20 backdrop-blur-3xl rounded-[2.5rem] p-4 border border-bento-card-border mb-8"
             >
               <div className="grid grid-cols-2 gap-2">
                 <button 
                   onClick={() => setDeliveryType('dine-in')}
-                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-bento-ink/40 hover:text-bento-ink hover:bg-bento-ink/5'}`}
                 >
                   <div className="flex flex-col items-center gap-1">
                     <Coffee size={16} />
@@ -522,7 +523,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                 </button>
                 <button 
                   onClick={() => setDeliveryType('pickup')}
-                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'pickup' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'pickup' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-bento-ink/40 hover:text-bento-ink hover:bg-bento-ink/5'}`}
                 >
                   <div className="flex flex-col items-center gap-1">
                     <Package size={16} />
@@ -538,7 +539,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               className="space-y-6"
             >
                   <div className="space-y-3">
-                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
+                    <label className="block text-[10px] font-black text-bento-ink/40 uppercase tracking-[0.3em] ml-4">
                       {t('phone_number')} ({t('optional')})
                     </label>
                     <input
@@ -546,12 +547,12 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+212 6xx xxxx"
-                      className="w-full bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none"
+                      className="w-full bg-bento-card-bg/20 backdrop-blur-xl border border-bento-card-border rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-bento-card-border transition-all placeholder:text-bento-ink/20 text-bento-ink font-bold outline-none"
                     />
                   </div>
 
               <div className="space-y-3">
-                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.3em] ml-4">
+                <label className="block text-[10px] font-black text-bento-ink/40 uppercase tracking-[0.3em] ml-4">
                   {t('additional_notes')}
                 </label>
                 <textarea
@@ -559,7 +560,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                   onChange={(e) => setDeliveryNotes(e.target.value)}
                   placeholder={deliveryType === 'dine-in' ? t('table_note_placeholder') : t('allergy_note_placeholder')}
                   rows={3}
-                  className="w-full bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20 text-white font-bold outline-none resize-none"
+                  className="w-full bg-bento-card-bg/20 backdrop-blur-xl border border-bento-card-border rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-bento-card-border transition-all placeholder:text-bento-ink/20 text-bento-ink font-bold outline-none resize-none"
                 />
               </div>
             </motion.div>
@@ -575,14 +576,14 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               <button
                 onClick={handleCheckout}
                 disabled={loading}
-                className="w-full bg-white text-stone-900 py-8 rounded-[3rem] font-black text-2xl shadow-[0_30px_60px_rgba(0,0,0,0.4)] hover:scale-[1.03] active:scale-[0.97] transition-all disabled:opacity-50 uppercase tracking-tight group overflow-hidden relative"
+                className="w-full bg-bento-primary text-bento-bg py-8 rounded-[3rem] font-black text-2xl shadow-[0_30px_60px_rgba(0,0,0,0.4)] hover:scale-[1.03] active:scale-[0.97] transition-all disabled:opacity-50 uppercase tracking-tight group overflow-hidden relative"
               >
                 <div className="relative z-10 flex items-center justify-center gap-3">
                   {loading ? '...' : t('confirm_order')}
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-shimmer" />
               </button>
-              <p className="text-center text-white/30 text-[10px] font-black uppercase tracking-widest px-8 leading-relaxed">
+              <p className="text-center text-bento-ink/30 text-[10px] font-black uppercase tracking-widest px-8 leading-relaxed">
                 {t('premium_selection')} <br /> {t('verified_by')} <span className="text-bento-primary font-bold">Cappuccino7</span>
               </p>
             </motion.div>

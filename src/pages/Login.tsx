@@ -77,7 +77,7 @@ export default function Login() {
                 navigator.clipboard.writeText(domain);
                 toast.success('Domain copied!', { id: 'copy-success' });
               }}
-              className="bg-bento-primary text-white text-[10px] py-1 px-3 rounded-lg font-bold uppercase tracking-widest self-start"
+              className="bg-bento-primary text-bento-bg text-[10px] py-1 px-3 rounded-lg font-bold uppercase tracking-widest self-start"
             >
               Copy Domain
             </button>
@@ -172,10 +172,11 @@ export default function Login() {
             className="w-full h-full object-cover" 
             alt="Background"
             referrerPolicy="no-referrer"
+            showOverlay={false}
           />
         )}
-        <div className="absolute inset-0 bg-bento-bg/60 backdrop-blur-[2px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-bento-bg via-bento-bg/40 to-transparent" />
+        <div className="absolute inset-0 bg-stone-950/60 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
@@ -194,12 +195,13 @@ export default function Login() {
                   alt="Logo" 
                   containerClassName="w-full h-full"
                   className="w-full h-full object-contain rounded-2xl"
+                  showOverlay={false}
                 />
               </div>
               
               <div className="text-center space-y-4">
-                <h1 className="text-3xl sm:text-5xl font-black text-bento-primary tracking-tighter italic drop-shadow-sm uppercase">Cappuccino7</h1>
-                <p className="text-bento-ink/60 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
+                <h1 className="text-3xl sm:text-5xl font-black text-amber-500 tracking-tighter italic drop-shadow-sm uppercase">Cappuccino7</h1>
+                <p className="text-white/80 font-medium leading-relaxed max-w-[280px] mx-auto text-sm">
                   {t('premium_shared_moments')} <br />
                   {t('login_rewards_msg')}
                 </p>
@@ -224,19 +226,10 @@ export default function Login() {
                   {t('email_login_btn')}
                 </button>
 
-                <div className="relative py-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10"></div>
-                  </div>
-                  <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
-                    <span className="bg-transparent px-4 text-bento-ink/40 font-black">{t('or_separator')}</span>
-                  </div>
-                </div>
-
                 <button
                   disabled={loading}
                   onClick={handleGuestAccess}
-                  className="w-full flex items-center justify-center gap-4 bg-transparent text-white/60 border border-white/5 py-5 px-6 rounded-[2rem] hover:bg-white/5 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
+                  className="w-full flex items-center justify-center gap-4 bg-transparent text-white/60 border border-white/20 py-5 px-6 rounded-[2rem] hover:bg-white/5 active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
                 >
                   {t('continue_guest')}
                 </button>
@@ -248,7 +241,7 @@ export default function Login() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="w-full space-y-8 bg-white/10 backdrop-blur-2xl p-8 rounded-[3rem] border border-white/10 shadow-2xl"
+              className="w-full space-y-8 bg-bento-card-bg/20 backdrop-blur-2xl p-8 rounded-[3rem] border border-bento-card-border shadow-2xl"
             >
               <button 
                 onClick={() => setMode('initial')}
@@ -258,10 +251,10 @@ export default function Login() {
               </button>
 
               <div className="space-y-2">
-                <h2 className="text-3xl font-black text-bento-ink uppercase italic tracking-tight">
+                <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
                   {mode === 'email-login' ? t('login') : t('join_us')}
                 </h2>
-                <p className="text-bento-ink/40 text-xs font-bold uppercase tracking-widest">
+                <p className="text-white/40 text-xs font-bold uppercase tracking-widest">
                   {mode === 'email-login' ? t('enter_credentials') : t('create_your_account')}
                 </p>
               </div>
@@ -269,16 +262,16 @@ export default function Login() {
               <form onSubmit={handleEmailAuth} className="space-y-6">
                 {mode === 'email-signup' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('full_name_label')}</label>
+                    <label className="text-[10px] uppercase font-black tracking-widest text-bento-ink/40 ml-4">{t('full_name_label')}</label>
                     <div className="relative">
-                      <User className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+                      <User className="absolute left-6 top-1/2 -translate-y-1/2 text-bento-ink/40" size={18} />
                       <input
                         type="text"
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="John Doe"
-                        className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
+                        className="w-full pl-16 pr-6 py-5 bg-bento-ink/5 border border-bento-card-border rounded-[2rem] focus:ring-2 focus:ring-bento-card-border outline-none transition-all text-bento-ink font-bold"
                       />
                     </div>
                   </div>
@@ -286,39 +279,39 @@ export default function Login() {
 
                 {mode === 'email-signup' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('phone_number_optional')}</label>
+                    <label className="text-[10px] uppercase font-black tracking-widest text-bento-ink/40 ml-4">{t('phone_number_optional')}</label>
                     <div className="relative">
-                      <div className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40 font-black text-xs">📞</div>
+                      <div className="absolute left-6 top-1/2 -translate-y-1/2 text-bento-ink/40 font-black text-xs">📞</div>
                       <input
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+212 6xx xxxx"
-                        className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
+                        className="w-full pl-16 pr-6 py-5 bg-bento-ink/5 border border-bento-card-border rounded-[2rem] focus:ring-2 focus:ring-bento-card-border outline-none transition-all text-bento-ink font-bold"
                       />
                     </div>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('email_address')}</label>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-bento-ink/40 ml-4">{t('email_address')}</label>
                   <div className="relative">
-                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-bento-ink/40" size={18} />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="your@email.com"
-                      className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
+                      className="w-full pl-16 pr-6 py-5 bg-bento-ink/5 border border-bento-card-border rounded-[2rem] focus:ring-2 focus:ring-bento-card-border outline-none transition-all text-bento-ink font-bold"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('password_label')}</label>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-bento-ink/40 ml-4">{t('password_label')}</label>
                   <div className="relative">
-                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-bento-ink/40" size={18} />
                     <input
                       type={showPassword ? "text" : "password"}
                       required
@@ -326,12 +319,12 @@ export default function Login() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-16 pr-14 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
+                      className="w-full pl-16 pr-14 py-5 bg-bento-ink/5 border border-bento-card-border rounded-[2rem] focus:ring-2 focus:ring-bento-card-border outline-none transition-all text-bento-ink font-bold"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-6 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors"
+                      className="absolute right-6 top-1/2 -translate-y-1/2 text-bento-ink/20 hover:text-bento-ink/60 transition-colors"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -341,7 +334,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-white text-stone-900 py-6 px-6 rounded-[2.5rem] shadow-2xl active:scale-95 transition-all font-black uppercase text-sm tracking-widest disabled:opacity-50 flex items-center justify-center gap-3"
+                  className="w-full bg-bento-primary text-bento-bg py-6 px-6 rounded-[2.5rem] shadow-2xl active:scale-95 transition-all font-black uppercase text-sm tracking-widest disabled:opacity-50 flex items-center justify-center gap-3"
                 >
                   {loading ? t('processing') : mode === 'email-login' ? t('sign_in_btn') : t('register_btn')}
                   <ArrowRight size={20} />
@@ -351,7 +344,7 @@ export default function Login() {
               <div className="text-center">
                 <button
                   onClick={() => setMode(mode === 'email-login' ? 'email-signup' : 'email-login')}
-                  className="text-white/40 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                  className="text-bento-ink/40 hover:text-bento-ink text-[10px] font-black uppercase tracking-widest transition-colors"
                 >
                   {mode === 'email-login' ? t('new_here_create') : t('already_owner_sign_in')}
                 </button>
