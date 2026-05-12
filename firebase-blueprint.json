@@ -14,6 +14,7 @@
         "itemLoyalty": { "type": "object" },
         "isAdmin": { "type": "boolean" },
         "isAnonymous": { "type": "boolean" },
+        "isWaiter": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "name", "points"]
@@ -28,13 +29,38 @@
         "items": { "type": "array" },
         "total": { "type": "number" },
         "status": { "type": "string", "enum": ["pending", "preparing", "ready", "delivered", "cancelled"] },
-        "deliveryType": { "type": "string", "enum": ["delivery", "pickup", "dine-in"] },
+        "deliveryType": { "type": "string", "enum": ["delivery", "pickup", "dine-in", "takeaway"] },
+        "tableZone": { "type": "string", "enum": ["A", "B"] },
+        "tableArea": { "type": "string", "enum": ["Inside", "Outside"] },
+        "tableNumber": { "type": "string" },
+        "fullTableLabel": { "type": "string" },
+        "waiterId": { "type": "string" },
+        "waiterName": { "type": "string" },
+        "waiterStatus": { "type": "string", "enum": ["New", "Accepted", "Preparing", "Ready", "Served"] },
         "prepTime": { "type": "number" },
         "estimatedReadyAt": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "items", "total", "status", "deliveryType", "prepTime"]
+    },
+    "WaiterRequest": {
+      "title": "Waiter Request",
+      "description": "Call waiter notification",
+      "type": "object",
+      "properties": {
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "tableZone": { "type": "string" },
+        "tableArea": { "type": "string" },
+        "tableNumber": { "type": "string" },
+        "fullTableLabel": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["new", "accepted", "completed"] },
+        "waiterId": { "type": "string" },
+        "waiterName": { "type": "string" }
+      },
+      "required": ["clientId", "fullTableLabel", "status", "timestamp"]
     },
     "BrandSettings": {
       "title": "Brand Settings",
@@ -63,6 +89,10 @@
     "/settings/brand": {
       "schema": "BrandSettings",
       "description": "Global brand configuration"
+    },
+    "/waiterRequests/{requestId}": {
+      "schema": "WaiterRequest",
+      "description": "Dine-in client assistance requests"
     },
     "/admins/{adminId}": {
       "schema": {

@@ -33,7 +33,8 @@ import {
   Flame,
   Snowflake,
   Grape,
-  Milk
+  Milk,
+  Navigation
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, doc, setDoc, updateDoc, serverTimestamp, increment, addDoc, Timestamp } from 'firebase/firestore';
@@ -413,7 +414,9 @@ export default function CashierDashboard() {
                           <div>
                              <div className="flex items-center gap-3 mb-1">
                                 <span className="text-xl font-black text-bento-ink uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
-                                <span className="px-2 py-0.5 bg-bento-bg text-stone-500 text-[8px] font-black uppercase rounded">{order.deliveryType}</span>
+                                <span className={`px-2 py-0.5 bg-bento-bg text-stone-500 text-[8px] font-black uppercase rounded ${order.deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 border border-amber-500/20' : ''}`}>
+                                  {order.deliveryType === 'dine-in' ? `${t('dine_in')} ${order.fullTableLabel || ''}` : order.deliveryType}
+                                </span>
                              </div>
                              <p className="text-stone-400 font-bold text-[10px] uppercase">{order.customerName}</p>
                           </div>

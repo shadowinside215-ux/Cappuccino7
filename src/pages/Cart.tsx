@@ -18,6 +18,8 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const [phone, setPhone] = useState(userProfile?.phone || '');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'dine-in'>('dine-in');
+  const [tableArea, setTableArea] = useState<'Inside' | 'Outside'>('Inside');
+  const [tableNumber, setTableNumber] = useState<string>('');
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
 
   const [isLocating, setIsLocating] = useState(false);
@@ -148,8 +150,16 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       }
     }
 
+    if (deliveryType === 'dine-in' && !tableNumber) {
+      toast.error(t('select_table_required', 'Please select your table number'));
+      return;
+    }
+
     setLoading(true);
     try {
+      const tableZone = tableArea === 'Inside' ? 'A' : 'B';
+      const fullTableLabel = `${tableZone}${tableNumber}`;
+
       const pointsEarned = totalItems;
       const isGuest = auth.currentUser.isAnonymous;
 
@@ -259,9 +269,14 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         kitchenStatus: hasKitchenItems ? 'pending' : 'completed',
         barmanStatus: hasBarmanItems ? 'pending' : 'completed',
         deliveryType,
+        tableZone: deliveryType === 'dine-in' ? tableZone : null,
+        tableArea: deliveryType === 'dine-in' ? tableArea : null,
+        tableNumber: deliveryType === 'dine-in' ? tableNumber : null,
+        fullTableLabel: deliveryType === 'dine-in' ? fullTableLabel : null,
+        waiterStatus: deliveryType === 'dine-in' ? 'New' : undefined,
         prepTime: prepTimeMinutes,
         estimatedReadyAt: estimatedReadyAt,
-        address: address || (deliveryType === 'dine-in' ? 'Palace Taha (Eat-in)' : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
+        address: address || (deliveryType === 'dine-in' ? `Table ${fullTableLabel} (${tableArea})` : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
         deliveryNotes,
         ...(finalLocation ? {
           location: {
@@ -522,7 +537,10 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                   </div>
                 </button>
                 <button 
-                  onClick={() => setDeliveryType('pickup')}
+                  onClick={() => {
+                    setDeliveryType('pickup');
+                    setTableNumber('');
+                  }}
                   className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'pickup' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-bento-ink/40 hover:text-bento-ink hover:bg-bento-ink/5'}`}
                 >
                   <div className="flex flex-col items-center gap-1">
@@ -531,6 +549,52 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                   </div>
                 </button>
               </div>
+
+              {deliveryType === 'dine-in' && (
+                <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        setTableArea('Inside');
+                        setTableNumber('');
+                      }}
+                      className={`flex-1 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all border ${tableArea === 'Inside' ? 'bg-bento-ink text-bento-bg border-bento-ink' : 'border-bento-card-border text-bento-ink/60'}`}
+                    >
+                      {t('inside', 'Inside')}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setTableArea('Outside');
+                        setTableNumber('');
+                      }}
+                      className={`flex-1 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all border ${tableArea === 'Outside' ? 'bg-bento-ink text-bento-bg border-bento-ink' : 'border-bento-card-border text-bento-ink/60'}`}
+                    >
+                      {t('outside', 'Outside')}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-5 sm:grid-cols-7 gap-2 max-h-[200px] overflow-y-auto p-2 custom-scrollbar">
+                    {Array.from({ length: tableArea === 'Inside' ? 23 : 27 }).map((_, i) => {
+                      const num = (i + 1).toString();
+                      return (
+                        <button
+                          key={num}
+                          onClick={() => setTableNumber(num)}
+                          className={`aspect-square flex items-center justify-center rounded-xl font-black text-xs transition-all border ${tableNumber === num ? 'bg-amber-400 text-stone-900 border-amber-400 scale-110 shadow-lg' : 'bg-bento-ink/5 text-bento-ink/40 border-bento-card-border border-dashed'}`}
+                        >
+                          {tableArea === 'Inside' ? 'A' : 'B'}{num}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {tableNumber && (
+                    <p className="text-center text-[10px] font-black text-amber-500 uppercase tracking-widest animate-pulse">
+                      {t('selected_table', 'Selected Table')}: {tableArea === 'Inside' ? 'A' : 'B'}{tableNumber}
+                    </p>
+                  )}
+                </div>
+              )}
             </motion.div>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}

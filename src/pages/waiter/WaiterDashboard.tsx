@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, setDoc, increment } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
-import { Order, OrderStatus, UserProfile } from '../../types';
+import { Order, OrderStatus, UserProfile, WaiterRequest, WaiterOrderStatus } from '../../types';
 import { awardOrderPoints } from '../../services/orderService';
 import { 
   ChefHat, 
@@ -18,7 +18,10 @@ import {
   ShoppingBag,
   Search,
   Gift,
-  MessageSquare
+  MessageSquare,
+  Bell,
+  Navigation,
+  UserCheck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -32,8 +35,9 @@ export default function WaiterDashboard() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<UserProfile[]>([]);
+  const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'clients'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'clients'>('orders');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -65,7 +69,7 @@ export default function WaiterDashboard() {
         if (activeOrders.length > lastOrderCount) {
           const audio = new Audio(NOTIFICATION_SOUND);
           audio.play().catch(e => console.log('Audio blocked', e));
-          toast('New Order!', { icon: '🔔' });
+          toast.success(t('new_order_toast', 'New Order Received!'), { icon: '🔔', duration: 5000 });
         }
 
         // Check for specific staff state changes
@@ -75,25 +79,17 @@ export default function WaiterDashboard() {
             const oldOrder = orders.find(o => o.id === change.doc.id);
             
             if (oldOrder) {
-              // Kitchen Notification for Waiter
-              if (newData.kitchenStatus !== oldOrder.kitchenStatus && (newData.kitchenStatus === 'ready' || newData.kitchenStatus === 'completed')) {
-                toast.success(`${t('kitchen_ready', 'Kitchen Order Ready!')} - ${newData.customerName}`, {
-                  icon: '🍳',
+              // Kitchen/Bar Notification: Order Ready
+              const kitchenJustReady = newData.kitchenStatus === 'ready' && oldOrder.kitchenStatus !== 'ready';
+              const barmanJustReady = newData.barmanStatus === 'ready' && oldOrder.barmanStatus !== 'ready';
+
+              if (kitchenJustReady || barmanJustReady) {
+                const targetSystem = kitchenJustReady ? t('kitchen') : t('barman');
+                toast.success(`${targetSystem} ${t('is_ready_alert', 'is Ready!')} - ${newData.fullTableLabel || newData.customerName}`, {
+                  icon: '✨',
                   duration: 8000,
                   position: 'top-right',
-                  style: { background: '#2563eb', color: '#fff', fontWeight: 'bold' }
-                });
-                const audio = new Audio(NOTIFICATION_SOUND);
-                audio.play().catch(() => {});
-              }
-              
-              // Barman Notification for Waiter
-              if (newData.barmanStatus !== oldOrder.barmanStatus && (newData.barmanStatus === 'ready' || newData.barmanStatus === 'completed')) {
-                toast.success(`${t('barman_ready', 'Drinks Ready!')} - ${newData.customerName}`, {
-                  icon: '☕',
-                  duration: 8000,
-                  position: 'top-right',
-                  style: { background: '#d97706', color: '#fff', fontWeight: 'bold' }
+                  style: { background: '#10b981', color: '#fff', fontWeight: 'bold' }
                 });
                 const audio = new Audio(NOTIFICATION_SOUND);
                 audio.play().catch(() => {});
@@ -105,11 +101,26 @@ export default function WaiterDashboard() {
         sessionStorage.setItem('last_order_count', activeOrders.length.toString());
         setLoading(false);
       }, (error) => {
-        // Only report error if we still have a user
         if (auth.currentUser) {
           handleFirestoreError(error, OperationType.LIST, 'orders');
         }
         setLoading(false);
+      });
+
+      // Requests subscription (Call Waiter)
+      const qRequests = query(collection(db, 'waiterRequests'), orderBy('timestamp', 'desc'));
+      const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WaiterRequest));
+        const activeReqs = data.filter(r => r.status !== 'completed');
+        setRequests(activeReqs);
+
+        const lastReqCount = parseInt(sessionStorage.getItem('last_request_count') || '0');
+        if (activeReqs.length > lastReqCount) {
+          const audio = new Audio(NOTIFICATION_SOUND);
+          audio.play().catch(() => {});
+          toast.success(t('new_waiter_request', 'New Waiter Assistance Request!'), { icon: '🔔', duration: 5000 });
+        }
+        sessionStorage.setItem('last_request_count', activeReqs.length.toString());
       });
 
       // Clients subscription
@@ -138,6 +149,16 @@ export default function WaiterDashboard() {
         status: newStatus,
         updatedAt: serverTimestamp()
       };
+      
+      // Also update waiterStatus if it's a waiter's action
+      const waiterStatuses: Record<OrderStatus, WaiterOrderStatus> = {
+        'pending': 'New',
+        'preparing': 'Preparing',
+        'ready': 'Ready',
+        'delivered': 'Served',
+        'cancelled': 'Served'
+      };
+      updateData.waiterStatus = waiterStatuses[newStatus];
 
       let elapsedMins = 0;
       if (newStatus === 'ready' || newStatus === 'preparing') {
@@ -174,6 +195,51 @@ export default function WaiterDashboard() {
       }
     } catch (err: any) {
       handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
+    }
+  };
+
+  const acceptOrder = async (order: Order) => {
+    if (!auth.currentUser) return;
+    try {
+      const waiterName = auth.currentUser.displayName || 'Waiter';
+      const orderRef = doc(db, 'orders', order.id);
+      await updateDoc(orderRef, {
+        waiterId: auth.currentUser.uid,
+        waiterName: waiterName,
+        waiterStatus: 'Accepted',
+        updatedAt: serverTimestamp()
+      });
+      toast.success(t('order_accepted', 'Order accepted and assigned to you'));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
+    }
+  };
+
+  const acceptRequest = async (req: WaiterRequest) => {
+    if (!auth.currentUser) return;
+    try {
+      const waiterName = auth.currentUser.displayName || 'Waiter';
+      const reqRef = doc(db, 'waiterRequests', req.id);
+      await updateDoc(reqRef, {
+        waiterId: auth.currentUser.uid,
+        waiterName: waiterName,
+        status: 'accepted'
+      });
+      toast.success(t('request_accepted', 'Request accepted'));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `waiterRequests/${req.id}`);
+    }
+  };
+
+  const completeRequest = async (req: WaiterRequest) => {
+    try {
+      const reqRef = doc(db, 'waiterRequests', req.id);
+      await updateDoc(reqRef, {
+        status: 'completed'
+      });
+      toast.success(t('request_completed', 'Request completed'));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `waiterRequests/${req.id}`);
     }
   };
 
@@ -253,6 +319,18 @@ export default function WaiterDashboard() {
                 {t('orders')} ({orders.length})
               </button>
               <button 
+                onClick={() => setActiveTab('requests')}
+                className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 relative ${
+                  activeTab === 'requests' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                <Bell size={14} />
+                {t('requests', 'Requests')} ({requests.length})
+                {requests.some(r => r.status === 'new') && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-ping" />
+                )}
+              </button>
+              <button 
                 onClick={() => setActiveTab('clients')}
                 className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
                   activeTab === 'clients' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'
@@ -301,7 +379,10 @@ export default function WaiterDashboard() {
                   >
                     <div className="mb-6">
                       <div className="flex justify-between items-start mb-1">
-                        <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer')}</p>
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer')}</p>
+                          <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
+                        </div>
                         {(() => {
                           const client = clients.find(c => c.uid === order.userId);
                           const hasReward = client?.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11);
@@ -316,15 +397,43 @@ export default function WaiterDashboard() {
                           return null;
                         })()}
                       </div>
-                      <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                          order.deliveryType === 'pickup' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'
-                        }`}>
-                          {order.deliveryType === 'pickup' ? t('takeaway') : t('dine_in', 'Dine In')}
-                        </span>
-                        <p className="text-[10px] font-bold text-stone-300">{t('ordered_at')}: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}</p>
+
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {order.deliveryType === 'dine-in' ? (
+                          <div className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-2xl shadow-lg border-2 border-amber-400/50">
+                            <Navigation size={14} className="text-amber-400" />
+                            <span className="text-sm font-black italic uppercase tracking-tighter">
+                              {order.fullTableLabel} ({order.tableArea})
+                            </span>
+                          </div>
+                        ) : (
+                          <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 ${
+                            order.deliveryType === 'pickup' ? 'bg-amber-100/50 text-amber-700 border-amber-200' : 'bg-stone-100 text-stone-700 border-stone-200'
+                          }`}>
+                            {order.deliveryType === 'pickup' ? t('takeaway') : order.deliveryType}
+                          </span>
+                        )}
+                        <p className="text-[10px] font-bold text-stone-400 ml-auto whitespace-nowrap">
+                          {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}
+                        </p>
                       </div>
+
+                      {order.waiterId ? (
+                        <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100">
+                          <UserCheck size={14} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">
+                            {t('assigned_to', 'Assigned to')}: {order.waiterName || 'Staff'}
+                          </span>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => acceptOrder(order)}
+                          className="mt-4 w-full py-3 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-amber-400/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle2 size={16} />
+                          {t('accept_order', 'Accept Order')}
+                        </button>
+                      )}
                     </div>
 
                     <div className="bg-stone-50 rounded-[2rem] p-6 space-y-4 mb-6">
@@ -416,6 +525,82 @@ export default function WaiterDashboard() {
                          <span className="text-[8px] font-black uppercase tracking-tighter">{t('complete')}</span>
                        </button>
                     </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        ) : activeTab === 'requests' ? (
+          <motion.div 
+            key="requests-list"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="space-y-6"
+          >
+            {requests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
+                <Bell size={64} className="mb-4 opacity-20" />
+                {t('no_active_requests', 'No active assistance requests')}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+                {requests.map((req) => (
+                  <motion.div
+                    layout
+                    key={req.id}
+                    className={`bg-white rounded-[2.5rem] p-6 shadow-xl border relative overflow-hidden ${
+                      req.status === 'new' ? 'ring-2 ring-red-400 border-red-100' : 'border-stone-100'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${req.status === 'new' ? 'bg-red-50 text-red-500 animate-pulse' : 'bg-amber-100 text-amber-600'}`}>
+                          <Bell size={24} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest leading-none mb-1">{t('table', 'Table')}</p>
+                          <h3 className="text-2xl font-black text-stone-900 uppercase italic leading-none">{req.fullTableLabel}</h3>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('time', 'Time')}</p>
+                        <p className="text-sm font-black text-stone-900">{req.timestamp?.toDate ? req.timestamp.toDate().toLocaleTimeString() : 'Now'}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 rounded-2xl p-4 mb-6">
+                      <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">{t('client', 'Client')}</p>
+                      <p className="font-bold text-stone-700">{req.clientName}</p>
+                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter mt-1">{req.tableArea} Zone</p>
+                    </div>
+
+                    {req.status === 'accepted' ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 mb-4">
+                          <UserCheck size={18} />
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-widest">{t('handling_by', 'Handling by')}</span>
+                            <span className="text-xs font-bold leading-none">{req.waiterName}</span>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => completeRequest(req)}
+                          className="w-full py-4 bg-green-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-green-200 flex items-center justify-center gap-2"
+                        >
+                          <CheckCheck size={18} />
+                          {t('mark_completed', 'Mark Completed')}
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => acceptRequest(req)}
+                        className="w-full py-4 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-amber-200 flex items-center justify-center gap-2"
+                      >
+                        <Navigation size={18} />
+                        {t('accept_request', 'Accept Request')}
+                      </button>
+                    )}
                   </motion.div>
                 ))}
               </div>

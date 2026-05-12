@@ -18,6 +18,22 @@ export interface UserProfile {
   createdAt: string;
 }
 
+export type WaiterOrderStatus = 'New' | 'Accepted' | 'Preparing' | 'Ready' | 'Served';
+
+export interface WaiterRequest {
+  id: string;
+  clientId: string;
+  clientName: string;
+  tableZone: 'A' | 'B';
+  tableArea: 'Inside' | 'Outside';
+  tableNumber: string;
+  fullTableLabel: string;
+  timestamp: any;
+  status: 'new' | 'accepted' | 'completed';
+  waiterId: string | null;
+  waiterName: string | null;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -72,6 +88,13 @@ export interface Order {
   deliveredInMinutes?: number;
   address: string;
   deliveryNotes?: string;
+  tableZone?: 'A' | 'B';
+  tableArea?: 'Inside' | 'Outside';
+  tableNumber?: string;
+  fullTableLabel?: string;
+  waiterId?: string | null;
+  waiterName?: string | null;
+  waiterStatus?: WaiterOrderStatus;
   location?: {
     lat: number;
     lng: number;

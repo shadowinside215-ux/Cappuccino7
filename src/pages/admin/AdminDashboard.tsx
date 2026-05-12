@@ -197,10 +197,19 @@ export default function AdminDashboard() {
     // Total Users Listener
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const allUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-      // Show staff and waiters instead of just ordinary clients
-      const staffAndWaiters = allUsers.filter(u => u.isAdmin || u.isWaiter || u.isKitchen || u.isBarman || u.isCashier || u.isDriver);
-      setUsers(allUsers); 
-      setStats(prev => ({ ...prev, totalUsers: staffAndWaiters.length }));
+      // Filter: Only clients who have an email and are NOT staff
+      const emailClients = allUsers.filter(u => 
+        u.email && 
+        u.email !== '' && 
+        !u.isAdmin && 
+        !u.isWaiter && 
+        !u.isKitchen && 
+        !u.isBarman && 
+        !u.isCashier && 
+        !u.isDriver
+      );
+      setUsers(emailClients); 
+      setStats(prev => ({ ...prev, totalUsers: emailClients.length }));
     });
 
     // Total Items Listener

@@ -33,6 +33,7 @@ import CashierDashboard from './pages/cashier/CashierDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import Settings from './pages/Settings';
 import Onboarding from './components/Onboarding';
+import CallWaiter from './components/CallWaiter';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
 
@@ -362,6 +363,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   return (
     <div className={`min-h-screen bg-bento-bg font-sans text-bento-ink ${!isStaffView ? 'pb-24 sm:pb-0 sm:pt-20' : ''}`}>
       <Toaster position="top-center" />
+      <CallWaiter userProfile={userProfile} />
       
       {loading ? (
         <div className="min-h-screen flex items-center justify-center">

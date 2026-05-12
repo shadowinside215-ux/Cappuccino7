@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Coffee, ShoppingBag, Timer, CheckCircle2, LogOut, CupSoda as Cup, Snowflake, AlertTriangle, ThermometerSun } from 'lucide-react';
+import { Coffee, ShoppingBag, Timer, CheckCircle2, LogOut, CupSoda as Cup, Snowflake, AlertTriangle, ThermometerSun, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../../lib/firebase';
 import { Order } from '../../types';
@@ -227,11 +227,16 @@ export default function BarmanDashboard() {
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-1">{t('type')}</p>
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      order.deliveryType === 'dine-in' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'bg-orange-500 text-stone-900 shadow-sm'
-                    }`}>
-                      {order.deliveryType === 'dine-in' ? t('dine_in') : t('takeaway')}
-                    </span>
+                    {order.deliveryType === 'dine-in' ? (
+                      <div className="bg-amber-500 text-stone-900 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-amber-500/20">
+                        <Navigation size={12} className="text-stone-900" />
+                        <span className="text-[10px] font-black uppercase tracking-tighter">{order.fullTableLabel} ({order.tableArea})</span>
+                      </div>
+                    ) : (
+                      <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-orange-500 text-stone-900 shadow-sm">
+                        {t('takeaway')}
+                      </span>
+                    )}
                   </div>
                 </div>
 

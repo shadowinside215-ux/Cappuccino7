@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ChefHat, ShoppingBag, Timer, CheckCircle2, ChevronRight, LogOut, Soup, AlertTriangle } from 'lucide-react';
+import { ChefHat, ShoppingBag, Timer, CheckCircle2, ChevronRight, LogOut, Soup, AlertTriangle, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../../lib/firebase';
 import { Order, OrderStatus } from '../../types';
@@ -227,13 +227,20 @@ export default function KitchenDashboard() {
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-1">{t('type')}</p>
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      order.deliveryType === 'dine-in' ? 'bg-amber-500 text-stone-950' : 'bg-blue-500 text-stone-950'
-                    }`}>
-                      {order.deliveryType === 'dine-in' ? t('dine_in') : t('takeaway')}
-                    </span>
+                    {order.deliveryType === 'dine-in' ? (
+                      <div className="bg-amber-500 text-stone-900 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-amber-500/20">
+                        <Navigation size={12} className="text-stone-900" />
+                        <span className="text-[10px] font-black uppercase tracking-tighter">{order.fullTableLabel} ({order.tableArea})</span>
+                      </div>
+                    ) : (
+                      <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-500 text-stone-950">
+                        {t('takeaway')}
+                      </span>
+                    )}
                   </div>
                 </div>
+
+                {/* Import Navigation icon at top */}
 
                 {/* Items List - Only Kitchen Items */}
                 <div className="space-y-4 mb-8 bg-bento-bg p-6 rounded-[2rem] border border-bento-card-border text-bento-ink">
