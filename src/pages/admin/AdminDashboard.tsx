@@ -98,7 +98,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Auto-register super admin
     const initializeAdmin = async () => {
-      if (auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
+      const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
+      if (auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email?.toLowerCase() === adminEmail.toLowerCase()) {
         try {
           // 1. Auto-register admin record
           const adminRef = doc(db, 'admins', auth.currentUser.uid);
@@ -243,7 +244,7 @@ export default function AdminDashboard() {
       }
       
       const email = auth.currentUser.email?.toLowerCase();
-      const creatorEmail = 'dragonballsam86@gmail.com';
+      const creatorEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
       setIsCreator(email === creatorEmail);
       
       const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
@@ -523,7 +524,8 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com') {
+    const adminEmailCheck = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
+    if (auth.currentUser?.email?.toLowerCase() === adminEmailCheck.toLowerCase()) {
       const autoSync = async () => {
         const hasSync = localStorage.getItem('menu_auto_sync_v29');
         if (!hasSync) {
@@ -700,6 +702,7 @@ export default function AdminDashboard() {
                <Users size={28} />
              </div>
            </div>
+
         </div>
         
         <div className="grid grid-cols-7 gap-1 md:gap-4 h-48 items-end opacity-40 pointer-events-none blur-[1px]">

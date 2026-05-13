@@ -317,7 +317,7 @@ const resources = {
       "run_setup": "Run Setup",
       "loyalty_badge": "Artisan Rewards Club",
       "loyalty_system_header": "Stamps. Points. Free Rewards. cappuccino7 loyalty reward system",
-      "loyalty_headline": "<span class=\"golden-glow\">Stamps. Points.</span> <br/>Free Rewards.",
+      "loyalty_headline": "<span class=\"text-golden\">Stamps. Points.</span> <br/><span class=\"text-golden\">Free Rewards.</span>",
       "loyalty_description_part1": "Collect ",
       "loyalty_description_highlight": "11 Stamps",
       "loyalty_description_part2": " on any drink or dish to unlock it <span class=\"golden-glow\">for free!</span> Every DH spent also earns you points for elite status gifts.",

@@ -23,6 +23,7 @@ export type WaiterOrderStatus = 'New' | 'Accepted' | 'Preparing' | 'Ready' | 'Se
 export interface WaiterRequest {
   id: string;
   clientId: string;
+  orderId?: string;
   clientName: string;
   tableZone: 'A' | 'B';
   tableArea: 'Inside' | 'Outside';

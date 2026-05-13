@@ -391,7 +391,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                           <h4 className={`font-black text-xl truncate uppercase tracking-tight italic ${isGoldState ? 'text-stone-900' : 'text-bento-ink'}`}>
                             {t(`products.${product.name}`, product.name)}
                           </h4>
-                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isGoldState ? 'text-stone-950' : (rewardReady ? 'text-amber-400' : 'text-bento-ink/40')}`}>
+                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isGoldState ? 'text-stone-950' : (rewardReady ? 'text-amber-500' : 'text-bento-ink/40')}`}>
                             {isGoldState ? t('get_free_order') : (rewardReady ? t('ready_to_redeem') : t('goal_lvl', { count }))}
                           </p>
                         </div>
@@ -407,8 +407,8 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                               key={i} 
                               className={`flex-1 rounded-full transition-all duration-500 ${
                                 i < (rewardReady ? 11 : count % 11) 
-                                ? (isGoldState ? 'bg-stone-900 shadow-[0_0_10px_rgba(0,0,0,0.2)]' : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]') 
-                                : (isGoldState ? 'bg-stone-900/10' : 'bg-bento-ink/5')
+                                ? (isGoldState ? 'bg-stone-900 shadow-[0_0_10px_rgba(0,0,0,0.2)]' : 'bg-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.5)]') 
+                                : (isGoldState ? 'bg-stone-900/10' : 'bg-bento-ink/10 ring-1 ring-bento-card-border/10')
                               }`} 
                             />
                           ))}

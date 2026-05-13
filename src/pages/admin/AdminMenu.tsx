@@ -84,7 +84,8 @@ export default function AdminMenu() {
     // Check if user is authenticated in Firebase
     const checkAuth = () => {
       const user = auth.currentUser;
-      const isAdminEmail = user?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+      const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
+      const isAdminEmail = user?.email?.toLowerCase() === adminEmail.toLowerCase();
       
       if (!user) {
         toast.error('You are not signed into Firebase. Please log in on the main site first.', { id: 'auth-warning' });

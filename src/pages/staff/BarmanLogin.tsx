@@ -4,7 +4,7 @@ import { Coffee, Lock, User as UserIcon, ArrowRight, Loader2, Signal } from 'luc
 import { motion } from 'motion/react';
 import { auth, db, handleFirestoreError, handleAuthError, OperationType } from '../../lib/firebase';
 import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 export default function BarmanLogin() {
@@ -18,33 +18,27 @@ export default function BarmanLogin() {
     setLoading(true);
 
     try {
-      const cleanUsername = username.trim().toLowerCase();
+      const cleanId = username.trim().toLowerCase();
       const cleanPassword = password.trim();
 
-      if (cleanUsername === 'barman' && cleanPassword === 'barman5000') {
-        let user;
-        // Use anonymous sign-in for the "magic" mode to avoid credential conflicts
+      // Fetch specific staff config by doc ID
+      const staffDoc = await getDoc(doc(db, 'staffConfigs', cleanId));
+      const staffData = staffDoc.exists() ? staffDoc.data() as any : null;
+
+      if (staffData && staffData.password === cleanPassword && staffData.id === 'barman') {
         const userCredential = await signInAnonymously(auth);
-        user = userCredential.user;
+        const user = userCredential.user;
 
         const userDocRef = doc(db, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        
-        if (!userDocSnap.exists()) {
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            name: 'Barman Staff',
-            email: 'barman@internal',
-            points: 0,
-            coffeeCount: 0,
-            itemLoyalty: {},
-            isAdmin: false,
-            isBarman: true,
-            isKitchen: false,
-            isWaiter: false,
-            createdAt: serverTimestamp()
-          });
-        }
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          name: staffData.displayName || 'Barman Staff',
+          email: 'barman@internal',
+          isAdmin: false,
+          isBarman: true,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
         await setDoc(doc(db, 'barman', user.uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
         
         localStorage.setItem('barman_session_active', 'true');
@@ -53,10 +47,9 @@ export default function BarmanLogin() {
         return;
       }
 
-      toast.error('Invalid barman credentials');
+      toast.error('Invalid credentials');
     } catch (err: any) {
-      const message = handleAuthError(err);
-      toast.error(message);
+      toast.error('Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -100,28 +93,28 @@ export default function BarmanLogin() {
           <form onSubmit={handleLogin} className="space-y-8">
             <div className="space-y-3">
               <label className="text-[10px] font-black text-amber-500/40 uppercase tracking-widest ml-4 flex items-center gap-2">
-                <UserIcon size={12} /> Bar ID
+                <UserIcon size={12} /> Station ID
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-[#1A0F0A] border border-[#3D2519] rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-amber-50 placeholder:text-stone-600"
-                placeholder="Barman username"
+                placeholder="Enter station ID"
                 required
               />
             </div>
 
             <div className="space-y-3">
               <label className="text-[10px] font-black text-amber-500/40 uppercase tracking-widest ml-4 flex items-center gap-2">
-                <Lock size={12} /> Bar Key
+                <Lock size={12} /> Security Key
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-[#1A0F0A] border border-[#3D2519] rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-amber-50 placeholder:text-stone-600"
-                placeholder="••••••••"
+                placeholder="Enter security key"
                 required
               />
             </div>

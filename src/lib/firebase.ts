@@ -6,9 +6,9 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with forced long polling for better connectivity in restricted environments
+// Initialize Firestore
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true
+  // experimentalForceLongPolling: true // Removed for better stability unless specifically needed
 }, firebaseConfig.firestoreDatabaseId || '(default)');
 
 export const auth = getAuth(app);
@@ -39,8 +39,21 @@ export interface FirestoreErrorInfo {
   }
 }
 
+// Global console protection for production
+if (import.meta.env.PROD) {
+  const noop = () => {};
+  console.log = noop;
+  console.debug = noop;
+  console.warn = noop;
+  console.info = noop;
+  console.error = noop; 
+}
+
 export function handleAuthError(error: any) {
-  console.error('Auth Error:', error);
+  if (import.meta.env.DEV) {
+    console.error('Auth Error:', error);
+  }
+  
   if (error.code === 'auth/network-request-failed') {
     return 'Network connection lost. Please check your internet and try again.';
   }
@@ -51,7 +64,11 @@ export function handleAuthError(error: any) {
     return 'Too many failed attempts. Please try again later.';
   }
   if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-email') {
-    return 'Invalid email or password. If you are a staff member, please use the specific access links at the bottom of the home page.';
+    return 'Invalid email or password. If you are a staff member, please use your station ID and security key.';
+  }
+  
+  if (import.meta.env.PROD) {
+    return 'Authentication failed. Please check your credentials and try again.';
   }
   return error.message || 'Authentication failed. Please try again.';
 }
@@ -68,22 +85,29 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   }
-  console.error('Firestore Error Details: ', JSON.stringify(errInfo));
-  // Re-throw so the application can still handle it, but with the logged details
-  throw new Error(JSON.stringify(errInfo));
+
+  if (import.meta.env.DEV) {
+    console.error('Firestore Error Details: ', JSON.stringify(errInfo));
+    throw new Error(JSON.stringify(errInfo));
+  } else {
+    // In production, we log a generic message to console (if it's not silenced)
+    // and throw a clean, non-technical error that the UI can catch or show.
+    const genericMessage = 'A database error occurred. Please try again or contact support if the issue persists.';
+    throw new Error(genericMessage);
+  }
 }
 
-// Connection test with enhanced logging
+// Connection test with conditional logging
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log("Firebase connection established successfully.");
+    if (import.meta.env.DEV) {
+      console.log("Firebase connection established successfully.");
+    }
   } catch (error) {
-    if (error instanceof Error) {
+    if (import.meta.env.DEV && error instanceof Error) {
       if (error.message.includes('the client is offline')) {
-        console.error("Firebase connection failed: The client is offline. Check your internet connection.");
-      } else if (error.message.includes('code=unavailable')) {
-        console.error("Firebase connection failed: Backend is unavailable. This may be due to a transient networking issue or the Firestore API being disabled/provisioned.");
+        console.error("Firebase connection failed: The client is offline.");
       } else {
         console.error("Firebase connection error:", error.message);
       }

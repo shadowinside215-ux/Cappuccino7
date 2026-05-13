@@ -4,7 +4,7 @@ import { ShieldCheck, Lock, User as UserIcon, ArrowRight, Loader2, Signal, Calcu
 import { motion } from 'motion/react';
 import { auth, db, handleAuthError } from '../../lib/firebase';
 import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 export default function CashierLogin() {
@@ -18,43 +18,31 @@ export default function CashierLogin() {
     setLoading(true);
 
     try {
-      const cleanUsername = username.trim().toLowerCase();
+      const cleanId = username.trim().toLowerCase();
       const cleanPassword = password.trim();
 
-      // Special logic for 'cashier' / 'cashier3000'
-      if (cleanUsername === 'cashier' && cleanPassword === 'cashier3000') {
-        let user;
-        
-        // Use anonymous login for instant terminal activation to avoid credential conflicts
+      // Fetch specific staff config by doc ID
+      const staffDoc = await getDoc(doc(db, 'staffConfigs', cleanId));
+      const staffData = staffDoc.exists() ? staffDoc.data() as any : null;
+
+      if (staffData && staffData.password === cleanPassword && staffData.id === 'cashier') {
         const userCredential = await signInAnonymously(auth);
-        user = userCredential.user;
+        const user = userCredential.user;
         
         const userDocRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userDocRef);
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          name: staffData.displayName || 'POS Cashier',
+          email: 'cashier@internal',
+          isAdmin: false,
+          isCashier: true,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
 
-        if (!userSnap.exists()) {
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            name: 'POS Cashier',
-            email: 'cashier@internal',
-            points: 0,
-            coffeeCount: 0,
-            itemLoyalty: {},
-            isAdmin: false,
-            isCashier: true,
-            isWaiter: false,
-            isKitchen: false,
-            isBarman: false,
-            isDriver: false,
-            createdAt: serverTimestamp()
-          });
-
-          // Also set in role collection for faster rule matching
-          await setDoc(doc(db, 'cashiers', user.uid), {
-            active: true,
-            createdAt: serverTimestamp()
-          });
-        }
+        await setDoc(doc(db, 'cashiers', user.uid), {
+          active: true,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
 
         toast.success('POS System Activated');
         navigate('/cashier/dashboard');
@@ -62,7 +50,7 @@ export default function CashierLogin() {
       }
 
       // Standard login
-      const loginEmail = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@cappuccino7.com`;
+      const loginEmail = cleanId.includes('@') ? cleanId : `${cleanId}@cappuccino7.com`;
       const userCredential = await signInWithEmailAndPassword(auth, loginEmail, cleanPassword);
       const user = userCredential.user;
 
@@ -77,7 +65,7 @@ export default function CashierLogin() {
         await auth.signOut();
       }
     } catch (err: any) {
-      toast.error(handleAuthError(err));
+      toast.error('Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -120,7 +108,7 @@ export default function CashierLogin() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-stone-800/50 border border-white/5 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-white placeholder:text-stone-600"
-                placeholder="cashier"
+                placeholder="Enter station ID"
                 required
               />
             </div>
@@ -134,7 +122,7 @@ export default function CashierLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-stone-800/50 border border-white/5 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-white placeholder:text-stone-600"
-                placeholder="••••••••"
+                placeholder="Enter security key"
                 required
               />
             </div>

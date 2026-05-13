@@ -1,14 +1,121 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Order, OrderStatus } from '../types';
-import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus, ExternalLink, MessageCircle, Timer } from 'lucide-react';
+import { Order, OrderStatus, WaiterRequest } from '../types';
+import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus, ExternalLink, MessageCircle, Timer, Bell, User, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { OrderTimer } from '../components/OrderTimer';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useBrandSettings } from '../lib/brand';
 import OptimizedImage from '../components/ui/OptimizedImage';
+import toast from 'react-hot-toast';
+
+const CallWaiterButton = ({ order }: { order: Order }) => {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const [request, setRequest] = useState<WaiterRequest | null>(null);
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    
+    // Listen for active waiter requests for this specific order/client
+    const q = query(
+      collection(db, 'waiterRequests'),
+      where('clientId', '==', auth.currentUser.uid),
+      where('orderId', '==', order.id),
+      where('status', '!=', 'completed')
+    );
+
+    return onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        setRequest({ id: snap.docs[0].id, ...snap.docs[0].data() } as WaiterRequest);
+      } else {
+        setRequest(null);
+      }
+    });
+  }, [order.id]);
+
+  const handleCall = async () => {
+    if (!auth.currentUser) return;
+    setLoading(true);
+
+    try {
+      await addDoc(collection(db, 'waiterRequests'), {
+        clientId: auth.currentUser.uid,
+        orderId: order.id,
+        clientName: auth.currentUser.displayName || t('guest'),
+        tableZone: order.tableZone,
+        tableArea: order.tableArea,
+        tableNumber: order.tableNumber,
+        fullTableLabel: order.fullTableLabel,
+        timestamp: serverTimestamp(),
+        status: 'new',
+        waiterId: order.waiterId || null, // Assigned waiter gets it if exists
+        waiterName: order.waiterName || null
+      });
+      toast.success(t('waiter_called', 'Waiter called!'));
+    } catch (err) {
+      toast.error(t('failed_to_call_waiter', 'Failed to call waiter'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (order.status === 'delivered' || order.status === 'cancelled') return null;
+
+  return (
+    <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between gap-4">
+      <div className="flex-1">
+        <AnimatePresence mode="wait">
+          {request ? (
+            <motion.div 
+              key="status"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="flex items-center gap-3"
+            >
+              <div className={`p-2 rounded-xl ${request.status === 'accepted' ? 'bg-amber-400 text-stone-900' : 'bg-white/10 text-amber-400 animate-pulse'}`}>
+                {request.status === 'accepted' ? <User size={14} /> : <Bell size={14} />}
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none mb-1">
+                  {request.status === 'accepted' ? t('waiter_on_way', 'Waiter is on the way') : t('waiter_called', 'Waiter called')}
+                </p>
+                <p className="text-[9px] font-bold text-white/60">
+                  {request.status === 'accepted' ? t('waiter_assigned', { name: request.waiterName }) : t('waiting_for_waiter', 'Waiting for assistance...')}
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.p 
+              key="prompt"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[10px] font-bold text-white/40 italic"
+            >
+              {t('need_help', 'Need assistance at your table?')}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <button
+        onClick={handleCall}
+        disabled={loading || !!request}
+        className={`px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-2 shadow-xl ${
+          request 
+            ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' 
+            : 'bg-amber-400 text-stone-900 hover:scale-105 active:scale-95'
+        }`}
+      >
+        {loading ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+        {t('call_waiter', 'Call Waiter')}
+      </button>
+    </div>
+  );
+};
 
 
 const StatusIcon = ({ status }: { status: string }) => {
@@ -212,6 +319,10 @@ export default function Orders() {
                     <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">{t('loyalty_perk')}</p>
                   </div>
                 </div>
+
+                {order.deliveryType === 'dine-in' && (
+                  <CallWaiterButton order={order} />
+                )}
 
                 <div className="flex items-center gap-4 pt-8 border-t border-white/10 overflow-x-auto no-scrollbar py-2">
                   <AnimatePresence>

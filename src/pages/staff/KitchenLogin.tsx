@@ -4,7 +4,7 @@ import { ChefHat, Lock, User as UserIcon, ArrowRight, Loader2, Signal } from 'lu
 import { motion } from 'motion/react';
 import { auth, db, handleFirestoreError, handleAuthError, OperationType } from '../../lib/firebase';
 import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 export default function KitchenLogin() {
@@ -18,33 +18,27 @@ export default function KitchenLogin() {
     setLoading(true);
 
     try {
-      const cleanUsername = username.trim().toLowerCase();
+      const cleanId = username.trim().toLowerCase();
       const cleanPassword = password.trim();
 
-      if (cleanUsername === 'kitchen' && cleanPassword === 'kitchen7000') {
-        let user;
-        // Use anonymous sign-in for the "magic" mode to avoid credential conflicts
+      // Fetch specific staff config by doc ID
+      const staffDoc = await getDoc(doc(db, 'staffConfigs', cleanId));
+      const staffData = staffDoc.exists() ? staffDoc.data() as any : null;
+
+      if (staffData && staffData.password === cleanPassword && staffData.id === 'kitchen') {
         const userCredential = await signInAnonymously(auth);
-        user = userCredential.user;
+        const user = userCredential.user;
         
         const userDocRef = doc(db, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        
-        if (!userDocSnap.exists()) {
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            name: 'Kitchen Staff',
-            email: 'kitchen@internal',
-            points: 0,
-            coffeeCount: 0,
-            itemLoyalty: {},
-            isAdmin: false,
-            isKitchen: true,
-            isBarman: false,
-            isWaiter: false,
-            createdAt: serverTimestamp()
-          });
-        }
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          name: staffData.displayName || 'Kitchen Staff',
+          email: 'kitchen@internal',
+          isAdmin: false,
+          isKitchen: true,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
         await setDoc(doc(db, 'kitchen', user.uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
         
         localStorage.setItem('kitchen_session_active', 'true');
@@ -53,10 +47,9 @@ export default function KitchenLogin() {
         return;
       }
 
-      toast.error('Invalid kitchen credentials');
+      toast.error('Invalid credentials');
     } catch (err: any) {
-      const message = handleAuthError(err);
-      toast.error(message);
+      toast.error('Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -107,21 +100,21 @@ export default function KitchenLogin() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-stone-800 border border-stone-700 rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none font-bold text-white placeholder:text-stone-600"
-                placeholder="Kitchen username"
+                placeholder="Enter station ID"
                 required
               />
             </div>
 
             <div className="space-y-3">
               <label className="text-[10px] font-black text-stone-500 uppercase tracking-widest ml-4 flex items-center gap-2">
-                <Lock size={12} /> Access Key
+                <Lock size={12} /> Security Key
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-stone-800 border border-stone-700 rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none font-bold text-white placeholder:text-stone-600"
-                placeholder="••••••••"
+                placeholder="Enter security key"
                 required
               />
             </div>

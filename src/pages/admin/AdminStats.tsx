@@ -33,9 +33,9 @@ export default function AdminStats() {
         return;
       }
       const email = auth.currentUser.email?.toLowerCase();
-      const creatorEmail = 'dragonballsam86@gmail.com';
+      const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
       const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
-      const hasRole = adminDoc.exists() || email === creatorEmail || sessionStorage.getItem('admin_mode') === 'true';
+      const hasRole = adminDoc.exists() || email === adminEmail.toLowerCase() || sessionStorage.getItem('admin_mode') === 'true';
       setIsAdmin(hasRole);
       if (!hasRole) setLoading(false);
     };

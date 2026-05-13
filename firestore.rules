@@ -80,12 +80,6 @@ service cloud.firestore {
              data.points is number &&
              (data.get('email', '') is string) &&
              (data.get('coffeeCount', 0) is number) &&
-             (data.get('isWaiter', false) is bool) &&
-             (data.get('isKitchen', false) is bool) &&
-             (data.get('isBarman', false) is bool) &&
-             (data.get('isCashier', false) is bool) &&
-             (data.get('isDriver', false) is bool) &&
-             (data.get('isAdmin', false) is bool) &&
              (data.get('createdAt', request.time) is timestamp || data.get('createdAt', '') is string);
     }
 
@@ -93,10 +87,20 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isOwner(userId) || isStaff());
       allow list: if isSignedIn() && isStaff(); 
       
-      allow create: if isOwner(userId) && isValidUser(incoming());
+      // Prevent normal users from creating accounts with staff/admin privileges
+      allow create: if isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().get('isAdmin', false) == false &&
+                    incoming().get('isWaiter', false) == false &&
+                    incoming().get('isKitchen', false) == false &&
+                    incoming().get('isBarman', false) == false &&
+                    incoming().get('isCashier', false) == false &&
+                    incoming().get('isStaff', false) == false;
+
       allow update: if isAdmin() || (
         isSignedIn() && isOwner(userId) && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'isWaiter', 'isKitchen', 'isBarman', 'isDriver', 'isCashier', 'isAdmin', 'address', 'email', 'createdAt', 'updatedAt'])
+        // Prevent self-elevation of privileges
+        !incoming().diff(existing()).affectedKeys().hasAny(['isAdmin', 'isStaff', 'isWaiter', 'isKitchen', 'isBarman', 'isDriver', 'isCashier']) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'address', 'email', 'updatedAt'])
       ) || (
         isStaff() && 
         incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty'])
@@ -107,13 +111,14 @@ service cloud.firestore {
     // --- Role Collections ---
     match /admins/{id} { 
       allow read: if isSignedIn(); 
-      allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid && request.auth.token.email == 'dragonballsam86@gmail.com' && request.auth.token.email_verified == true); 
+      // Only existing admins or the system creator can nominate new admins
+      allow write: if isAdmin(); 
     }
-    match /waiters/{id} { allow read: if isSignedIn(); allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid); }
-    match /kitchen/{id} { allow read: if isSignedIn(); allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid); }
-    match /barman/{id} { allow read: if isSignedIn(); allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid); }
-    match /drivers/{id} { allow read: if isSignedIn(); allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid); }
-    match /cashiers/{id} { allow read: if isSignedIn(); allow write: if isAdmin() || (isSignedIn() && id == request.auth.uid); }
+    match /waiters/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /kitchen/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /barman/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /drivers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /cashiers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
 
     // --- Settings (Brand, Global, etc.) ---
     match /settings/{settingId} {
@@ -195,6 +200,14 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidWaiterRequest(incoming());
       allow update: if isStaff();
       allow delete: if isAdmin();
+    }
+
+    // --- Staff Configs ---
+    match /staffConfigs/{id} {
+      // Allow get so staff can verify credentials without listing the whole collection
+      allow get: if true; 
+      allow list: if isAdmin();
+      allow write: if isAdmin();
     }
   }
 }

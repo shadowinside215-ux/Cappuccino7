@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, handleAuthError } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 export default function WaiterLogin() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [stationId, setStationId] = useState('');
+  const [securityKey, setSecurityKey] = useState('');
   const [loading, setLoading] = useState(false);
   const { settings: brand } = useBrandSettings();
   const navigate = useNavigate();
@@ -20,52 +20,83 @@ export default function WaiterLogin() {
     setLoading(true);
 
     try {
-      const cleanEmail = email.trim().toLowerCase();
-      const cleanPassword = password.trim();
+      const cleanId = stationId.trim().toLowerCase();
+      const cleanPassword = securityKey.trim();
 
-      // Special logic for the simple 'waiter' / 'waiter1234' login
-      if (cleanEmail === 'waiter' && cleanPassword === 'waiter1234') {
-        let user;
+      // Fetch specific staff config by doc ID
+      const staffDoc = await getDoc(doc(db, 'staffConfigs', cleanId));
+      const staffData = staffDoc.exists() ? staffDoc.data() as any : null;
+
+      if (staffData && staffData.password === cleanPassword && staffData.id.startsWith('waiter')) {
+        const waiterName = staffData.displayName;
         
-        // Use anonymous sign-in for the "magic" mode to avoid credential conflicts
         const userCredential = await signInAnonymously(auth);
-        user = userCredential.user;
+        const user = userCredential.user;
 
-        // Synchronously create/update the user profile to have waiter permissions
         const userDocRef = doc(db, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        
-        if (!userDocSnap.exists()) {
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            name: 'System Waiter',
-            email: 'waiter@internal',
-            points: 0,
-            coffeeCount: 0,
-            itemLoyalty: {},
-            isAdmin: false,
-            isWaiter: true,
-            isKitchen: false,
-            isBarman: false,
-            createdAt: serverTimestamp()
-          });
-        }
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          name: waiterName,
+          email: `${staffData.id}@waiter.internal`,
+          points: 0,
+          coffeeCount: 0,
+          itemLoyalty: {},
+          isAdmin: false,
+          isWaiter: true,
+          isKitchen: false,
+          isBarman: false,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
 
-        // ALSO sync to 'waiters' collection for fast exists() check in rules
         await setDoc(doc(db, 'waiters', user.uid), {
           active: true,
+          name: waiterName,
           updatedAt: serverTimestamp()
         }, { merge: true });
         
-        // Save a session flag for the guard to allow this specific session
         localStorage.setItem('waiter_session_active', 'true');
-        toast.success('Waiter mode activated');
+        toast.success(`${waiterName} mode activated`);
         navigate('/waiter/dashboard');
         return;
       }
 
+      // Legacy fallback
+      if (cleanId === 'waiter') {
+        const waiterAccounts: Record<string, string> = {
+          'waiter1': 'Waiter 1',
+          'waiter2': 'Waiter 2',
+          'waiter3': 'Waiter 3',
+          'waiter4': 'Waiter 4'
+        };
+
+        if (waiterAccounts[cleanPassword]) {
+          const waiterName = waiterAccounts[cleanPassword];
+          const userCredential = await signInAnonymously(auth);
+          const user = userCredential.user;
+
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+          name: waiterName,
+          isWaiter: true,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        localStorage.setItem('waiter_session_active', 'true');
+        toast.success(`${waiterName} mode activated`);
+        navigate('/waiter/dashboard');
+        return;
+        }
+      }
+
+      // Original waiter login removal
+      if (cleanId === 'waiter' && cleanPassword === 'waiter1234') {
+        toast.error('Invalid credentials');
+        setLoading(false);
+        return;
+      }
+
       // Standard email login
-      const loginEmail = cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@cappuccino7.com`;
+      const loginEmail = cleanId.includes('@') ? cleanId : `${cleanId}@cappuccino7.com`;
       const userCredential = await signInWithEmailAndPassword(auth, loginEmail, cleanPassword);
       const user = userCredential.user;
 
@@ -80,8 +111,7 @@ export default function WaiterLogin() {
         await auth.signOut();
       }
     } catch (err: any) {
-      const message = handleAuthError(err);
-      toast.error(message);
+      toast.error('Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -129,10 +159,10 @@ export default function WaiterLogin() {
               </label>
               <input
                 type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={stationId}
+                onChange={(e) => setStationId(e.target.value)}
                 className="w-full bg-stone-50 border border-stone-100 rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-stone-900"
-                placeholder="Waiter username"
+                placeholder="Enter station ID"
                 required
               />
             </div>
@@ -143,8 +173,8 @@ export default function WaiterLogin() {
               </label>
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={securityKey}
+                onChange={(e) => setSecurityKey(e.target.value)}
                 className="w-full bg-stone-50 border border-stone-100 rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-stone-900"
                 placeholder="••••••••"
                 required

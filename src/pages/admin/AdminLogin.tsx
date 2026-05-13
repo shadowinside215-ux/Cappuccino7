@@ -6,7 +6,7 @@ import { auth, db, handleAuthError, handleFirestoreError, OperationType } from '
 import { useBrandSettings } from '../../lib/brand';
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 export default function AdminLogin() {
@@ -40,9 +40,7 @@ export default function AdminLogin() {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleLogin = async () => {
     if (!isFirebaseAuthed && (auth.currentUser === null || auth.currentUser.isAnonymous)) {
       toast.error('Please verify your email identity first');
       return;
@@ -55,47 +53,41 @@ export default function AdminLogin() {
 
     setLoading(true);
 
-    // Specific business requirement credentials
-    if (username === 'admin' && password === 'admin2000') {
-      try {
-        if (auth.currentUser) {
-          // 1. Create admin document (bootstraps isAdmin() permission in rules)
-          const adminPath = `admins/${auth.currentUser.uid}`;
-          try {
-            await setDoc(doc(db, 'admins', auth.currentUser.uid), {
-              email: auth.currentUser.email,
-              registeredAt: serverTimestamp(),
-              role: 'super_admin'
-            }, { merge: true });
-          } catch (err) {
-            console.error("Admin registration details:", err);
-            handleFirestoreError(err, OperationType.WRITE, adminPath);
-          }
+    try {
+      const email = auth.currentUser.email.toLowerCase();
+      const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
+      
+      // 1. Check if user is in 'admins' collection or is the hardcoded creator
+      const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
+      const hasPermission = adminDoc.exists() || email === adminEmail.toLowerCase();
 
-          // 2. Sync isAdmin flag to user document for UI and persistent access
-          const userPath = `users/${auth.currentUser.uid}`;
-          try {
-            await setDoc(doc(db, 'users', auth.currentUser.uid), {
-              isAdmin: true,
-              updatedAt: serverTimestamp()
-            }, { merge: true });
-          } catch (err) {
-            handleFirestoreError(err, OperationType.WRITE, userPath);
-          }
-        }
-      } catch (err: any) {
-        console.error("Admin registration details:", err.message);
-        toast.error('Admin permission sync failed, but proceeding with session...');
+      if (hasPermission) {
+        // Register/Sync admin record if needed
+        const adminRef = doc(db, 'admins', auth.currentUser.uid);
+        await setDoc(adminRef, {
+          email: auth.currentUser.email,
+          registeredAt: serverTimestamp(),
+          role: 'super_admin'
+        }, { merge: true });
+
+        // Sync to users collection
+        await setDoc(doc(db, 'users', auth.currentUser.uid), {
+          isAdmin: true,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        sessionStorage.setItem('admin_mode', 'true');
+        toast.success('Admin access granted');
+        navigate('/admin');
+      } else {
+        toast.error('Unauthorized: Your account does not have admin privileges.');
       }
-
-      // Store a temporary session flag for admin mode
-      sessionStorage.setItem('admin_mode', 'true');
-      toast.success('Admin access granted');
-      navigate('/admin');
-    } else {
-      toast.error('Invalid administrative credentials');
+    } catch (err: any) {
+      console.error("Admin verification error:", err);
+      toast.error('Authentication check failed. Please contact the administrator.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -155,81 +147,50 @@ export default function AdminLogin() {
             </div>
           </div>
 
-          <AnimatePresence mode="wait">
+          <div className="space-y-6">
             {!isFirebaseAuthed && (!auth.currentUser || auth.currentUser.isAnonymous) ? (
-              <motion.div 
-                key="step1"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-              >
-                <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
-                  <p className="text-center text-[10px] font-black text-stone-400 uppercase tracking-widest mb-6">Identity Check</p>
-                  <button
-                    onClick={handleGoogleSignIn}
-                    disabled={loading}
-                    className="w-full bg-stone-900 text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-stone-200 active:scale-95 disabled:opacity-50 relative overflow-hidden group"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                    {loading ? <Loader2 size={20} className="animate-spin" /> : <Mail size={18} className="text-amber-400" />}
-                    {loading ? 'Verifying...' : 'Sign in to confirm'}
-                  </button>
-                </div>
-              </motion.div>
+              <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                <p className="text-center text-[10px] font-black text-stone-400 uppercase tracking-widest mb-6 px-4 leading-relaxed">
+                  Authentication Required <br/>
+                  <span className="text-stone-300 font-bold opacity-60">Please prove your identity with Google</span>
+                </p>
+                <button
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                  className="w-full bg-stone-900 text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-stone-200 active:scale-95 disabled:opacity-50 relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                  {loading ? <Loader2 size={20} className="animate-spin" /> : <Mail size={18} className="text-amber-400" />}
+                  {loading ? 'Verifying...' : 'Sign in to confirm'}
+                </button>
+              </div>
             ) : (
-              <motion.form 
-                key="step2"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                onSubmit={handleLogin} 
-                className="space-y-8"
-              >
-                <div className="flex items-center gap-3 bg-green-50 text-green-700 p-4 rounded-2xl border border-green-100">
-                  <div className="bg-green-500 rounded-full p-1">
-                    <ShieldCheck size={12} className="text-white" />
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 bg-green-50 text-green-700 p-5 rounded-3xl border border-green-100">
+                  <div className="bg-green-500 rounded-full p-1.5 flex-shrink-0">
+                    <ShieldCheck size={14} className="text-white" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest truncate">{auth.currentUser?.email}</span>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-4 flex items-center gap-2">
-                    <UserIcon size={12} /> ID
-                  </label>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-100 rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-bento-primary/20 transition-all outline-none font-bold text-stone-900"
-                    placeholder="Admin username"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-4 flex items-center gap-2">
-                    <Lock size={12} /> Key
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-100 rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-bento-primary/20 transition-all outline-none font-bold text-stone-900"
-                    placeholder="••••••••"
-                    required
-                  />
+                  <div className="min-w-0">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-green-600 mb-0.5">Identified</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest truncate">{auth.currentUser?.email}</p>
+                  </div>
                 </div>
 
                 <button
-                  type="submit"
+                  onClick={handleLogin}
                   disabled={loading}
                   className="w-full bg-bento-primary text-white py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-bento-primary/40 hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
                 >
-                  Enter Console <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  {loading ? 'Entering...' : 'Enter Console'} 
+                  {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
                 </button>
-              </motion.form>
+
+                <p className="text-[9px] text-stone-400 text-center font-bold px-4">
+                  Identity locked to authenticated session. Only authorized emails can access the console.
+                </p>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
 
           <p className="text-center text-stone-300 text-[10px] font-bold uppercase tracking-[0.3em]">
             Restricted Admin Area

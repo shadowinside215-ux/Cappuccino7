@@ -111,7 +111,13 @@ export default function WaiterDashboard() {
       const qRequests = query(collection(db, 'waiterRequests'), orderBy('timestamp', 'desc'));
       const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WaiterRequest));
-        const activeReqs = data.filter(r => r.status !== 'completed');
+        
+        // Filter: Show if not completed AND (unassigned OR assigned to current waiter)
+        const activeReqs = data.filter(r => 
+          r.status !== 'completed' && 
+          (r.waiterId === null || r.waiterId === user.uid)
+        );
+        
         setRequests(activeReqs);
 
         const lastReqCount = parseInt(sessionStorage.getItem('last_request_count') || '0');
@@ -153,10 +159,12 @@ export default function WaiterDashboard() {
       // Also update waiterStatus if it's a waiter's action
       const waiterStatuses: Record<OrderStatus, WaiterOrderStatus> = {
         'pending': 'New',
+        'accepted': 'Accepted',
         'preparing': 'Preparing',
         'ready': 'Ready',
         'delivered': 'Served',
-        'cancelled': 'Served'
+        'cancelled': 'Served',
+        'delivering': 'Preparing'
       };
       updateData.waiterStatus = waiterStatuses[newStatus];
 

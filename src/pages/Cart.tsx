@@ -451,7 +451,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                           {t(`products.${item.name}`, item.name)}
                         </h3>
                         {item.customization && (
-                          <p className="text-amber-400 text-[10px] font-black uppercase tracking-widest italic mt-1">
+                          <p className="text-amber-500 font-black text-[10px] uppercase tracking-widest bg-amber-500/10 w-fit px-3 py-1 rounded-lg border border-amber-500/20">
                             {item.customization}
                           </p>
                         )}
@@ -503,7 +503,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                     {total} DH
                   </motion.p>
                 </div>
-                <div className="flex justify-between items-center bg-bento-ink/5 px-6 py-3 rounded-2xl ring-1 ring-bento-card-border">
+                <div className="flex justify-between items-center bg-bento-card-bg/30 px-6 py-3 rounded-2xl ring-1 ring-bento-card-border">
                   {auth.currentUser?.isAnonymous ? (
                     <div className="space-y-1 text-bento-ink">
                       <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">{t('loyalty_perk')}</p>
@@ -512,7 +512,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                   ) : (
                     <div className="text-bento-ink sm:text-right">
                       <p className="text-[10px] font-black text-bento-ink/40 uppercase tracking-[0.3em] mb-1">{t('loyalty_perk')}</p>
-                      <p className="text-xl font-black text-amber-400">+{totalItems} {t('reward_points')}</p>
+                      <p className="text-xl font-black text-amber-500">+{totalItems} {t('reward_points')}</p>
                     </div>
                   )}
                 </div>

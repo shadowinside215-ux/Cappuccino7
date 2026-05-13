@@ -31,9 +31,9 @@ import BarmanDashboard from './pages/staff/BarmanDashboard';
 import CashierLogin from './pages/cashier/CashierLogin';
 import CashierDashboard from './pages/cashier/CashierDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
+import StaffManagement from './pages/admin/StaffManagement';
 import Settings from './pages/Settings';
 import Onboarding from './components/Onboarding';
-import CallWaiter from './components/CallWaiter';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
 
@@ -44,7 +44,8 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
   useEffect(() => {
     const checkAdmin = async () => {
       const isAdminMode = sessionStorage.getItem('admin_mode') === 'true';
-      const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+      const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
+      const isCreator = auth.currentUser?.email?.toLowerCase() === adminEmail.toLowerCase();
       
       if (isAdminMode || isCreator) {
         setIsAdminDocument(true);
@@ -341,7 +342,8 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     return () => unsubscribe();
   }, [userProfile?.uid, isStaffUser]);
 
-  const isCreator = auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com';
+    const adminEmailFallback = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
+  const isCreator = auth.currentUser?.email?.toLowerCase() === adminEmailFallback.toLowerCase();
   const isAdmin = userProfile?.isAdmin || isCreator;
 
   useEffect(() => {
@@ -363,7 +365,6 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   return (
     <div className={`min-h-screen bg-bento-bg font-sans text-bento-ink ${!isStaffView ? 'pb-24 sm:pb-0 sm:pt-20' : ''}`}>
       <Toaster position="top-center" />
-      <CallWaiter userProfile={userProfile} />
       
       {loading ? (
         <div className="min-h-screen flex items-center justify-center">
@@ -564,6 +565,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
+                  <Route path="/admin/staff" element={<AdminGuard userProfile={userProfile}><StaffManagement /></AdminGuard>} />
                   <Route path="/admin/stats" element={<AdminGuard userProfile={userProfile}><AdminStats /></AdminGuard>} />
                   <Route path="/admin/menu" element={<AdminGuard userProfile={userProfile}><AdminMenu /></AdminGuard>} />
                   <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
@@ -595,12 +597,37 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Link 
                     key={link.to}
                     to={link.to} 
-                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-amber-500/50 hover:text-amber-500 transition-all flex items-center gap-2 group"
+                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-amber-500 hover:text-amber-600 transition-all flex items-center gap-2 group"
                   >
-                    <span className="w-1 h-1 bg-amber-500/40 group-hover:bg-amber-500 rounded-full transition-colors" />
+                    <span className="w-1 h-1 bg-amber-500 rounded-full transition-colors" />
                     {link.label}
                   </Link>
                 ))}
+              </div>
+            </footer>
+          )}
+
+          {!isStaffView && !isLoginPage && (
+            <footer className="relative z-[100] max-w-2xl mx-auto px-6 pb-32 pt-20 text-center">
+              <div className="p-8 border border-bento-card-border bg-bento-card-bg/10 backdrop-blur-md rounded-[3rem] shadow-2xl">
+                <div className="flex justify-center gap-4 flex-wrap mb-6">
+                  {[
+                    { to: "/waiter/login", label: t('waiter_access') },
+                    { to: "/cashier/login", label: t('cashier_access', 'POS Cashier') },
+                    { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen') },
+                    { to: "/barman/login", label: t('barman_access', 'Barman') },
+                    { to: "/admin/login", label: t('admin_access') },
+                  ].map((link) => (
+                    <Link 
+                      key={link.to}
+                      to={link.to} 
+                      className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-500 hover:text-amber-600 transition-all flex items-center gap-1 group bg-amber-500/5 px-3 py-1.5 rounded-full border border-amber-500/20"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+                <p className="text-[10px] font-black text-amber-500/40 uppercase tracking-[0.3em] font-serif italic">Cappuccino7 artisan experience</p>
               </div>
             </footer>
           )}
