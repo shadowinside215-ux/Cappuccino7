@@ -38,6 +38,22 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
 
   const handleCall = async () => {
     if (!auth.currentUser) return;
+    
+    if (!order.waiterId) {
+      toast(t('wait_for_waiter_assignment', 'Please wait for a waiter to take your order before calling.'), {
+        icon: '⏳',
+        duration: 4000,
+        style: {
+          borderRadius: '1.5rem',
+          background: '#2D241E',
+          color: '#fff',
+          fontWeight: 'bold',
+          border: '1px solid rgba(255,255,255,0.1)'
+        }
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -51,12 +67,12 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
         fullTableLabel: order.fullTableLabel,
         timestamp: serverTimestamp(),
         status: 'new',
-        waiterId: order.waiterId || null, // Assigned waiter gets it if exists
+        waiterId: order.waiterId,
         waiterName: order.waiterName || null
       });
-      toast.success(t('waiter_called', 'Waiter called!'));
+      toast.success(t('waiter_called', 'Assigned waiter called!'));
     } catch (err) {
-      toast.error(t('failed_to_call_waiter', 'Failed to call waiter'));
+      handleFirestoreError(err, OperationType.WRITE, 'waiterRequests');
     } finally {
       setLoading(false);
     }
@@ -64,39 +80,44 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
 
   if (order.status === 'delivered' || order.status === 'cancelled') return null;
 
+  const isAssigned = !!order.waiterId;
+
   return (
-    <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between gap-4">
+    <div className="mt-8 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
       <div className="flex-1">
         <AnimatePresence mode="wait">
           {request ? (
             <motion.div 
               key="status"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              className="flex items-center gap-3"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex items-center gap-4 bg-white/5 p-4 rounded-[2rem] border border-white/5"
             >
-              <div className={`p-2 rounded-xl ${request.status === 'accepted' ? 'bg-amber-400 text-stone-900' : 'bg-white/10 text-amber-400 animate-pulse'}`}>
-                {request.status === 'accepted' ? <User size={14} /> : <Bell size={14} />}
+              <div className={`p-3 rounded-2xl ${request.status === 'accepted' ? 'bg-amber-400 text-stone-900 shadow-[0_0_20px_rgba(251,191,36,0.3)]' : 'bg-white/10 text-amber-400 animate-pulse'}`}>
+                {request.status === 'accepted' ? <User size={18} /> : <Bell size={18} />}
               </div>
-              <div>
-                <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none mb-1">
-                  {request.status === 'accepted' ? t('waiter_on_way', 'Waiter is on the way') : t('waiter_called', 'Waiter called')}
+              <div className="flex flex-col">
+                <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em] mb-1">
+                  {request.status === 'accepted' ? t('waiter_on_way', 'Waiter on way') : t('waiter_called', 'Notification sent')}
                 </p>
-                <p className="text-[9px] font-bold text-white/60">
+                <p className="text-xs font-bold text-white leading-none">
                   {request.status === 'accepted' ? t('waiter_assigned', { name: request.waiterName }) : t('waiting_for_waiter', 'Waiting for assistance...')}
                 </p>
               </div>
             </motion.div>
           ) : (
-            <motion.p 
-              key="prompt"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-[10px] font-bold text-white/40 italic"
-            >
-              {t('need_help', 'Need assistance at your table?')}
-            </motion.p>
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] font-serif italic">
+                {isAssigned ? t('assistance_ready', 'Assistance Available') : t('waiting_for_assignment', 'Assignment Pending')}
+              </p>
+              <p className="text-xs font-bold text-white/40 italic">
+                {!isAssigned 
+                  ? t('wait_for_waiter_to_take', 'Wait for a waiter to take your order...')
+                  : t('need_help', 'Need assistance? Tap to call your waiter.')
+                }
+              </p>
+            </div>
           )}
         </AnimatePresence>
       </div>
@@ -104,14 +125,21 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
       <button
         onClick={handleCall}
         disabled={loading || !!request}
-        className={`px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-2 shadow-xl ${
+        className={`w-full sm:w-auto px-10 py-5 rounded-[2rem] font-black uppercase text-[10px] tracking-[0.3em] transition-all flex items-center justify-center gap-3 shadow-2xl relative overflow-hidden group ${
           request 
             ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' 
-            : 'bg-amber-400 text-stone-900 hover:scale-105 active:scale-95'
+            : !isAssigned
+              ? 'bg-white/5 text-stone-500 border border-white/5 opacity-50 grayscale'
+              : 'bg-amber-400 text-stone-900 hover:scale-105 active:scale-95 shadow-[0_20px_40px_rgba(251,191,36,0.2)]'
         }`}
       >
-        {loading ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+        {loading ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <Bell size={16} className={isAssigned && !request ? 'animate-bounce' : ''} />
+        )}
         {t('call_waiter', 'Call Waiter')}
+        {isAssigned && !request && <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />}
       </button>
     </div>
   );
@@ -138,7 +166,7 @@ export default function Orders() {
   const isGuest = auth.currentUser?.isAnonymous;
 
   useEffect(() => {
-    if (!auth.currentUser || isGuest) {
+    if (!auth.currentUser) {
       setLoading(false);
       return;
     }
@@ -154,10 +182,11 @@ export default function Orders() {
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'orders');
+      setLoading(false);
     });
 
     return unsubscribe;
-  }, [isGuest]);
+  }, [auth.currentUser?.uid]);
 
   if (loading) return <div className="text-center py-20 flex items-center justify-center gap-2">
     <div className="w-5 h-5 border-2 border-bento-primary border-t-transparent rounded-full animate-spin" />
@@ -249,7 +278,7 @@ export default function Orders() {
                     <div className="flex items-center gap-4 mb-2">
                       <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">#{order.id.slice(-6).toUpperCase()}</h3>
                       <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ring-1 ${
-                        order.status === 'ready' || order.status === 'delivered' || order.status === 'completed' 
+                        order.status === 'ready' || order.status === 'delivered'
                         ? 'bg-green-500/20 text-green-400 ring-green-500/20' 
                         : 'bg-amber-500/20 text-amber-400 ring-amber-500/20 animate-pulse'
                       }`}>

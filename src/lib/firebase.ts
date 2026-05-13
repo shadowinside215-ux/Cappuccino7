@@ -46,7 +46,7 @@ if (import.meta.env.PROD) {
   console.debug = noop;
   console.warn = noop;
   console.info = noop;
-  console.error = noop; 
+  // console.error = noop; // Re-enabled for debugging stability issues
 }
 
 export function handleAuthError(error: any) {

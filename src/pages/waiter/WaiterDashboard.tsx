@@ -43,11 +43,13 @@ export default function WaiterDashboard() {
   useEffect(() => {
     let unsubscribeOrders: (() => void) | null = null;
     let unsubscribeClients: (() => void) | null = null;
+    let unsubscribeRequests: (() => void) | null = null;
 
     const unsubAuth = auth.onAuthStateChanged((user) => {
       // Clean up previous listeners if auth state changes
       if (unsubscribeOrders) unsubscribeOrders();
       if (unsubscribeClients) unsubscribeClients();
+      if (unsubscribeRequests) unsubscribeRequests();
 
       if (!user) {
         setLoading(false);
@@ -62,6 +64,7 @@ export default function WaiterDashboard() {
 
       unsubscribeOrders = onSnapshot(qOrders, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+        // Keep active orders (waiter view)
         const activeOrders = data.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
         setOrders(activeOrders);
         
@@ -69,7 +72,7 @@ export default function WaiterDashboard() {
         if (activeOrders.length > lastOrderCount) {
           const audio = new Audio(NOTIFICATION_SOUND);
           audio.play().catch(e => console.log('Audio blocked', e));
-          toast.success(t('new_order_toast', 'New Order Received!'), { icon: '🔔', duration: 5000 });
+          toast.success(t('new_order_toast', 'New Order Received!') as string, { icon: '🔔', duration: 5000 });
         }
 
         // Check for specific staff state changes
@@ -84,8 +87,8 @@ export default function WaiterDashboard() {
               const barmanJustReady = newData.barmanStatus === 'ready' && oldOrder.barmanStatus !== 'ready';
 
               if (kitchenJustReady || barmanJustReady) {
-                const targetSystem = kitchenJustReady ? t('kitchen') : t('barman');
-                toast.success(`${targetSystem} ${t('is_ready_alert', 'is Ready!')} - ${newData.fullTableLabel || newData.customerName}`, {
+                const targetSystem = kitchenJustReady ? (t('kitchen') as string) : (t('barman') as string);
+                toast.success(`${targetSystem} ${t('is_ready_alert', 'is Ready!') as string} - ${newData.fullTableLabel || newData.customerName}`, {
                   icon: '✨',
                   duration: 8000,
                   position: 'top-right',
@@ -101,15 +104,13 @@ export default function WaiterDashboard() {
         sessionStorage.setItem('last_order_count', activeOrders.length.toString());
         setLoading(false);
       }, (error) => {
-        if (auth.currentUser) {
-          handleFirestoreError(error, OperationType.LIST, 'orders');
-        }
+        handleFirestoreError(error, OperationType.LIST, 'orders');
         setLoading(false);
       });
 
       // Requests subscription (Call Waiter)
       const qRequests = query(collection(db, 'waiterRequests'), orderBy('timestamp', 'desc'));
-      const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
+      unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WaiterRequest));
         
         // Filter: Show if not completed AND (unassigned OR assigned to current waiter)
@@ -124,9 +125,11 @@ export default function WaiterDashboard() {
         if (activeReqs.length > lastReqCount) {
           const audio = new Audio(NOTIFICATION_SOUND);
           audio.play().catch(() => {});
-          toast.success(t('new_waiter_request', 'New Waiter Assistance Request!'), { icon: '🔔', duration: 5000 });
+          toast.success(t('new_waiter_request', 'New Waiter Assistance Request!') as string, { icon: '🔔', duration: 5000 });
         }
         sessionStorage.setItem('last_request_count', activeReqs.length.toString());
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'waiterRequests');
       });
 
       // Clients subscription
@@ -135,9 +138,8 @@ export default function WaiterDashboard() {
         const data = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
         setClients(data);
       }, (error) => {
-        if (auth.currentUser) {
-          console.error('Clients fetch error:', error);
-        }
+        handleFirestoreError(error, OperationType.LIST, 'users');
+        setLoading(false);
       });
     });
 
@@ -145,6 +147,7 @@ export default function WaiterDashboard() {
       unsubAuth();
       if (unsubscribeOrders) unsubscribeOrders();
       if (unsubscribeClients) unsubscribeClients();
+      if (unsubscribeRequests) unsubscribeRequests();
     };
   }, []);
 
@@ -208,18 +211,27 @@ export default function WaiterDashboard() {
 
   const acceptOrder = async (order: Order) => {
     if (!auth.currentUser) return;
+    
     try {
-      const waiterName = auth.currentUser.displayName || 'Waiter';
       const orderRef = doc(db, 'orders', order.id);
+      const waiterName = auth.currentUser.displayName || 'Waiter';
+      const waiterId = auth.currentUser.uid;
+
+      // Using transaction to ensure first-come, first-served
       await updateDoc(orderRef, {
-        waiterId: auth.currentUser.uid,
+        waiterId: waiterId,
         waiterName: waiterName,
         waiterStatus: 'Accepted',
         updatedAt: serverTimestamp()
       });
-      toast.success(t('order_accepted', 'Order accepted and assigned to you'));
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
+      
+      toast.success(t('order_accepted', 'Order accepted and assigned to you') as string);
+    } catch (err: any) {
+      if (err.message?.includes('permission-denied') || err.code === 'permission-denied') {
+        toast.error(t('order_already_taken', 'This order was already taken by another waiter') as string);
+      } else {
+        handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
+      }
     }
   };
 
@@ -227,15 +239,21 @@ export default function WaiterDashboard() {
     if (!auth.currentUser) return;
     try {
       const waiterName = auth.currentUser.displayName || 'Waiter';
+      const waiterId = auth.currentUser.uid;
       const reqRef = doc(db, 'waiterRequests', req.id);
+
       await updateDoc(reqRef, {
-        waiterId: auth.currentUser.uid,
+        waiterId: waiterId,
         waiterName: waiterName,
         status: 'accepted'
       });
-      toast.success(t('request_accepted', 'Request accepted'));
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `waiterRequests/${req.id}`);
+      toast.success(t('request_accepted', 'Request accepted') as string);
+    } catch (err: any) {
+      if (err.message?.includes('permission-denied') || err.code === 'permission-denied') {
+        toast.error(t('request_already_taken', 'This request was already taken by another waiter') as string);
+      } else {
+        handleFirestoreError(err, OperationType.UPDATE, `waiterRequests/${req.id}`);
+      }
     }
   };
 
@@ -245,7 +263,7 @@ export default function WaiterDashboard() {
       await updateDoc(reqRef, {
         status: 'completed'
       });
-      toast.success(t('request_completed', 'Request completed'));
+      toast.success(t('request_completed', 'Request completed') as string);
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `waiterRequests/${req.id}`);
     }
@@ -277,7 +295,7 @@ export default function WaiterDashboard() {
       // Award points
       await awardOrderPoints(order);
       
-      toast.success(t('order_completed_toast', 'Order completed and delivered!'));
+      toast.success(t('order_completed_toast', 'Order completed and delivered!') as string);
     } catch (err: any) {
       handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
     }
@@ -306,10 +324,10 @@ export default function WaiterDashboard() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-stone-900 tracking-tighter uppercase italic">
-              {t('waiter_console')}
+              {t('waiter_console') as string}
             </h1>
             <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em]">
-              Palace Taha • {t('active_terminal')}
+              Palace Taha • {t('active_terminal') as string}
             </p>
           </div>
         </div>
@@ -324,7 +342,7 @@ export default function WaiterDashboard() {
                 }`}
               >
                 <ShoppingBag size={14} />
-                {t('orders')} ({orders.length})
+                {t('orders') as string} ({orders.length})
               </button>
               <button 
                 onClick={() => setActiveTab('requests')}
@@ -333,7 +351,7 @@ export default function WaiterDashboard() {
                 }`}
               >
                 <Bell size={14} />
-                {t('requests', 'Requests')} ({requests.length})
+                {(t('requests', 'Requests') as string)} ({requests.length})
                 {requests.some(r => r.status === 'new') && (
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-ping" />
                 )}
@@ -345,7 +363,7 @@ export default function WaiterDashboard() {
                 }`}
               >
                 <Users size={14} />
-                {t('clients_list', 'Clients')} ({clients.length})
+                {(t('clients_list', 'Clients') as string)} ({clients.length})
               </button>
            </div>
 
@@ -356,7 +374,7 @@ export default function WaiterDashboard() {
              }}
              className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100"
            >
-             {t('exit')}
+             {t('exit') as string}
            </button>
         </div>
       </div>
@@ -388,7 +406,7 @@ export default function WaiterDashboard() {
                     <div className="mb-6">
                       <div className="flex justify-between items-start mb-1">
                         <div className="flex flex-col">
-                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer')}</p>
+                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer') as string}</p>
                           <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
                         </div>
                         {(() => {
@@ -398,7 +416,7 @@ export default function WaiterDashboard() {
                             return (
                               <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-3 py-1 rounded-full animate-bounce shadow-lg">
                                 <Gift size={12} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">{t('reward_ready')}</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">{t('reward_ready') as string}</span>
                               </div>
                             );
                           }
@@ -427,19 +445,26 @@ export default function WaiterDashboard() {
                       </div>
 
                       {order.waiterId ? (
-                        <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100">
-                          <UserCheck size={14} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">
-                            {t('assigned_to', 'Assigned to')}: {order.waiterName || 'Staff'}
+                        <div className={`mt-4 flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all ${
+                          order.waiterId === auth.currentUser?.uid 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                            : 'bg-stone-50 text-stone-500 border-stone-100'
+                        }`}>
+                          <UserCheck size={14} className={order.waiterId === auth.currentUser?.uid ? 'text-amber-500' : ''} />
+                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+                            {order.waiterId === auth.currentUser?.uid 
+                              ? t('you_are_handling_this', 'You are handling this order')
+                              : `${t('assigned_to', 'Assigned to')}: ${order.waiterName || 'Staff'}`
+                            }
                           </span>
                         </div>
                       ) : (
                         <button 
                           onClick={() => acceptOrder(order)}
-                          className="mt-4 w-full py-3 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-amber-400/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+                          className="mt-4 w-full py-4 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-xl shadow-amber-400/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                         >
-                          <CheckCircle2 size={16} />
-                          {t('accept_order', 'Accept Order')}
+                          <Navigation size={16} className="rotate-45" />
+                          {t('take_order', 'Take Order') as string}
                         </button>
                       )}
                     </div>
@@ -448,14 +473,14 @@ export default function WaiterDashboard() {
                         {order.items.map((item, idx) => (
                           <div key={idx} className="flex justify-between items-start text-sm">
                             <div className="flex flex-col">
-                              <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name)}</span>
+                              <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
                               {item.customization && (
                                 <span className="text-[10px] font-black uppercase text-amber-500 italic">
                                   {item.customization.includes('|') ? (
                                     <>
-                                      {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim())}
+                                      {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim()) as string}
                                       {' • '}
-                                      {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_'))}
+                                      {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_')) as string}
                                     </>
                                   ) : (
                                     item.customization
@@ -464,7 +489,7 @@ export default function WaiterDashboard() {
                               )}
                               {(item as any).categoryName && (
                                 <span className="text-[8px] font-black uppercase tracking-widest text-amber-600">
-                                  {t(`categories.${(item as any).categoryName}`, (item as any).categoryName)} {(item as any).subSection ? `• ${(item as any).subSection.replace('_', ' ')}` : ''}
+                                  {t(`categories.${(item as any).categoryName}`, (item as any).categoryName) as string} {(item as any).subSection ? `• ${(item as any).subSection.replace('_', ' ')}` : ''}
                                 </span>
                               )}
                             </div>
@@ -472,7 +497,7 @@ export default function WaiterDashboard() {
                           </div>
                         ))}
                         <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">{t('total', 'Total')}</span>
+                          <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">{t('total', 'Total') as string}</span>
                           <span className="text-lg font-black text-stone-900">{order.total} MAD</span>
                        </div>
                     </div>
@@ -567,18 +592,18 @@ export default function WaiterDashboard() {
                           <Bell size={24} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest leading-none mb-1">{t('table', 'Table')}</p>
+                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest leading-none mb-1">{t('table', 'Table') as string}</p>
                           <h3 className="text-2xl font-black text-stone-900 uppercase italic leading-none">{req.fullTableLabel}</h3>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('time', 'Time')}</p>
+                        <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('time', 'Time') as string}</p>
                         <p className="text-sm font-black text-stone-900">{req.timestamp?.toDate ? req.timestamp.toDate().toLocaleTimeString() : 'Now'}</p>
                       </div>
                     </div>
 
                     <div className="bg-stone-50 rounded-2xl p-4 mb-6">
-                      <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">{t('client', 'Client')}</p>
+                      <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">{t('client', 'Client') as string}</p>
                       <p className="font-bold text-stone-700">{req.clientName}</p>
                       <p className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter mt-1">{req.tableArea} Zone</p>
                     </div>
@@ -588,7 +613,7 @@ export default function WaiterDashboard() {
                         <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 mb-4">
                           <UserCheck size={18} />
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-widest">{t('handling_by', 'Handling by')}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">{t('handling_by', 'Handling by') as string}</span>
                             <span className="text-xs font-bold leading-none">{req.waiterName}</span>
                           </div>
                         </div>
@@ -597,7 +622,7 @@ export default function WaiterDashboard() {
                           className="w-full py-4 bg-green-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-green-200 flex items-center justify-center gap-2"
                         >
                           <CheckCheck size={18} />
-                          {t('mark_completed', 'Mark Completed')}
+                          {t('mark_completed', 'Mark Completed') as string}
                         </button>
                       </div>
                     ) : (
@@ -606,7 +631,7 @@ export default function WaiterDashboard() {
                         className="w-full py-4 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-amber-200 flex items-center justify-center gap-2"
                       >
                         <Navigation size={18} />
-                        {t('accept_request', 'Accept Request')}
+                        {t('accept_request', 'Accept Request') as string}
                       </button>
                     )}
                   </motion.div>
@@ -626,7 +651,7 @@ export default function WaiterDashboard() {
                <Search className="text-stone-300 mr-3" />
                <input 
                  type="text" 
-                 placeholder={t('search_clients_placeholder')}
+                 placeholder={t('search_clients_placeholder') as string}
                  className="flex-1 bg-transparent outline-none text-sm font-bold"
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
@@ -638,11 +663,11 @@ export default function WaiterDashboard() {
                  <table className="w-full text-left">
                    <thead>
                      <tr className="border-b border-stone-50">
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client')}</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('status')}</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('loyalty_points', 'Points')}</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('contact')}</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('type')}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client') as string}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('status') as string}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('loyalty_points', 'Points') as string}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('contact') as string}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('type') as string}</th>
                      </tr>
                    </thead>
                    <tbody>
@@ -667,7 +692,7 @@ export default function WaiterDashboard() {
                                   <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2 text-amber-600 font-bold">
                                       <Timer size={14} className="animate-pulse" />
-                                      <span className="text-xs">{t('active_order_label')}</span>
+                                      <span className="text-xs">{t('active_order_label') as string}</span>
                                     </div>
                                     <OrderTimer 
                                       createdAt={activeOrder.createdAt} 
@@ -677,16 +702,16 @@ export default function WaiterDashboard() {
                                   </div>
                                 );
                               }
-                              return <span className="text-xs text-stone-400">{t('no_active_orders_label')}</span>;
+                              return <span className="text-xs text-stone-400">{t('no_active_orders_label') as string}</span>;
                             })()}
                          </td>
                          <td className="px-8 py-6">
                             <div className="flex flex-col gap-1">
-                               <div className="text-sm font-black text-stone-900">{client.points} {t('pts_short')}</div>
+                               <div className="text-sm font-black text-stone-900">{client.points} {t('pts_short') as string}</div>
                                {client.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11) && (
                                  <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-2 py-0.5 rounded-lg w-fit shadow-lg shadow-amber-400/20 ring-2 ring-white/20">
                                    <Gift size={10} />
-                                   <span className="text-[8px] font-black uppercase tracking-tight">12 - {t('get_free_order')}</span>
+                                   <span className="text-[8px] font-black uppercase tracking-tight">12 - {t('get_free_order') as string}</span>
                                  </div>
                                )}
                             </div>
@@ -697,7 +722,7 @@ export default function WaiterDashboard() {
                               client.isAdmin ? 'bg-stone-900 text-white' : 
                               client.isWaiter ? 'bg-amber-400 text-stone-900' : 'bg-stone-100 text-stone-500'
                             }`}>
-                               {client.isAdmin ? t('admin_role') : client.isWaiter ? t('waiter_role') : t('customer_role')}
+                               {client.isAdmin ? (t('admin_role') as string) : client.isWaiter ? (t('waiter_role') as string) : (t('customer_role') as string)}
                             </div>
                          </td>
                        </tr>

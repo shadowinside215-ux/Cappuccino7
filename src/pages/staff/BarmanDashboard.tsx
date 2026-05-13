@@ -114,6 +114,7 @@ export default function BarmanDashboard() {
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'orders (barman filter)');
       toast.error(t('permission_denied_orders', 'Permission denied Accessing orders'));
+      setLoading(false);
     });
 
     return () => unsubscribe();

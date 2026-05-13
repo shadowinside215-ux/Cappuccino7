@@ -17,7 +17,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState(userProfile?.phone || '');
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [deliveryType, setDeliveryType] = useState<'pickup' | 'dine-in'>('dine-in');
+  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dine-in'>('dine-in');
   const [tableArea, setTableArea] = useState<'Inside' | 'Outside'>('Inside');
   const [tableNumber, setTableNumber] = useState<string>('');
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);

@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, HTMLMotionProps } from 'motion/react';
 import { Loader2, Coffee } from 'lucide-react';
 
-interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-  src?: string;
-  alt?: string;
-  className?: string;
+interface OptimizedImageProps extends HTMLMotionProps<"img"> {
   containerClassName?: string;
   fallbackSrc?: string;
   priority?: boolean;
-  referrerPolicy?: React.HTMLAttributeReferrerPolicy;
   showOverlay?: boolean;
   overlayClassName?: string;
 }

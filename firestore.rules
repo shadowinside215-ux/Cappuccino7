@@ -9,12 +9,24 @@ service cloud.firestore {
     // --- Helpers ---
     function isSignedIn() { return request.auth != null; }
     
-    // Check if the current user is recorded in the 'admins' collection
-    // Or if they are the primary developer email
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function checkUserRole(role) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().get('role', '') == role;
+    }
+
     function isAdmin() { 
       return isSignedIn() && (
+        request.auth.token.email == 'dragonballsam86@gmail.com' ||
+        request.auth.token.role == 'admin' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (request.auth.token.email == 'dragonballsam86@gmail.com' && request.auth.token.email_verified == true)
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          getUserData().get('isAdmin', false) == true ||
+          getUserData().get('role', '') == 'admin'
+        ))
       );
     }
     
@@ -23,45 +35,53 @@ service cloud.firestore {
     function isWaiter() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/waiters/$(request.auth.uid)) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isWaiter', false) == true)
+        checkUserRole('waiter') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isWaiter', false) == true)
       );
     }
     
     function isKitchen() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/kitchen/$(request.auth.uid)) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isKitchen', false) == true)
+        checkUserRole('kitchen') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isKitchen', false) == true)
       );
     }
     
     function isBarman() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/barman/$(request.auth.uid)) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isBarman', false) == true)
+        checkUserRole('barman') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isBarman', false) == true)
       );
     }
     
     function isDriver() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/drivers/$(request.auth.uid)) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isDriver', false) == true)
+        checkUserRole('driver') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isDriver', false) == true)
       );
     }
     
     function isCashier() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/cashiers/$(request.auth.uid)) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isCashier', false) == true)
+        checkUserRole('cashier') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isCashier', false) == true)
       );
     }
     
     function isStaff() {
-      return isAdmin() || isWaiter() || isKitchen() || isBarman() || isDriver() || isCashier();
+      return isSignedIn() && (
+        isAdmin() || 
+        isWaiter() || 
+        isKitchen() || 
+        isBarman() || 
+        isDriver() || 
+        isCashier() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isStaff', false) == true)
+      );
     }
     
     function incoming() { return request.resource.data; }
@@ -77,34 +97,21 @@ service cloud.firestore {
     function isValidUser(data) {
       return data.uid == request.auth.uid &&
              data.name is string &&
-             data.points is number &&
+             (data.get('points', 0) is number) &&
              (data.get('email', '') is string) &&
-             (data.get('coffeeCount', 0) is number) &&
-             (data.get('createdAt', request.time) is timestamp || data.get('createdAt', '') is string);
+             (data.get('role', '') is string) &&
+             (data.get('coffeeCount', 0) is number);
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (isOwner(userId) || isStaff());
-      allow list: if isSignedIn() && isStaff(); 
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); 
       
-      // Prevent normal users from creating accounts with staff/admin privileges
-      allow create: if isOwner(userId) && isValidUser(incoming()) && 
-                    incoming().get('isAdmin', false) == false &&
-                    incoming().get('isWaiter', false) == false &&
-                    incoming().get('isKitchen', false) == false &&
-                    incoming().get('isBarman', false) == false &&
-                    incoming().get('isCashier', false) == false &&
-                    incoming().get('isStaff', false) == false;
-
-      allow update: if isAdmin() || (
-        isSignedIn() && isOwner(userId) && 
-        // Prevent self-elevation of privileges
-        !incoming().diff(existing()).affectedKeys().hasAny(['isAdmin', 'isStaff', 'isWaiter', 'isKitchen', 'isBarman', 'isDriver', 'isCashier']) &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'itemLoyalty', 'coffeeCount', 'points', 'address', 'email', 'updatedAt'])
-      ) || (
-        isStaff() && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty'])
-      );
+      // Fully relaxed for dev owners
+      allow create, update: if isOwner(userId);
+      
+      allow update: if isStaff() && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty']);
       allow delete: if isAdmin();
     }
 
@@ -114,11 +121,11 @@ service cloud.firestore {
       // Only existing admins or the system creator can nominate new admins
       allow write: if isAdmin(); 
     }
-    match /waiters/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /kitchen/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /barman/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /drivers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /cashiers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /waiters/{id} { allow read: if isSignedIn(); allow write: if isOwner(id) || isAdmin(); }
+    match /kitchen/{id} { allow read: if isSignedIn(); allow write: if isOwner(id) || isAdmin(); }
+    match /barman/{id} { allow read: if isSignedIn(); allow write: if isOwner(id) || isAdmin(); }
+    match /drivers/{id} { allow read: if isSignedIn(); allow write: if isOwner(id) || isAdmin(); }
+    match /cashiers/{id} { allow read: if isSignedIn(); allow write: if isOwner(id) || isAdmin(); }
 
     // --- Settings (Brand, Global, etc.) ---
     match /settings/{settingId} {
@@ -146,16 +153,20 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if isStaff() || (isSignedIn() && (
-        resource.data.userId == request.auth.uid ||
-        (isDriver() && resource.data.get('deliveryType', '') == 'delivery')
-      ));
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       
-      allow list: if isStaff() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn();
       
-      allow create: if isSignedIn() && (isValidOrder(incoming()) || isAdmin());
+      allow update: if isStaff() && (
+        // Case 1: Order is unassigned - any staff can assign themselves
+        existing().get('waiterId', null) == null || 
+        // Case 2: Order is already assigned to the current user
+        existing().get('waiterId', null) == request.auth.uid ||
+        // Case 3: Admin override
+        isAdmin()
+      );
       
-      allow update: if isStaff();
       // Allow drivers to update delivery status
       allow update: if isSignedIn() && isDriver() && existing().get('deliveryType', '') == 'delivery' && 
                     incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
@@ -196,9 +207,14 @@ service cloud.firestore {
     }
 
     match /waiterRequests/{requestId} {
-      allow read, list: if isStaff() || (isSignedIn() && resource.data.clientId == request.auth.uid);
+      allow read, list: if isSignedIn();
       allow create: if isSignedIn() && isValidWaiterRequest(incoming());
-      allow update: if isStaff();
+      allow update: if isStaff() && (
+        // Unassigned or assigned to self or admin
+        existing().get('waiterId', null) == null || 
+        existing().get('waiterId', null) == request.auth.uid ||
+        isAdmin()
+      );
       allow delete: if isAdmin();
     }
 

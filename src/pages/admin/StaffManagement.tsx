@@ -26,10 +26,10 @@ export default function StaffManagement() {
       if (snap.empty) {
         // Initialize defaults if empty
         const defaults: StaffConfig[] = [
-          { id: 'waiter1', username: 'waiter1', password: 'waiter1', displayName: 'Waiter 1' },
-          { id: 'waiter2', username: 'waiter2', password: 'waiter2', displayName: 'Waiter 2' },
-          { id: 'waiter3', username: 'waiter3', password: 'waiter3', displayName: 'Waiter 3' },
-          { id: 'waiter4', username: 'waiter4', password: 'waiter4', displayName: 'Waiter 4' },
+          { id: 'waiter1', username: 'waiter', password: 'waiter1', displayName: 'Waiter 1' },
+          { id: 'waiter2', username: 'waiter', password: 'waiter2', displayName: 'Waiter 2' },
+          { id: 'waiter3', username: 'waiter', password: 'waiter3', displayName: 'Waiter 3' },
+          { id: 'waiter4', username: 'waiter', password: 'waiter4', displayName: 'Waiter 4' },
           { id: 'kitchen', username: 'kitchen', password: 'kitchen7000', displayName: 'Kitchen' },
           { id: 'barman', username: 'barman', password: 'barman5000', displayName: 'Barman' },
           { id: 'cashier', username: 'cashier', password: 'cashier9000', displayName: 'Cashier' },

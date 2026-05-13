@@ -4,34 +4,37 @@ import { AlertTriangle, RotateCcw } from 'lucide-react';
 interface Props {
   children?: ReactNode;
   fallback?: ReactNode;
+  fallbackTitle?: string;
 }
 
 interface State {
   hasError: boolean;
+  error: Error | null;
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null
+    };
+  }
 
-  public static getDerivedStateFromError(_: Error): State {
-    // Update state so the next render will show the fallback UI.
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    if (import.meta.env.DEV) {
-      console.error('Uncaught error:', error, errorInfo);
-    }
+    console.error('ErrorBoundary caught an error', error, errorInfo);
   }
 
   private handleReset = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, error: null });
     window.location.reload();
   };
 
-  public render() {
+  render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -51,8 +54,18 @@ class ErrorBoundary extends Component<Props, State> {
                 Oops!
               </h1>
               <p className="text-stone-500 font-bold leading-relaxed">
-                Something went wrong while rendering this page. We've been notified and are working on a fix.
+                Something went wrong while rendering this page.
               </p>
+              <p className="text-[10px] text-stone-500 font-bold uppercase tracking-widest text-center mt-2">
+                {this.props.fallbackTitle || "Application Critical Failure"}
+              </p>
+            </div>
+
+            <div className="bg-stone-50 p-6 rounded-[2rem] border border-stone-100 overflow-hidden">
+              <p className="text-xs text-stone-600 font-black uppercase tracking-widest text-center mb-2">Error Insight</p>
+              <div className="text-[10px] text-stone-400 font-bold leading-relaxed text-center break-words opacity-60">
+                {this.state.error?.message || "Operational anomaly detected"}
+              </div>
             </div>
 
             <button
@@ -60,12 +73,15 @@ class ErrorBoundary extends Component<Props, State> {
               className="w-full flex items-center justify-center gap-2 bg-stone-900 text-white py-5 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl"
             >
               <RotateCcw size={16} />
-              Reload Application
+              Reload Station
             </button>
-            
-            <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">
-              Error ID: {Math.random().toString(36).substring(7).toUpperCase()}
-            </p>
+          </div>
+          
+          <div className="flex justify-center mt-8">
+            <div className="flex items-center gap-2 px-6 py-3 bg-stone-100 rounded-full">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Protocol Delta Active</span>
+            </div>
           </div>
         </div>
       );

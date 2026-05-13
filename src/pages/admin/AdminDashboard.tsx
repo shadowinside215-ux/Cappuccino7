@@ -572,7 +572,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <button 
-              onClick={initializeDatabase}
+              onClick={() => initializeDatabase()}
               disabled={isSettingUp}
               className={`bg-bento-accent text-bento-primary font-bold py-4 px-8 rounded-2xl transition-all shadow-xl active:scale-[0.98] ${isSettingUp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white'}`}
             >

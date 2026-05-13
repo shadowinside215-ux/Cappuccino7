@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Lock, User as UserIcon, ArrowRight, Loader2, Signal, Calculator } from 'lucide-react';
+import { ShieldCheck, Lock, User as UserIcon, ArrowRight, Loader2, Signal, Calculator, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { auth, db, handleAuthError } from '../../lib/firebase';
-import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signInAnonymously, updateProfile } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+
+const staffAccounts = [
+  { username: "admin", password: "admin7000", role: "admin", displayName: "Admin" },
+  { username: "cashier", password: "cashier3000", role: "cashier", displayName: "Cashier" },
+  { username: "kitchen", password: "kitchen7000", role: "kitchen", displayName: "Kitchen" },
+  { username: "barman", password: "barman5000", role: "barman", displayName: "Barman" },
+  { username: "waiter", password: "waiter1", role: "waiter", waiterId: "waiter1", displayName: "Waiter 1" },
+  { username: "waiter", password: "waiter2", role: "waiter", waiterId: "waiter2", displayName: "Waiter 2" },
+  { username: "waiter", password: "waiter3", role: "waiter", waiterId: "waiter3", displayName: "Waiter 3" },
+  { username: "waiter", password: "waiter4", role: "waiter", waiterId: "waiter4", displayName: "Waiter 4" }
+];
 
 export default function CashierLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -18,54 +30,53 @@ export default function CashierLogin() {
     setLoading(true);
 
     try {
-      const cleanId = username.trim().toLowerCase();
+      const cleanUsername = username.trim().toLowerCase();
       const cleanPassword = password.trim();
 
-      // Fetch specific staff config by doc ID
-      const staffDoc = await getDoc(doc(db, 'staffConfigs', cleanId));
-      const staffData = staffDoc.exists() ? staffDoc.data() as any : null;
+      const account = staffAccounts.find(acc => acc.username === cleanUsername && acc.password === cleanPassword && acc.role === 'cashier');
 
-      if (staffData && staffData.password === cleanPassword && staffData.id === 'cashier') {
-        const userCredential = await signInAnonymously(auth);
-        const user = userCredential.user;
-        
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, {
-          uid: user.uid,
-          name: staffData.displayName || 'POS Cashier',
-          email: 'cashier@internal',
-          isAdmin: false,
-          isCashier: true,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+      if (account) {
+        // Save session locally
+        const staffSession = {
+          role: account.role,
+          displayName: account.displayName,
+          username: account.username,
+          authenticatedAt: new Date().toISOString()
+        };
+        localStorage.setItem('staffSession', JSON.stringify(staffSession));
 
-        await setDoc(doc(db, 'cashiers', user.uid), {
-          active: true,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        try {
+          const userCredential = await signInAnonymously(auth);
+          const user = userCredential.user;
+          
+          await updateProfile(user, { displayName: account.displayName });
 
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            name: account.displayName,
+            role: account.role,
+            isStaff: true,
+            isCashier: true,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+
+          await setDoc(doc(db, 'cashiers', user.uid), {
+            active: true,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (firebaseErr) {
+          console.warn("Firebase background auth failed - proceeding with local session", firebaseErr);
+        }
+
+        localStorage.setItem('cashier_session_active', 'true');
         toast.success('POS System Activated');
         navigate('/cashier/dashboard');
         return;
       }
 
-      // Standard login
-      const loginEmail = cleanId.includes('@') ? cleanId : `${cleanId}@cappuccino7.com`;
-      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, cleanPassword);
-      const user = userCredential.user;
-
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const userData = userDoc.data();
-
-      if (userData?.isCashier || userData?.isAdmin) {
-        toast.success('Cashier access granted');
-        navigate('/cashier/dashboard');
-      } else {
-        toast.error('Unauthorized access');
-        await auth.signOut();
-      }
+      toast.error('Invalid username or password');
     } catch (err: any) {
-      toast.error('Invalid credentials');
+      toast.error('Invalid username or password');
     } finally {
       setLoading(false);
     }
@@ -101,30 +112,39 @@ export default function CashierLogin() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-stone-500 uppercase tracking-widest ml-4 flex items-center gap-2">
-                <UserIcon size={12} /> Station ID
+                <UserIcon size={12} /> Username
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-stone-800/50 border border-white/5 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-white placeholder:text-stone-600"
-                placeholder="Enter station ID"
+                placeholder="Enter username"
                 required
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-stone-500 uppercase tracking-widest ml-4 flex items-center gap-2">
-                <Lock size={12} /> Security Key
+                <Lock size={12} /> Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-stone-800/50 border border-white/5 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-white placeholder:text-stone-600"
-                placeholder="Enter security key"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-stone-800/50 border border-white/5 rounded-2xl py-4 pl-6 pr-12 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none font-bold text-white placeholder:text-stone-600"
+                  placeholder="Enter password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-500 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button

@@ -57,6 +57,7 @@ export interface OrderItem {
   name: string;
   price: number;
   quantity: number;
+  image?: string;
   customization?: string;
   system?: 'kitchen' | 'barman' | 'both';
   categoryName?: string;
@@ -85,6 +86,7 @@ export interface Order {
   estimatedReadyAt?: any; // Firestore Timestamp
   preparingAt?: any; // Firestore Timestamp
   readyAt?: any; // Firestore Timestamp
+  readyInMinutes?: number;
   deliveredAt?: any; // Firestore Timestamp
   deliveredInMinutes?: number;
   address: string;

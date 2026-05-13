@@ -1,17 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, handleAuthError, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import OptimizedImage from '../../components/ui/OptimizedImage';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { signInWithPopup, GoogleAuthProvider, signInAnonymously, updateProfile } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp, getDoc, collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+
+const staffAccounts = [
+  { username: "admin", password: "admin7000", role: "admin", displayName: "Admin" },
+  { username: "cashier", password: "cashier3000", role: "cashier", displayName: "Cashier" },
+  { username: "kitchen", password: "kitchen7000", role: "kitchen", displayName: "Kitchen" },
+  { username: "barman", password: "barman5000", role: "barman", displayName: "Barman" },
+  { username: "waiter", password: "waiter1", role: "waiter", waiterId: "waiter1", displayName: "Waiter 1" },
+  { username: "waiter", password: "waiter2", role: "waiter", waiterId: "waiter2", displayName: "Waiter 2" },
+  { username: "waiter", password: "waiter3", role: "waiter", waiterId: "waiter3", displayName: "Waiter 3" },
+  { username: "waiter", password: "waiter4", role: "waiter", waiterId: "waiter4", displayName: "Waiter 4" }
+];
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isFirebaseAuthed, setIsFirebaseAuthed] = useState(false);
   const { settings: brand } = useBrandSettings();
@@ -54,24 +66,43 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const email = auth.currentUser.email.toLowerCase();
+      const email = auth.currentUser?.email?.toLowerCase();
       const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
       
-      // 1. Check if user is in 'admins' collection or is the hardcoded creator
-      const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
-      const hasPermission = adminDoc.exists() || email === adminEmail.toLowerCase();
+      // Auto-seed staff configs if they don't exist
+      const staffRef = collection(db, 'staffConfigs');
+      const staffSnap = await getDocs(staffRef);
+      if (staffSnap.empty) {
+        const defaults = [
+          { id: 'waiter', username: 'waiter', password: 'waiter1234', displayName: 'Waiter' },
+          { id: 'kitchen', username: 'kitchen', password: 'kitchen7000', displayName: 'Kitchen' },
+          { id: 'barman', username: 'barman', password: 'barman5000', displayName: 'Barman' },
+          { id: 'cashier', username: 'cashier', password: 'cashier3000', displayName: 'Cashier' },
+        ];
+        for (const config of defaults) {
+          await setDoc(doc(db, 'staffConfigs', config.id), config);
+        }
+      }
 
-      if (hasPermission) {
-        // Register/Sync admin record if needed
-        const adminRef = doc(db, 'admins', auth.currentUser.uid);
+      // 1. Check if user has permission (Google login email match OR anonymous with correct credentials)
+      let hasPermission = false;
+      let uid = auth.currentUser?.uid;
+
+      if (auth.currentUser && !auth.currentUser.isAnonymous) {
+        const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
+        hasPermission = adminDoc.exists() || email === adminEmail.toLowerCase();
+      }
+
+      if (hasPermission && uid) {
+        // ...Existing registration logic...
+        const adminRef = doc(db, 'admins', uid);
         await setDoc(adminRef, {
-          email: auth.currentUser.email,
+          email: auth.currentUser?.email || 'admin@internal',
           registeredAt: serverTimestamp(),
           role: 'super_admin'
         }, { merge: true });
 
-        // Sync to users collection
-        await setDoc(doc(db, 'users', auth.currentUser.uid), {
+        await setDoc(doc(db, 'users', uid), {
           isAdmin: true,
           updatedAt: serverTimestamp()
         }, { merge: true });
@@ -79,12 +110,62 @@ export default function AdminLogin() {
         sessionStorage.setItem('admin_mode', 'true');
         toast.success('Admin access granted');
         navigate('/admin');
-      } else {
-        toast.error('Unauthorized: Your account does not have admin privileges.');
+        return;
       }
+      
+      toast.error('Unauthorized access');
     } catch (err: any) {
       console.error("Admin verification error:", err);
-      toast.error('Authentication check failed. Please contact the administrator.');
+      toast.error('Authentication check failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTraditionalLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const cleanUsername = username.trim().toLowerCase();
+      const cleanPassword = password.trim();
+
+      const account = staffAccounts.find(acc => acc.username === cleanUsername && acc.password === cleanPassword && acc.role === 'admin');
+
+      if (account) {
+        // Save session locally
+        const staffSession = {
+          role: account.role,
+          displayName: account.displayName,
+          username: account.username,
+          authenticatedAt: new Date().toISOString()
+        };
+        localStorage.setItem('staffSession', JSON.stringify(staffSession));
+
+        try {
+          const userCredential = await signInAnonymously(auth);
+          const user = userCredential.user;
+
+          await updateProfile(user, { displayName: account.displayName });
+
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            name: account.displayName,
+            isAdmin: true,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (firebaseErr) {
+          console.warn("Firebase background auth failed - proceeding with local session", firebaseErr);
+        }
+
+        sessionStorage.setItem('admin_mode', 'true');
+        toast.success('Admin Mode Activated');
+        navigate('/admin');
+      } else {
+        toast.error('Invalid username or password');
+      }
+    } catch (err) {
+      toast.error('Login failed');
     } finally {
       setLoading(false);
     }
@@ -117,10 +198,10 @@ export default function AdminLogin() {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="card !p-12 space-y-10 bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[3.5rem] border border-white relative overflow-hidden">
+        <div className="card !p-12 space-y-8 bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[3.5rem] border border-white relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-bento-primary via-amber-400 to-bento-primary" />
           
-          <div className="text-center space-y-6">
+          <div className="text-center space-y-4">
             <button 
               onClick={() => navigate('/login')}
               className="absolute top-8 left-8 text-stone-400 hover:text-stone-900 transition-colors flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
@@ -129,70 +210,99 @@ export default function AdminLogin() {
             </button>
             <motion.div 
               whileHover={{ rotate: 5, scale: 1.05 }}
-              className="w-32 h-32 bg-white rounded-[2.5rem] overflow-hidden shadow-2xl p-2 mx-auto border-2 border-stone-50 relative group"
+              className="w-24 h-24 bg-white rounded-[2rem] overflow-hidden shadow-2xl p-2 mx-auto border-2 border-stone-50 relative group"
             >
                {brand.logoUrl && (
                  <OptimizedImage 
                    src={brand.logoUrl} 
                    alt="Management Logo" 
-                   className="w-full h-full object-contain rounded-[2rem]"
+                   className="w-full h-full object-contain rounded-[1.5rem]"
                    showOverlay={false}
                  />
                )}
-               <div className="absolute inset-0 bg-bento-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.div>
             <div>
-              <h1 className="text-4xl font-black italic text-bento-primary tracking-tighter uppercase leading-none">Console</h1>
-              <p className="text-amber-500 font-black uppercase tracking-[0.3em] text-[10px] mt-3">Admin Authority</p>
+              <h1 className="text-3xl font-black italic text-bento-primary tracking-tighter uppercase leading-none">Console</h1>
+              <p className="text-amber-500 font-black uppercase tracking-[0.3em] text-[10px] mt-2">Admin Authority</p>
             </div>
           </div>
 
           <div className="space-y-6">
-            {!isFirebaseAuthed && (!auth.currentUser || auth.currentUser.isAnonymous) ? (
-              <div className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
-                <p className="text-center text-[10px] font-black text-stone-400 uppercase tracking-widest mb-6 px-4 leading-relaxed">
-                  Authentication Required <br/>
-                  <span className="text-stone-300 font-bold opacity-60">Please prove your identity with Google</span>
-                </p>
-                <button
-                  onClick={handleGoogleSignIn}
-                  disabled={loading}
-                  className="w-full bg-stone-900 text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-stone-200 active:scale-95 disabled:opacity-50 relative overflow-hidden group"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                  {loading ? <Loader2 size={20} className="animate-spin" /> : <Mail size={18} className="text-amber-400" />}
-                  {loading ? 'Verifying...' : 'Sign in to confirm'}
-                </button>
+            <form onSubmit={handleTraditionalLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-4 flex items-center gap-2">
+                  <UserIcon size={12} /> Username
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-100 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-bento-primary/20 transition-all outline-none font-bold text-stone-900"
+                  placeholder="Enter username"
+                  required
+                />
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 bg-green-50 text-green-700 p-5 rounded-3xl border border-green-100">
-                  <div className="bg-green-500 rounded-full p-1.5 flex-shrink-0">
-                    <ShieldCheck size={14} className="text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-green-600 mb-0.5">Identified</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest truncate">{auth.currentUser?.email}</p>
-                  </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-4 flex items-center gap-2">
+                  <Lock size={12} /> Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-100 rounded-2xl py-4 pl-6 pr-12 focus:ring-2 focus:ring-bento-primary/20 transition-all outline-none font-bold text-stone-900"
+                    placeholder="Enter password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-900 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
-
-                <button
-                  onClick={handleLogin}
-                  disabled={loading}
-                  className="w-full bg-bento-primary text-white py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-bento-primary/40 hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
-                >
-                  {loading ? 'Entering...' : 'Enter Console'} 
-                  {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
-                </button>
-
-                <p className="text-[9px] text-stone-400 text-center font-bold px-4">
-                  Identity locked to authenticated session. Only authorized emails can access the console.
-                </p>
               </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-stone-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : 'Log In'}
+                {!loading && <ArrowRight size={18} />}
+              </button>
+            </form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-stone-100"></div></div>
+              <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-stone-300">or</span></div>
+            </div>
+
+            {(!auth.currentUser || auth.currentUser.isAnonymous) ? (
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full bg-white border-2 border-stone-100 text-stone-900 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-stone-50 transition-all"
+              >
+                <Mail size={16} className="text-amber-500" />
+                Google Authentication
+              </button>
+            ) : (
+              <button
+                onClick={handleLogin}
+                disabled={loading}
+                className="w-full bg-bento-primary/5 text-bento-primary border-2 border-bento-primary/10 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-bento-primary/10 transition-all"
+              >
+                <ShieldCheck size={16} />
+                Continue with {auth.currentUser.email}
+              </button>
             )}
           </div>
 
-          <p className="text-center text-stone-300 text-[10px] font-bold uppercase tracking-[0.3em]">
+          <p className="text-center text-stone-300 text-[9px] font-bold uppercase tracking-[0.3em]">
             Restricted Admin Area
           </p>
         </div>

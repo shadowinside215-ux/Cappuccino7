@@ -91,13 +91,13 @@ export default function AdminOrders() {
         await awardOrderPoints(order);
       }
       
-      toast.success(`${t('order_set_to')} ${newStatus}`);
+      toast.success(`${t('order_set_to') as string} ${newStatus}`);
     } catch (err) {
-      toast.error(t('failed_status_update'));
+      toast.error(t('failed_status_update') as string);
     }
   };
 
-  if (loading) return <div className="text-center py-20 tracking-tighter uppercase font-black italic text-stone-400">{t('monitoring_orders')}</div>;
+  if (loading) return <div className="text-center py-20 tracking-tighter uppercase font-black italic text-stone-400">{t('monitoring_orders') as string}</div>;
 
   const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
   const completedOrders = orders.filter(o => o.status === 'delivered').slice(0, 15);
@@ -105,16 +105,16 @@ export default function AdminOrders() {
   return (
     <div className="space-y-12 pb-20">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-brown-950 uppercase italic tracking-tighter">{t('live_orders')}</h1>
+        <h1 className="text-3xl font-bold text-brown-950 uppercase italic tracking-tighter">{t('live_orders') as string}</h1>
         <div className="flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-wider">
-          <AlertCircle size={14} /> {activeOrders.length} {t('waiting_label')}
+          <AlertCircle size={14} /> {activeOrders.length} {t('waiting_label') as string}
         </div>
       </div>
 
       <div className="space-y-6">
         {activeOrders.length === 0 ? (
           <div className="text-center py-20 bg-[#FDF8F3] rounded-3xl border-2 border-dashed border-stone-200">
-            <p className="text-stone-400 font-bold uppercase italic tracking-tight">{t('no_active_orders_admin')}</p>
+            <p className="text-stone-400 font-bold uppercase italic tracking-tight">{t('no_active_orders_admin') as string}</p>
           </div>
         ) : (
           activeOrders.map((order) => (
@@ -130,7 +130,7 @@ export default function AdminOrders() {
                         return (
                           <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-3 py-1 rounded-full animate-bounce shadow-lg">
                             <Gift size={12} strokeWidth={3} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">{t('reward_ready')}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">{t('reward_ready') as string}</span>
                           </div>
                         );
                       }
@@ -142,7 +142,7 @@ export default function AdminOrders() {
                     <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 italic">
                       <ShoppingBag size={14} className="text-brown-600" />
                       <span className="font-black uppercase text-[10px] tracking-wider">
-                        {order.deliveryType === 'dine-in' ? t('dine_in', 'Dine In') : t('takeaway')}
+                        {order.deliveryType === 'dine-in' ? (t('dine_in', 'Dine In') as string) : (t('takeaway') as string)}
                       </span>
                     </p>
                     <OrderTimer 
@@ -161,7 +161,7 @@ export default function AdminOrders() {
                         'bg-stone-100 border-stone-200 text-stone-500'
                       }`}>
                         <ChefHat size={14} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{t('kitchen', 'Kitchen')}: {t(`status.${order.kitchenStatus}`, order.kitchenStatus)}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{(t('kitchen', 'Kitchen') as string)}: {t(`status.${order.kitchenStatus}`, order.kitchenStatus) as string}</span>
                       </div>
                     )}
                     {order.barmanStatus && (
@@ -172,7 +172,7 @@ export default function AdminOrders() {
                         'bg-stone-100 border-stone-200 text-stone-500'
                       }`}>
                         <Coffee size={14} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{t('barman', 'Barman')}: {t(`status.${order.barmanStatus}`, order.barmanStatus)}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{(t('barman', 'Barman') as string)}: {t(`status.${order.barmanStatus}`, order.barmanStatus) as string}</span>
                       </div>
                     )}
                   </div>
@@ -181,28 +181,28 @@ export default function AdminOrders() {
                     <div className="mb-4 bg-amber-50 p-4 rounded-2xl border border-amber-100">
                       <div className="flex items-center gap-2 mb-1">
                         <MessageCircle size={14} className="text-amber-600" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">{t('special_instructions')}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">{(t('special_instructions') as string)}</span>
                       </div>
                       <p className="text-sm font-medium text-amber-900 italic">"{order.deliveryNotes}"</p>
                     </div>
                   )}
 
                   <div className="space-y-3 mt-6">
-                    <p className="text-[10px] font-black text-brown-300 uppercase tracking-widest pl-1">{t('order_details')}</p>
+                    <p className="text-[10px] font-black text-brown-300 uppercase tracking-widest pl-1">{(t('order_details') as string)}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {order.items.map((item, idx) => (
                         <div key={idx} className="bg-brown-50/50 px-4 py-3 rounded-2xl flex justify-between items-center border border-brown-100/50">
                           <div className="flex items-center gap-3">
                             <span className="w-6 h-6 rounded-lg bg-brown-600 text-white flex items-center justify-center text-[10px] font-black">{item.quantity}x</span>
                             <div>
-                              <span className="text-xs font-bold text-brown-900">{t(`products.${item.name}`, item.name)}</span>
+                              <span className="text-xs font-bold text-brown-900">{t(`products.${item.name}`, item.name) as string}</span>
                               {item.customization && (
                                 <p className="text-[9px] font-black uppercase text-amber-500 italic mt-0.5">
                                   {item.customization.includes('|') ? (
                                     <>
-                                      {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim())}
+                                      {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim()) as string}
                                       {' • '}
-                                      {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_'))}
+                                      {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_')) as string}
                                     </>
                                   ) : (
                                     item.customization
@@ -211,7 +211,7 @@ export default function AdminOrders() {
                               )}
                               {(item as any).categoryName && (
                                 <p className="text-[8px] font-black uppercase tracking-widest text-amber-600 mt-0.5">
-                                  {t(`categories.${(item as any).categoryName}`, (item as any).categoryName)} 
+                                  {t(`categories.${(item as any).categoryName}`, (item as any).categoryName) as string} 
                                   {(item as any).subSection ? ` • ${(item as any).subSection.replace('_', ' ')}` : ''}
                                 </p>
                               )}
@@ -220,7 +220,7 @@ export default function AdminOrders() {
                           <div className="text-right">
                              <p className="text-[10px] font-black text-brown-400">{item.price * item.quantity} MAD</p>
                              <p className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">
-                               {(item as any).pointsWorth ?? item.quantity} {t('points_loyalty')}
+                               {(item as any).pointsWorth ?? item.quantity} {(t('points_loyalty') as string)}
                              </p>
                           </div>
                         </div>

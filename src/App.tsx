@@ -32,6 +32,8 @@ import CashierLogin from './pages/cashier/CashierLogin';
 import CashierDashboard from './pages/cashier/CashierDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import StaffManagement from './pages/admin/StaffManagement';
+import DriverLogin from './pages/driver/DriverLogin';
+import DriverDashboard from './pages/driver/DriverDashboard';
 import Settings from './pages/Settings';
 import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
@@ -167,6 +169,10 @@ const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | nu
   
   useEffect(() => {
     const checkCashier = async () => {
+      if (localStorage.getItem('cashier_session_active') === 'true') {
+        setIsCashierDocument(true);
+        return;
+      }
       if (userProfile?.isCashier || userProfile?.isAdmin) {
         setIsCashierDocument(true);
         return;
@@ -184,6 +190,12 @@ const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | nu
   if (isCashierDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg text-bento-ink">Authenticating Cashier...</div>;
   if (isCashierDocument || userProfile?.isCashier) return <>{children}</>;
   return <Navigate to="/cashier/login" />;
+};
+
+const DriverGuard = ({ children }: { children: React.ReactNode }) => {
+  const isDriverAuth = localStorage.getItem('driver_auth') === 'true';
+  if (isDriverAuth) return <>{children}</>;
+  return <Navigate to="/driver/login" />;
 };
 
 function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
@@ -579,6 +591,8 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/barman/dashboard" element={<BarmanGuard userProfile={userProfile}><BarmanDashboard /></BarmanGuard>} />
                   <Route path="/cashier/login" element={<CashierLogin />} />
                   <Route path="/cashier/dashboard" element={<CashierGuard userProfile={userProfile}><CashierDashboard /></CashierGuard>} />
+                  <Route path="/driver/login" element={<DriverLogin />} />
+                  <Route path="/driver/dashboard" element={<DriverGuard><DriverDashboard /></DriverGuard>} />
                 </Routes>
               </motion.div>
             </AnimatePresence>
@@ -593,6 +607,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   { to: "/cashier/login", label: t('cashier_access', 'POS Cashier') },
                   { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen') },
                   { to: "/barman/login", label: t('barman_access', 'Barman') },
+                  { to: "/driver/login", label: t('driver_access', 'Driver') },
                 ].map((link) => (
                   <Link 
                     key={link.to}
