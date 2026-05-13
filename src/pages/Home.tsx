@@ -125,6 +125,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
       // If we have categories but the loading state is stuck, clear it
       if (data.length > 0) setLoading(false);
     }, (error) => {
+      setLoading(false);
       handleFirestoreError(error, OperationType.LIST, 'categories');
     });
 

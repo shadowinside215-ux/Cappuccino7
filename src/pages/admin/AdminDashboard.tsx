@@ -544,7 +544,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => navigate('/')}
-              className="p-3 bg-bento-card-bg rounded-2xl text-stone-500 hover:text-bento-primary transition-colors border border-bento-card-border"
+              className="p-3 bg-bento-card-bg rounded-2xl text-stone-700 hover:text-bento-primary transition-colors border border-stone-200 shadow-sm"
               title="Exit Admin Console"
             >
               <LogOut size={24} />
@@ -845,7 +845,7 @@ export default function AdminDashboard() {
                   
                   <button 
                     onClick={() => viewUserDetails(user)}
-                    className="p-3 bg-stone-50 text-stone-300 hover:bg-bento-primary hover:text-white rounded-2xl transition-all"
+                    className="p-3 bg-stone-200/50 text-stone-600 hover:bg-bento-primary hover:text-white rounded-2xl transition-all border border-stone-200"
                   >
                     <ChevronRight size={20} />
                   </button>

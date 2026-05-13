@@ -529,7 +529,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               <div className="grid grid-cols-2 gap-2">
                 <button 
                   onClick={() => setDeliveryType('dine-in')}
-                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-bento-ink/40 hover:text-bento-ink hover:bg-bento-ink/5'}`}
+                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'bg-bento-ink/10 text-bento-ink/50 hover:text-bento-ink hover:bg-bento-ink/20'}`}
                 >
                   <div className="flex flex-col items-center gap-1">
                     <Coffee size={16} />
@@ -541,7 +541,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                     setDeliveryType('pickup');
                     setTableNumber('');
                   }}
-                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'pickup' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'text-bento-ink/40 hover:text-bento-ink hover:bg-bento-ink/5'}`}
+                  className={`py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${deliveryType === 'pickup' ? 'bg-amber-400 text-stone-900 shadow-xl' : 'bg-bento-ink/10 text-bento-ink/50 hover:text-bento-ink hover:bg-bento-ink/20'}`}
                 >
                   <div className="flex flex-col items-center gap-1">
                     <Package size={16} />
@@ -580,7 +580,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         <button
                           key={num}
                           onClick={() => setTableNumber(num)}
-                          className={`aspect-square flex items-center justify-center rounded-xl font-black text-xs transition-all border ${tableNumber === num ? 'bg-amber-400 text-stone-900 border-amber-400 scale-110 shadow-lg' : 'bg-bento-ink/5 text-bento-ink/40 border-bento-card-border border-dashed'}`}
+                          className={`aspect-square flex items-center justify-center rounded-xl font-black text-xs transition-all border ${tableNumber === num ? 'bg-amber-400 text-stone-900 border-amber-400 scale-110 shadow-lg' : 'bg-stone-800/80 text-stone-400 border-stone-700 border-dashed'}`}
                         >
                           {tableArea === 'Inside' ? 'A' : 'B'}{num}
                         </button>

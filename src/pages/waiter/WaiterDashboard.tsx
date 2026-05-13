@@ -544,16 +544,16 @@ export default function WaiterDashboard() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-stone-50">
-                       <button onClick={() => updateStatus(order, 'preparing')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-50 hover:bg-amber-50 group transition-colors">
-                         <Soup size={18} className="text-stone-400 group-hover:text-amber-500" />
-                         <span className="text-[8px] font-black uppercase tracking-tighter">{t('preparing')}</span>
+                    <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-stone-100">
+                       <button onClick={() => updateStatus(order, 'preparing')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-200/50 hover:bg-amber-100 group transition-colors border border-stone-200">
+                         <Soup size={18} className="text-stone-600 group-hover:text-amber-600" />
+                         <span className="text-[8px] font-black uppercase tracking-tighter text-stone-700">{t('preparing')}</span>
                        </button>
-                       <button onClick={() => updateStatus(order, 'ready')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-50 hover:bg-green-50 group transition-colors">
-                         <CheckCircle2 size={18} className="text-stone-400 group-hover:text-green-500" />
-                         <span className="text-[8px] font-black uppercase tracking-tighter">{t('mark_ready', 'Ready')}</span>
+                       <button onClick={() => updateStatus(order, 'ready')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-200/50 hover:bg-green-100 group transition-colors border border-stone-200">
+                         <CheckCircle2 size={18} className="text-stone-600 group-hover:text-green-600" />
+                         <span className="text-[8px] font-black uppercase tracking-tighter text-stone-700">{t('mark_ready', 'Ready')}</span>
                        </button>
-                       <button onClick={() => completeOrder(order)} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-900 text-white hover:bg-black">
+                       <button onClick={() => completeOrder(order)} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-950 text-white hover:bg-black shadow-lg">
                          <CheckCheck size={18} className="text-amber-400" />
                          <span className="text-[8px] font-black uppercase tracking-tighter">{t('complete')}</span>
                        </button>

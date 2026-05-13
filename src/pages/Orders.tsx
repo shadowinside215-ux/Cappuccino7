@@ -127,9 +127,9 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
         disabled={loading || !!request}
         className={`w-full sm:w-auto px-10 py-5 rounded-[2rem] font-black uppercase text-[10px] tracking-[0.3em] transition-all flex items-center justify-center gap-3 shadow-2xl relative overflow-hidden group ${
           request 
-            ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' 
+            ? 'bg-stone-950/80 text-white/20 cursor-not-allowed border border-white/5 shadow-inner' 
             : !isAssigned
-              ? 'bg-white/5 text-stone-500 border border-white/5 opacity-50 grayscale'
+              ? 'bg-stone-900 text-stone-600 border border-white/10 cursor-not-allowed grayscale'
               : 'bg-amber-400 text-stone-900 hover:scale-105 active:scale-95 shadow-[0_20px_40px_rgba(251,191,36,0.2)]'
         }`}
       >
