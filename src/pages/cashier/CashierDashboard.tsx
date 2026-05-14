@@ -408,65 +408,123 @@ export default function CashierDashboard() {
           ) : (
             <div className="flex-1 overflow-y-auto bg-bento-bg p-6 space-y-4 custom-scrollbar">
                <h2 className="text-2xl font-black uppercase italic tracking-tighter text-amber-500 mb-8">{t('pos_unpaid_orders')}</h2>
-               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {unpaidOrders.map(order => (
-                    <div key={order.id} className="bg-bento-card-bg border border-bento-card-border p-6 rounded-3xl flex flex-col justify-between group hover:border-amber-500/30 transition-all shadow-sm">
-                       <div className="flex justify-between items-start mb-6">
-                          <div>
-                             <div className="flex items-center gap-3 mb-1">
-                                <span className="text-xl font-black text-bento-ink uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
-                                <span className={`px-2 py-0.5 bg-bento-bg text-stone-500 text-[8px] font-black uppercase rounded ${order.deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 border border-amber-500/20' : ''}`}>
-                                  {order.deliveryType === 'dine-in' ? `${t('dine_in')} ${order.fullTableLabel || ''}` : order.deliveryType}
-                                </span>
+               
+               {/* Ready for Collection Section */}
+               <div className="mb-12">
+                  <div className="flex items-center gap-3 mb-6">
+                     <div className="w-8 h-8 bg-green-500 rounded-xl flex items-center justify-center text-stone-900">
+                        <CheckCircle2 size={16} />
+                     </div>
+                     <h3 className="text-sm font-black uppercase tracking-widest text-bento-ink">{t('ready_for_collection', 'Ready for Collection')}</h3>
+                     <div className="h-px flex-1 bg-stone-500/10"></div>
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                     {unpaidOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.isPOS).map(order => (
+                       <div key={order.id} className="bg-white border-2 border-green-500/50 p-6 rounded-[2.5rem] flex flex-col justify-between group hover:border-green-500 transition-all shadow-xl shadow-green-500/5">
+                          <div className="flex justify-between items-start mb-6">
+                             <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                   <span className="text-xl font-black text-stone-900 uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
+                                   <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${order.deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 border border-amber-500/20' : 'bg-stone-100 text-stone-500'}`}>
+                                     {order.deliveryType === 'dine-in' ? `${t('dine_in')} ${order.fullTableLabel || ''}` : order.deliveryType}
+                                   </span>
+                                </div>
+                                <p className="text-stone-400 font-bold text-[10px] uppercase">{order.customerName}</p>
                              </div>
-                             <p className="text-stone-400 font-bold text-[10px] uppercase">{order.customerName}</p>
+                             <div className="text-right">
+                                <p className="text-2xl font-black text-stone-900 tabular-nums">{order.total.toFixed(2)}</p>
+                                <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">MAD TOTAL</p>
+                             </div>
                           </div>
-                          <div className="text-right">
-                             <p className="text-2xl font-black text-bento-ink tabular-nums">{order.total.toFixed(2)}</p>
-                             <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">MAD TOTAL</p>
+
+                          <div className="space-y-2 mb-6 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                             {order.items.map((item, i) => (
+                               <div key={i} className="flex justify-between text-[10px] font-bold text-stone-600">
+                                  <span>{item.quantity}x {item.name}</span>
+                                  <span>{item.price * item.quantity} MAD</span>
+                               </div>
+                             ))}
+                          </div>
+
+                          <div className="mb-4">
+                             <OrderTimer 
+                               createdAt={order.createdAt} 
+                               prepTime={order.prepTime} 
+                               status={order.status} 
+                               expectedReadyAt={order.expectedReadyAt}
+                             />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 mt-auto">
+                             <button 
+                               onClick={() => handleMarkPaid(order, 'cash')}
+                               className="bg-green-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-green-700 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
+                             >
+                                <Banknote size={16} /> {t('pos_paid_cash')}
+                             </button>
+                             <button 
+                               onClick={() => handleMarkPaid(order, 'card')}
+                               className="bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+                             >
+                                <CreditCard size={16} /> {t('pos_paid_card')}
+                             </button>
                           </div>
                        </div>
-
-                       <div className="space-y-2 mb-6 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                          {order.items.map((item, i) => (
-                            <div key={i} className="flex justify-between text-[10px] font-bold text-stone-500">
-                               <span>{item.quantity}x {item.name}</span>
-                               <span>{item.price * item.quantity} MAD</span>
-                            </div>
-                          ))}
+                     ))}
+                     {unpaidOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.isPOS).length === 0 && (
+                       <div className="col-span-full py-12 flex flex-col items-center justify-center opacity-20 bg-stone-500/5 rounded-[2rem] border border-dashed border-stone-500/20">
+                          <p className="font-black uppercase tracking-widest text-[9px]">{t('no_ready_orders', 'No orders ready for collection')}</p>
                        </div>
+                     )}
+                  </div>
+               </div>
 
-                       <div className="mb-4">
-                          <OrderTimer 
-                            createdAt={order.createdAt} 
-                            prepTime={order.prepTime} 
-                            status={order.status} 
-                            expectedReadyAt={order.expectedReadyAt}
-                          />
-                       </div>
+               {/* Ongoing Preparation Section */}
+               <div>
+                  <div className="flex items-center gap-3 mb-6">
+                     <div className="w-8 h-8 bg-stone-100 rounded-xl flex items-center justify-center text-stone-400">
+                        <Clock size={16} />
+                     </div>
+                     <h3 className="text-sm font-black uppercase tracking-widest text-stone-500">{t('ongoing_preparation', 'Ongoing Preparation')}</h3>
+                     <div className="h-px flex-1 bg-stone-500/10"></div>
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 opacity-70 hover:opacity-100 transition-opacity">
+                     {unpaidOrders.filter(o => o.status !== 'delivered' && o.status !== 'ready' && !o.isPOS).map(order => (
+                       <div key={order.id} className="bg-bento-card-bg border border-bento-card-border p-4 rounded-3xl flex flex-col justify-between group shadow-sm bg-stone-50/50">
+                          <div className="flex justify-between items-start mb-4">
+                             <div>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                   <span className="text-sm font-black text-bento-ink uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
+                                   <span className="text-[7px] font-black uppercase text-amber-600 bg-amber-50 px-1.5 rounded">{order.status}</span>
+                                </div>
+                                <p className="text-stone-400 font-bold text-[8px] uppercase">{order.customerName}</p>
+                             </div>
+                             <div className="text-right">
+                                <p className="text-sm font-black text-bento-ink tabular-nums">{order.total}</p>
+                             </div>
+                          </div>
 
-                       <div className="grid grid-cols-2 gap-2 mt-auto">
-                          <button 
-                            onClick={() => handleMarkPaid(order, 'cash')}
-                            className="bg-green-600/20 text-green-500 border border-green-600/30 py-3 rounded-xl font-black uppercase text-[9px] hover:bg-green-600 hover:text-white transition-all flex items-center justify-center gap-2"
-                          >
-                             <Banknote size={14} /> {t('pos_paid_cash')}
-                          </button>
-                          <button 
-                            onClick={() => handleMarkPaid(order, 'card')}
-                            className="bg-blue-600/20 text-blue-400 border border-blue-600/30 py-3 rounded-xl font-black uppercase text-[9px] hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2"
-                          >
-                             <CreditCard size={14} /> {t('pos_paid_card')}
-                          </button>
+                          <div className="mb-4">
+                             <OrderTimer 
+                               createdAt={order.createdAt} 
+                               prepTime={order.prepTime} 
+                               status={order.status} 
+                               expectedReadyAt={order.expectedReadyAt}
+                             />
+                          </div>
+                          
+                          <div className="flex gap-1">
+                             {order.kitchenStatus && <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-stone-100 rounded text-stone-500">K: {order.kitchenStatus}</span>}
+                             {order.barmanStatus && <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-stone-100 rounded text-stone-500">B: {order.barmanStatus}</span>}
+                          </div>
                        </div>
-                    </div>
-                  ))}
-                  {unpaidOrders.length === 0 && (
-                    <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-20 bg-bento-card-bg rounded-[3rem] border-2 border-dashed border-bento-card-border">
-                       <CheckCircle2 size={64} strokeWidth={1} />
-                       <p className="font-black uppercase tracking-[0.5em] text-[10px] mt-6">All Orders Settled</p>
-                    </div>
-                  )}
+                     ))}
+                     {unpaidOrders.filter(o => o.status !== 'delivered' && o.status !== 'ready' && !o.isPOS).length === 0 && (
+                       <div className="col-span-full py-8 flex items-center justify-center opacity-20">
+                          <p className="font-black uppercase tracking-widest text-[8px]">{t('no_ongoing_orders', 'No ongoing preparations')}</p>
+                       </div>
+                     )}
+                  </div>
                </div>
             </div>
           )}

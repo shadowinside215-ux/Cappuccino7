@@ -13,74 +13,55 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function checkUserRole(role) {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getUserData().get('role', '') == role;
-    }
-
     function isAdmin() { 
+      let data = getUserData();
       return isSignedIn() && (
         request.auth.token.email == 'dragonballsam86@gmail.com' ||
         request.auth.token.role == 'admin' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-          getUserData().get('isAdmin', false) == true ||
-          getUserData().get('role', '') == 'admin'
-        ))
+        data.get('isAdmin', false) == true ||
+        data.get('role', '') == 'admin' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
     
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
     function isWaiter() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/waiters/$(request.auth.uid)) ||
-        checkUserRole('waiter') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isWaiter', false) == true)
-      );
+      let data = getUserData();
+      return isSignedIn() && (data.get('isWaiter', false) == true || data.get('role', '') == 'waiter' || exists(/databases/$(database)/documents/waiters/$(request.auth.uid)));
     }
     
     function isKitchen() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/kitchen/$(request.auth.uid)) ||
-        checkUserRole('kitchen') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isKitchen', false) == true)
-      );
+      let data = getUserData();
+      return isSignedIn() && (data.get('isKitchen', false) == true || data.get('role', '') == 'kitchen' || exists(/databases/$(database)/documents/kitchen/$(request.auth.uid)));
     }
     
     function isBarman() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/barman/$(request.auth.uid)) ||
-        checkUserRole('barman') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isBarman', false) == true)
-      );
+      let data = getUserData();
+      return isSignedIn() && (data.get('isBarman', false) == true || data.get('role', '') == 'barman' || exists(/databases/$(database)/documents/barman/$(request.auth.uid)));
     }
     
     function isDriver() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/drivers/$(request.auth.uid)) ||
-        checkUserRole('driver') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isDriver', false) == true)
-      );
+      let data = getUserData();
+      return isSignedIn() && (data.get('isDriver', false) == true || data.get('role', '') == 'driver' || exists(/databases/$(database)/documents/drivers/$(request.auth.uid)));
     }
     
     function isCashier() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/cashiers/$(request.auth.uid)) ||
-        checkUserRole('cashier') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isCashier', false) == true)
-      );
+      let data = getUserData();
+      return isSignedIn() && (data.get('isCashier', false) == true || data.get('role', '') == 'cashier' || exists(/databases/$(database)/documents/cashiers/$(request.auth.uid)));
     }
     
     function isStaff() {
+      let data = getUserData();
       return isSignedIn() && (
         isAdmin() || 
-        isWaiter() || 
-        isKitchen() || 
-        isBarman() || 
-        isDriver() || 
+        isWaiter() ||
+        isKitchen() ||
+        isBarman() ||
+        isDriver() ||
         isCashier() ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('isStaff', false) == true)
+        data.get('isStaff', false) == true ||
+        data.get('role', '') in ['admin', 'waiter', 'kitchen', 'barman', 'cashier', 'driver']
       );
     }
     
@@ -159,18 +140,22 @@ service cloud.firestore {
       allow create: if isSignedIn();
       
       allow update: if isStaff() && (
-        // Case 1: Order is unassigned - any staff can assign themselves
-        existing().get('waiterId', null) == null || 
-        // Case 2: Order is already assigned to the current user
-        existing().get('waiterId', null) == request.auth.uid ||
-        // Case 3: Admin override
-        isAdmin()
+        // Action: Staff self-assignment (Take Order)
+        (existing().get('waiterId', null) == null && incoming().diff(existing()).affectedKeys().hasOnly(['waiterId', 'waiterName', 'waiterStatus', 'status', 'updatedAt'])) ||
+        
+        // Action: Assigned staff updating status
+        (existing().get('waiterId', null) == request.auth.uid && incoming().diff(existing()).affectedKeys().hasAny(['status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'updatedAt', 'waiterStatus', 'deliveredAt'])) ||
+        
+        // Action: Admin or Cashier updating payment or overall status
+        ((isAdmin() || isCashier()) && incoming().diff(existing()).affectedKeys().hasOnly(['isPaid', 'paymentMethod', 'status', 'updatedAt', 'deliveredAt', 'paidAt'])) ||
+        
+        // Action: Kitchen/Barman updating their specific status
+        ((isKitchen() || isBarman()) && incoming().diff(existing()).affectedKeys().hasOnly(['kitchenStatus', 'barmanStatus', 'status', 'updatedAt'])) ||
+        
+        // Action: Driver updating delivery status
+        (isDriver() && existing().get('deliveryType', '') == 'delivery' && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'deliveredAt']))
       );
       
-      // Allow drivers to update delivery status
-      allow update: if isSignedIn() && isDriver() && existing().get('deliveryType', '') == 'delivery' && 
-                    incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
-                    
       allow delete: if isAdmin();
     }
 

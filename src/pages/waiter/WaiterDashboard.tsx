@@ -449,18 +449,14 @@ export default function WaiterDashboard() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-stone-100">
-                       <button onClick={() => updateStatus(order, 'preparing')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-200/50 hover:bg-amber-100 group transition-colors border border-stone-200">
-                         <Soup size={18} className="text-stone-600 group-hover:text-amber-600" />
-                         <span className="text-[8px] font-black uppercase tracking-tighter text-stone-700">{t('preparing')}</span>
-                       </button>
-                       <button onClick={() => updateStatus(order, 'ready')} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-200/50 hover:bg-green-100 group transition-colors border border-stone-200">
-                         <CheckCircle2 size={18} className="text-stone-600 group-hover:text-green-600" />
-                         <span className="text-[8px] font-black uppercase tracking-tighter text-stone-700">{t('mark_ready', 'Ready')}</span>
-                       </button>
-                       <button onClick={() => completeOrder(order)} className="flex flex-col items-center gap-2 py-4 rounded-3xl bg-stone-950 text-white hover:bg-black shadow-lg">
-                         <CheckCheck size={18} className="text-amber-400" />
-                         <span className="text-[8px] font-black uppercase tracking-tighter">{t('complete')}</span>
+                    <div className="mt-6 pt-6 border-t border-stone-100">
+                       <button 
+                         onClick={() => completeOrder(order)} 
+                         className="w-full flex flex-col items-center gap-2 py-5 rounded-3xl bg-stone-950 text-white hover:bg-black shadow-xl shadow-stone-900/20 active:scale-95 transition-all"
+                       >
+                         <CheckCheck size={20} className="text-amber-400" />
+                         <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('complete')}</span>
+                         <span className="text-[8px] font-bold text-stone-500 uppercase tracking-tighter">{t('mark_as_served_for_cashier', 'Mark as Served & Send to Cashier')}</span>
                        </button>
                     </div>
                   </motion.div>

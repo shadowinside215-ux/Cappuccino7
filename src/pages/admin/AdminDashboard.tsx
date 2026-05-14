@@ -60,6 +60,74 @@ export default function AdminDashboard() {
     }
   };
 
+  const cleanupAllTestData = async () => {
+    const confirmation = window.confirm(
+      "⚠️ DANGER: This will PERMANENTLY DELETE all orders, all revenue data, all waiter requests, and CLEAR all customer loyalty points/points balances. This cannot be undone. Proceed?"
+    );
+    if (!confirmation) return;
+
+    const secondConfirmation = window.confirm(
+      "Are you absolutely sure? This will reset the app to zero test data."
+    );
+    if (!secondConfirmation) return;
+
+    const toastId = toast.loading('Initiating deep cleanup...');
+    try {
+      // 1. Clear Orders
+      const orderSnap = await getDocs(collection(db, 'orders'));
+      let orderBatch = writeBatch(db);
+      let count = 0;
+      for (const d of orderSnap.docs) {
+        orderBatch.delete(d.ref);
+        count++;
+        if (count >= 400) {
+          await orderBatch.commit();
+          orderBatch = writeBatch(db);
+          count = 0;
+        }
+      }
+      await orderBatch.commit();
+
+      // 2. Clear Revenue
+      const revSnap = await getDocs(collection(db, 'dailyRevenue'));
+      const revBatch = writeBatch(db);
+      revSnap.docs.forEach(d => revBatch.delete(d.ref));
+      await revBatch.commit();
+
+      // 3. Clear Waiter Requests
+      const reqSnap = await getDocs(collection(db, 'waiterRequests'));
+      const reqBatch = writeBatch(db);
+      reqSnap.docs.forEach(d => reqBatch.delete(d.ref));
+      await reqBatch.commit();
+
+      // 4. Reset User Loyalty
+      const userSnap = await getDocs(collection(db, 'users'));
+      let userBatch = writeBatch(db);
+      count = 0;
+      for (const d of userSnap.docs) {
+        userBatch.update(d.ref, {
+          points: 0,
+          coffeeCount: 0,
+          itemLoyalty: {}
+        });
+        count++;
+        if (count >= 400) {
+          await userBatch.commit();
+          userBatch = writeBatch(db);
+          count = 0;
+        }
+      }
+      await userBatch.commit();
+
+      toast.success('System reset successfully. All test data cleared.', { id: toastId });
+      setWeeklyRevenue({});
+      setStats(prev => ({ ...prev, todayRevenue: 0, totalOrders: 0, activeOrders: 0 }));
+    } catch (err) {
+      console.error("Cleanup error:", err);
+      toast.error('Cleanup failed. Check permissions.', { id: toastId });
+    }
+  };
+
   const resetWeeklyRevenue = async () => {
     if (!confirm('Clear all revenue data for the week?')) return;
     const toastId = toast.loading('Clearing weekly revenue...');
@@ -94,6 +162,58 @@ export default function AdminDashboard() {
       toast.error('Failed to fetch history', { id: 'details' });
     }
   };
+
+  useEffect(() => {
+    // AUTO-CLEANUP TRIGGER (One-time use to clear test data)
+    const runAutoCleanup = async () => {
+      const alreadyCleaned = sessionStorage.getItem('auto_cleanup_done');
+      if (alreadyCleaned) return;
+
+      console.log("🚀 Starting Automatic Test Data Cleanup...");
+      try {
+        // 1. Clear Orders
+        const orderSnap = await getDocs(collection(db, 'orders'));
+        const orderBatch = writeBatch(db);
+        orderSnap.docs.forEach(d => orderBatch.delete(d.ref));
+        await orderBatch.commit();
+
+        // 2. Clear Revenue (All tiers)
+        const revTiers = ['dailyRevenue', 'weeklyRevenue', 'monthlyRevenue', 'stats'];
+        for (const tier of revTiers) {
+          const snap = await getDocs(collection(db, tier));
+          const batch = writeBatch(db);
+          snap.docs.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+
+        // 3. Clear Requests
+        const reqSnap = await getDocs(collection(db, 'waiterRequests'));
+        const reqBatch = writeBatch(db);
+        reqSnap.docs.forEach(d => reqBatch.delete(d.ref));
+        await reqBatch.commit();
+
+        // 4. Reset User Points
+        const userSnap = await getDocs(collection(db, 'users'));
+        const userBatch = writeBatch(db);
+        userSnap.docs.forEach(d => {
+          userBatch.update(d.ref, {
+            points: 0,
+            coffeeCount: 0,
+            itemLoyalty: {}
+          });
+        });
+        await userBatch.commit();
+
+        sessionStorage.setItem('auto_cleanup_done', 'true');
+        toast.success('DEEP CLEANUP COMPLETE: All test data has been wiped.');
+        window.location.reload(); // Refresh to show clean state
+      } catch (err) {
+        console.error("Auto-cleanup error:", err);
+      }
+    };
+
+    runAutoCleanup();
+  }, []);
 
   useEffect(() => {
     // Auto-register super admin
@@ -790,7 +910,6 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* User Loyalty Management */}
       <div className="space-y-6">
         <div className="flex items-center justify-between pl-1">
           <div className="flex items-center gap-3">
@@ -853,6 +972,33 @@ export default function AdminDashboard() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* System Maintenance Section */}
+      <div className="pt-12 border-t border-stone-200">
+        <div className="flex items-center gap-3 mb-6">
+          <ShieldCheck className="text-red-500" size={24} />
+          <h2 className="text-xl font-black text-stone-900 uppercase italic tracking-tighter">System Maintenance</h2>
+        </div>
+        
+        <div className="bg-red-50 border border-red-100 p-8 rounded-[3rem] shadow-xl shadow-red-500/5">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="max-w-xl">
+              <h3 className="text-lg font-black text-red-700 uppercase tracking-tight mb-2">Deep Cleanup Tool</h3>
+              <p className="text-sm text-red-600 font-medium opacity-80 leading-relaxed">
+                This tool will wipe all operational data including orders, transactions, revenue history, and reset all user loyalty points. 
+                Use this only to clear the app of test data before launching to production. This action is irreversible.
+              </p>
+            </div>
+            <button 
+              onClick={cleanupAllTestData}
+              className="w-full md:w-auto bg-red-600 text-white px-10 py-5 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-red-700 active:scale-95 transition-all shadow-xl shadow-red-600/30 flex items-center justify-center gap-3"
+            >
+              <Database size={18} />
+              Wipe All Test Data
+            </button>
+          </div>
         </div>
       </div>
       <AnimatePresence>
