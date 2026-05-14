@@ -137,7 +137,7 @@ export default function CashierDashboard() {
     const todayStart = startOfDay(new Date());
     const qJournal = query(
       collection(db, 'orders'),
-      where('isPOS', '==', true),
+      where('isPaid', '==', true),
       where('createdAt', '>=', todayStart),
       orderBy('createdAt', 'desc')
     );
@@ -200,7 +200,7 @@ export default function CashierDashboard() {
     );
 
     const unsub = onSnapshot(q, (snap) => {
-      const orders = snap.docs.map(d => d.data() as Order).filter(o => o.isPOS);
+      const orders = snap.docs.map(d => d.data() as Order).filter(o => o.isPaid);
       const total = orders.reduce((acc, o) => acc + (o.total || 0), 0);
       const cash = orders.filter(o => o.paymentMethod === 'cash').reduce((acc, o) => acc + (o.total || 0), 0);
       const card = orders.filter(o => o.paymentMethod === 'card').reduce((acc, o) => acc + (o.total || 0), 0);
@@ -272,7 +272,7 @@ export default function CashierDashboard() {
         isPaid: false, // Will be marked paid below
         createdAt: serverTimestamp(),
         pointsEarned: Math.floor(totalPrice / 10),
-        prepTime: 20
+        prepTime: hasKitchenItems ? 30 : 10
       };
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);
@@ -325,9 +325,10 @@ export default function CashierDashboard() {
     try {
       const { addOrderToStats } = await import('../../lib/stats');
       
-      // Update order with payment method first
+      // Update order with payment method and set isPaid to true
       await updateDoc(doc(db, 'orders', order.id), {
         paymentMethod: method,
+        isPaid: true,
         updatedAt: serverTimestamp()
       });
 
@@ -391,16 +392,16 @@ export default function CashierDashboard() {
         <div className="flex-1 flex flex-col min-w-0">
           {view === 'pos' ? (
             <div className="flex-1 overflow-y-auto bg-bento-bg custom-scrollbar">
-              <div className="grid grid-cols-4 md:grid-cols-5 border-b border-bento-card-border">
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border-b border-bento-card-border">
                 {filteredProducts.map(product => (
                   <motion.button
                     key={product.id}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => addToCart(product)}
-                    className="aspect-square bg-[#00ADC0] border border-black/10 flex flex-col items-center justify-center p-4 text-center group active:brightness-50 transition-all hover:brightness-110"
+                    className="aspect-[4/3] bg-[#00ADC0] border border-black/10 flex flex-col items-center justify-center p-8 text-center group active:brightness-50 transition-all hover:brightness-110 shadow-inner"
                   >
-                    <span className="text-[10px] md:text-[12px] font-black uppercase leading-tight mb-2 text-white drop-shadow-sm line-clamp-2 px-1">{product.name}</span>
-                    <span className="text-[11px] md:text-[13px] font-black text-white/80 tabular-nums">{product.price.toFixed(2)}</span>
+                    <span className="text-sm md:text-lg lg:text-xl font-black uppercase leading-tight mb-4 text-white drop-shadow-md line-clamp-3 px-2 tracking-tight">{product.name}</span>
+                    <span className="text-base md:text-xl font-black text-white px-4 py-2 bg-black/20 rounded-xl shadow-lg ring-1 ring-white/10">{product.price.toFixed(2)} DH</span>
                   </motion.button>
                 ))}
               </div>
@@ -420,62 +421,94 @@ export default function CashierDashboard() {
                   </div>
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                      {unpaidOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.isPOS).map(order => (
-                       <div key={order.id} className="bg-white border-2 border-green-500/50 p-6 rounded-[2.5rem] flex flex-col justify-between group hover:border-green-500 transition-all shadow-xl shadow-green-500/5">
-                          <div className="flex justify-between items-start mb-6">
-                             <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                   <span className="text-xl font-black text-stone-900 uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
-                                   <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${order.deliveryType === 'dine-in' ? 'bg-amber-400 text-stone-900 border border-amber-500/20' : 'bg-stone-100 text-stone-500'}`}>
-                                     {order.deliveryType === 'dine-in' ? `${t('dine_in')} ${order.fullTableLabel || ''}` : order.deliveryType}
-                                   </span>
+                        <div key={order.id} className="bg-white border-2 border-green-500/50 p-6 rounded-[2.5rem] flex flex-col justify-between group hover:border-green-500 transition-all shadow-xl shadow-green-500/5 min-h-[450px]">
+                           <div className="flex justify-between items-start mb-6">
+                              <div>
+                                 <div className="flex items-center gap-3 mb-1">
+                                    <span className="text-xl font-black text-stone-900 uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
+                                    <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${order.deliveryType === 'dine-in' ? 'bg-stone-900 text-white border border-amber-500/20 shadow-lg' : 'bg-stone-100 text-stone-500'}`}>
+                                      {order.deliveryType === 'dine-in' ? (
+                                        <div className="flex items-center gap-2">
+                                          <Navigation size={10} className="text-amber-400" />
+                                          {order.fullTableLabel || order.tableNumber}
+                                        </div>
+                                      ) : order.deliveryType}
+                                    </span>
+                                 </div>
+                                 <p className="text-stone-400 font-bold text-[10px] uppercase">{order.customerName}</p>
+                                 {order.waiterName && (
+                                   <div className="flex items-center gap-1.5 mt-1 text-[8px] font-black uppercase text-amber-600">
+                                      <Users size={10} />
+                                      {t('waiter', 'Waiter') as string}: {order.waiterName}
+                                   </div>
+                                 )}
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-2xl font-black text-stone-900 tabular-nums">{order.total.toFixed(2)}</p>
+                                 <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">MAD TOTAL</p>
+                              </div>
+                           </div>
+
+                           <div className="space-y-3 mb-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                              {order.items.map((item, i) => (
+                                <div key={i} className="flex flex-col gap-0.5 pb-2 border-b border-stone-50">
+                                   <div className="flex justify-between text-[10px] font-black uppercase text-stone-700">
+                                      <span>{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
+                                      <span>{(item.price * item.quantity).toFixed(2)} MAD</span>
+                                   </div>
+                                   {(item as any).categoryName && (
+                                     <span className="text-[7px] font-black uppercase tracking-widest text-amber-600/60">
+                                       {t(`categories.${(item as any).categoryName}`, (item as any).categoryName) as string}
+                                     </span>
+                                   )}
+                                   {item.customization && (
+                                     <span className="text-[8px] font-black text-bento-ink/40 uppercase italic">
+                                       • {item.customization}
+                                     </span>
+                                   )}
                                 </div>
-                                <p className="text-stone-400 font-bold text-[10px] uppercase">{order.customerName}</p>
+                              ))}
+                           </div>
+
+                           {order.deliveryNotes && (
+                             <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 italic">
+                               <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                               <p className="text-[10px] font-black text-stone-700 leading-tight uppercase tracking-tight">
+                                 {order.deliveryNotes}
+                               </p>
                              </div>
-                             <div className="text-right">
-                                <p className="text-2xl font-black text-stone-900 tabular-nums">{order.total.toFixed(2)}</p>
-                                <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">MAD TOTAL</p>
-                             </div>
-                          </div>
+                           )}
 
-                          <div className="space-y-2 mb-6 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                             {order.items.map((item, i) => (
-                               <div key={i} className="flex justify-between text-[10px] font-bold text-stone-600">
-                                  <span>{item.quantity}x {item.name}</span>
-                                  <span>{item.price * item.quantity} MAD</span>
-                               </div>
-                             ))}
-                          </div>
+                           <div className="mb-4">
+                              <OrderTimer 
+                                createdAt={order.createdAt} 
+                                prepTime={order.prepTime} 
+                                status={order.status} 
+                                expectedReadyAt={order.expectedReadyAt}
+                              />
+                           </div>
 
-                          <div className="mb-4">
-                             <OrderTimer 
-                               createdAt={order.createdAt} 
-                               prepTime={order.prepTime} 
-                               status={order.status} 
-                               expectedReadyAt={order.expectedReadyAt}
-                             />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2 mt-auto">
-                             <button 
-                               onClick={() => handleMarkPaid(order, 'cash')}
-                               className="bg-green-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-green-700 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
-                             >
-                                <Banknote size={16} /> {t('pos_paid_cash')}
-                             </button>
-                             <button 
-                               onClick={() => handleMarkPaid(order, 'card')}
-                               className="bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
-                             >
-                                <CreditCard size={16} /> {t('pos_paid_card')}
-                             </button>
-                          </div>
-                       </div>
-                     ))}
-                     {unpaidOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.isPOS).length === 0 && (
-                       <div className="col-span-full py-12 flex flex-col items-center justify-center opacity-20 bg-stone-500/5 rounded-[2rem] border border-dashed border-stone-500/20">
-                          <p className="font-black uppercase tracking-widest text-[9px]">{t('no_ready_orders', 'No orders ready for collection')}</p>
-                       </div>
-                     )}
+                           <div className="grid grid-cols-2 gap-2 mt-auto">
+                              <button 
+                                onClick={() => handleMarkPaid(order, 'cash')}
+                                className="bg-green-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-green-700 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
+                              >
+                                 <Banknote size={16} /> {t('pos_paid_cash')}
+                              </button>
+                              <button 
+                                onClick={() => handleMarkPaid(order, 'card')}
+                                className="bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+                              >
+                                 <CreditCard size={16} /> {t('pos_paid_card')}
+                              </button>
+                           </div>
+                        </div>
+                      ))}
+                      {unpaidOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.isPOS).length === 0 && (
+                        <div className="col-span-full py-12 flex flex-col items-center justify-center opacity-20 bg-stone-500/5 rounded-[2rem] border border-dashed border-stone-500/20">
+                           <p className="font-black uppercase tracking-widest text-[9px]">{t('no_ready_orders', 'No orders ready for collection')}</p>
+                        </div>
+                      )}
                   </div>
                </div>
 
@@ -490,39 +523,39 @@ export default function CashierDashboard() {
                   </div>
                   <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 opacity-70 hover:opacity-100 transition-opacity">
                      {unpaidOrders.filter(o => o.status !== 'delivered' && o.status !== 'ready' && !o.isPOS).map(order => (
-                       <div key={order.id} className="bg-bento-card-bg border border-bento-card-border p-4 rounded-3xl flex flex-col justify-between group shadow-sm bg-stone-50/50">
-                          <div className="flex justify-between items-start mb-4">
-                             <div>
-                                <div className="flex items-center gap-2 mb-0.5">
-                                   <span className="text-sm font-black text-bento-ink uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
-                                   <span className="text-[7px] font-black uppercase text-amber-600 bg-amber-50 px-1.5 rounded">{order.status}</span>
-                                </div>
-                                <p className="text-stone-400 font-bold text-[8px] uppercase">{order.customerName}</p>
-                             </div>
-                             <div className="text-right">
-                                <p className="text-sm font-black text-bento-ink tabular-nums">{order.total}</p>
-                             </div>
-                          </div>
+                        <div key={order.id} className="bg-bento-card-bg border border-bento-card-border p-4 rounded-3xl flex flex-col justify-between group shadow-sm bg-stone-50/50">
+                           <div className="flex justify-between items-start mb-4">
+                              <div>
+                                 <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="text-sm font-black text-bento-ink uppercase italic tracking-tighter">#{order.id.slice(-6).toUpperCase()}</span>
+                                    <span className="text-[7px] font-black uppercase text-amber-600 bg-amber-50 px-1.5 rounded">{order.status}</span>
+                                 </div>
+                                 <p className="text-stone-400 font-bold text-[8px] uppercase">{order.customerName}</p>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-sm font-black text-bento-ink tabular-nums">{order.total}</p>
+                              </div>
+                           </div>
 
-                          <div className="mb-4">
-                             <OrderTimer 
-                               createdAt={order.createdAt} 
-                               prepTime={order.prepTime} 
-                               status={order.status} 
-                               expectedReadyAt={order.expectedReadyAt}
-                             />
-                          </div>
-                          
-                          <div className="flex gap-1">
-                             {order.kitchenStatus && <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-stone-100 rounded text-stone-500">K: {order.kitchenStatus}</span>}
-                             {order.barmanStatus && <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-stone-100 rounded text-stone-500">B: {order.barmanStatus}</span>}
-                          </div>
-                       </div>
+                           <div className="mb-4">
+                              <OrderTimer 
+                                createdAt={order.createdAt} 
+                                prepTime={order.prepTime} 
+                                status={order.status} 
+                                expectedReadyAt={order.expectedReadyAt}
+                              />
+                           </div>
+                           
+                           <div className="flex gap-1">
+                              {order.kitchenStatus && <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-stone-100 rounded text-stone-500">K: {order.kitchenStatus}</span>}
+                              {order.barmanStatus && <span className="text-[7px] font-black uppercase px-2 py-0.5 bg-stone-100 rounded text-stone-500">B: {order.barmanStatus}</span>}
+                           </div>
+                        </div>
                      ))}
                      {unpaidOrders.filter(o => o.status !== 'delivered' && o.status !== 'ready' && !o.isPOS).length === 0 && (
-                       <div className="col-span-full py-8 flex items-center justify-center opacity-20">
-                          <p className="font-black uppercase tracking-widest text-[8px]">{t('no_ongoing_orders', 'No ongoing preparations')}</p>
-                       </div>
+                        <div className="col-span-full py-8 flex items-center justify-center opacity-20">
+                           <p className="font-black uppercase tracking-widest text-[8px]">{t('no_ongoing_orders', 'No ongoing preparations')}</p>
+                        </div>
                      )}
                   </div>
                </div>
@@ -619,8 +652,8 @@ export default function CashierDashboard() {
                 className={`shrink-0 h-14 px-3 rounded-xl flex items-center gap-2 transition-all border ${!selectedOrder ? 'bg-amber-500 border-amber-600 text-stone-900 shadow-md' : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-400'}`}
               >
                 <div className="flex flex-col items-center">
-                  <Plus size={14} />
-                  <span className="text-[10px] font-black uppercase">POS</span>
+                   <Plus size={14} />
+                   <span className="text-[10px] font-black uppercase">POS</span>
                 </div>
               </button>
               

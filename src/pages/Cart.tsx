@@ -164,8 +164,9 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       const isGuest = auth.currentUser.isAnonymous;
 
       // Category detection: Food (30m) vs Drinks (10m) per user requirements
-      const foodKeywords = ['food', 'dishes', 'breakfast', 'pizza', 'burger', 'sandwich', 'salad', 'crepe', 'waffle', 'pancake', 'pasta', 'meal', 'petit déjeuner', 'omelette', 'tacos', 'panini', 'oeuf', 'egg', 'dish'];
-      const drinkKeywords = ['drink', 'juice', 'coffee', 'smoothie', 'mojito', 'milkshake', 'ice tea', 'frappuccino', 'jus', 'café', 'boisson', 'thé', 'iced', 'frappé', 'espresso', 'latte', 'cappuccino', 'soda', 'coke', 'fanta', 'sprite', 'water', 'eau'];
+      // Added more inclusive keywords to handle translation variations and common menu names
+      const foodKeywords = ['food', 'dishes', 'breakfast', 'pizza', 'burger', 'sandwich', 'salad', 'crepe', 'waffle', 'pancake', 'pasta', 'meal', 'petit déjeuner', 'omelette', 'omlette', 'tacos', 'panini', 'oeuf', 'egg', 'dish', 'viande', 'plat', 'steak', 'chicken', 'poulet', 'fish', 'poisson', 'rice', 'riz', 'soup', 'soupe', 'taco', 'burrito', 'noodle', 'wrap', 'bento', 'box'];
+      const drinkKeywords = ['drink', 'juice', 'coffee', 'smoothie', 'mojito', 'milkshake', 'ice tea', 'frappuccino', 'jus', 'café', 'boisson', 'thé', 'iced', 'frappé', 'espresso', 'latte', 'cappuccino', 'soda', 'coke', 'fanta', 'sprite', 'water', 'eau', 'shake', 'tea', 'lemonade', 'limonade', 'beverage', 'cocktail', 'mocktail', 'fizz', 'brew'];
 
       const itemsWithMetadata = [];
       const originalCartItems = [...items];

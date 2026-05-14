@@ -193,23 +193,23 @@ export default function AdminStats() {
   return (
     <div className="min-h-screen bg-bento-bg p-4 sm:p-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-        <div>
-           <div className="flex items-center gap-3 mb-2">
-             <button 
-               onClick={() => navigate('/admin')} 
-               className="flex items-center gap-2 px-4 py-2 bg-bento-card-bg rounded-xl hover:bg-stone-100 transition-all border border-bento-card-border shadow-sm group"
-             >
-               <LayoutDashboard size={18} className="text-stone-500 group-hover:text-bento-primary transition-colors" />
-               <span className="text-[10px] font-black uppercase text-stone-600 tracking-widest">{t('back_to_dashboard', 'Back to Dashboard')}</span>
-             </button>
-             <div className="h-4 w-px bg-stone-200 mx-1" />
-             <span className="text-[10px] font-black uppercase text-stone-400 tracking-[0.2em]">Live Analytics</span>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-bento-card-bg/40 p-8 rounded-[3rem] border border-bento-card-border shadow-2xl">
+        <div className="flex items-center gap-6">
+           <button 
+             onClick={() => navigate('/admin')} 
+             className="p-5 bg-amber-500 text-stone-900 rounded-3xl hover:bg-amber-400 transition-all shadow-xl shadow-amber-500/20 active:scale-95 group flex items-center gap-3"
+           >
+             <LayoutDashboard size={24} className="group-hover:-translate-x-1 transition-transform" />
+             <span className="text-xs font-black uppercase tracking-widest">{t('back_to_dashboard', 'Back to Dashboard')}</span>
+           </button>
+           <div className="h-10 w-px bg-stone-200" />
+           <div>
+             <span className="text-[10px] font-black uppercase text-stone-400 tracking-[0.3em] block mb-1">Performance Overview</span>
+             <h1 className="text-4xl font-black text-bento-ink italic tracking-tighter uppercase leading-none">{t('revenue_statistics')}</h1>
            </div>
-           <h1 className="text-4xl font-black text-bento-ink italic tracking-tighter uppercase">{t('revenue_statistics')}</h1>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-5 py-3 bg-stone-900 dark:bg-stone-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black dark:hover:bg-black transition-all shadow-xl active:scale-95">
+          <button className="flex items-center gap-2 px-8 py-5 bg-stone-950 text-white rounded-[2rem] text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95">
              <Download size={14} /> {t('export_csv')}
           </button>
         </div>

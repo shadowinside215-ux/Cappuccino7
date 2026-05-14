@@ -7,9 +7,18 @@ export async function awardOrderPoints(order: Order) {
   try {
     const userRef = doc(db, 'users', order.userId);
     const userSnap = await getDoc(userRef);
-    const userData = userSnap.data() as UserProfile | undefined;
+    if (!userSnap.exists()) {
+      console.log('Skipping point award: User document does not exist.');
+      return;
+    }
+    const userData = userSnap.data() as UserProfile;
+    // Don't award points if user is anonymous (to avoid permission issues if they aren't fully registered)
+    if (userData.isAnonymous) {
+      console.log('Skipping point award: User is anonymous.');
+      return;
+    }
     
-    const currentItemLoyalty = userData?.itemLoyalty || {};
+    const currentItemLoyalty = userData.itemLoyalty || {};
     const newItemLoyalty = { ...currentItemLoyalty };
     
     order.items.forEach(item => {

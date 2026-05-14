@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, setDoc, increment } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, setDoc, increment, where } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile, WaiterRequest, WaiterOrderStatus } from '../../types';
 import { awardOrderPoints } from '../../services/orderService';
@@ -34,15 +34,18 @@ const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/235
 export default function WaiterDashboard() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const activeTab = 'orders' as const;
+  const [activeTab, setActiveTab] = useState<'orders' | 'requests'>('orders');
 
   useEffect(() => {
     let unsubscribeOrders: (() => void) | null = null;
+    let unsubscribeRequests: (() => void) | null = null;
 
     const unsubAuth = auth.onAuthStateChanged((user) => {
       // Clean up previous listeners if auth state changes
       if (unsubscribeOrders) unsubscribeOrders();
+      if (unsubscribeRequests) unsubscribeRequests();
 
       if (!user) {
         setLoading(false);
@@ -100,11 +103,60 @@ export default function WaiterDashboard() {
         handleFirestoreError(error, OperationType.LIST, 'orders');
         setLoading(false);
       });
+
+      // Waiter Requests subscription (Notifications for call waiter)
+      const qRequests = query(
+        collection(db, 'waiterRequests'),
+        where('status', 'in', ['new', 'accepted']),
+        orderBy('timestamp', 'desc')
+      );
+
+      let isInitialLoad = true;
+      unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
+        const reqData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WaiterRequest));
+        setRequests(reqData);
+
+        if (isInitialLoad) {
+          isInitialLoad = false;
+          return;
+        }
+
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const req = { id: change.doc.id, ...change.doc.data() } as WaiterRequest;
+            
+            // Only notify if it's assigned to this waiter or unassigned
+            if (!req.waiterId || req.waiterId === auth.currentUser?.uid) {
+              toast.error(
+                `${t('waiter_called_toast', 'Customer Calling!')} - ${req.fullTableLabel || req.clientName}`,
+                {
+                  icon: '🔔',
+                  duration: 15000,
+                  position: 'top-center',
+                  style: { 
+                    background: '#1a1a1a', 
+                    color: '#fbbf24', 
+                    fontWeight: '900',
+                    border: '5px solid #fbbf24',
+                    fontSize: '20px',
+                    padding: '24px'
+                  }
+                }
+              );
+              const audio = new Audio(NOTIFICATION_SOUND);
+              audio.play().catch(e => console.error("Audio error", e));
+            }
+          }
+        });
+      }, (error) => {
+        console.error("Waiter requests listener error:", error);
+      });
     });
 
     return () => {
       unsubAuth();
       if (unsubscribeOrders) unsubscribeOrders();
+      if (unsubscribeRequests) unsubscribeRequests();
     };
   }, []);
 
@@ -179,6 +231,7 @@ export default function WaiterDashboard() {
         waiterId: waiterId,
         waiterName: waiterName,
         waiterStatus: 'Accepted',
+        status: 'accepted',
         updatedAt: serverTimestamp()
       });
       
@@ -285,6 +338,26 @@ export default function WaiterDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
+           <div className="flex bg-stone-100 p-1.5 rounded-2xl border border-stone-200">
+             <button 
+               onClick={() => setActiveTab('orders')}
+               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'orders' ? 'bg-white text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+             >
+               {t('orders', 'Orders') as string} ({orders.length})
+             </button>
+             <button 
+               onClick={() => setActiveTab('requests')}
+               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'requests' ? 'bg-white text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+             >
+               {t('requests_tab', 'Calls') as string}
+               {requests.filter(r => r.status === 'new').length > 0 && (
+                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center animate-pulse">
+                   {requests.filter(r => r.status === 'new').length}
+                 </span>
+               )}
+             </button>
+           </div>
+           
            <button 
              onClick={() => {
                localStorage.removeItem('waiter_session_active');
@@ -298,172 +371,233 @@ export default function WaiterDashboard() {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div 
-          key="orders-grid"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          className="space-y-8"
-        >
-            {orders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
-                <Coffee size={64} className="mb-4 opacity-20" />
-                {t('no_active_orders')}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
-                {orders.map((order) => (
-                  <motion.div
-                    layout
-                    key={order.id}
-                    className={`bg-white rounded-[3rem] p-8 shadow-xl border relative overflow-hidden ${
-                      order.status === 'ready' ? 'ring-4 ring-green-400 border-green-400' : 'border-stone-100'
-                    }`}
-                  >
-                    <div className="mb-6">
-                      <div className="flex justify-between items-start mb-1">
-                        <div className="flex flex-col">
-                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer') as string}</p>
-                          <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
+        {activeTab === 'orders' ? (
+          <motion.div 
+            key="orders-grid"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="space-y-8"
+          >
+              {orders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
+                  <Coffee size={64} className="mb-4 opacity-20" />
+                  {t('no_active_orders')}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
+                  {orders.map((order) => (
+                    <motion.div
+                      layout
+                      key={order.id}
+                      className={`bg-white rounded-[3rem] p-8 shadow-xl border relative overflow-hidden ${
+                        order.status === 'ready' ? 'ring-4 ring-green-400 border-green-400' : 'border-stone-100'
+                      }`}
+                    >
+                      <div className="mb-6">
+                        <div className="flex justify-between items-start mb-1">
+                          <div className="flex flex-col">
+                            <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer') as string}</p>
+                            <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        {order.deliveryType === 'dine-in' ? (
-                          <div className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-2xl shadow-lg border-2 border-amber-400/50">
-                            <Navigation size={14} className="text-amber-400" />
-                            <span className="text-sm font-black italic uppercase tracking-tighter">
-                              {order.fullTableLabel} ({order.tableArea})
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          {order.deliveryType === 'dine-in' ? (
+                            <div className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-2xl shadow-lg border-2 border-amber-400/50">
+                              <Navigation size={14} className="text-amber-400" />
+                              <span className="text-sm font-black italic uppercase tracking-tighter">
+                                {order.fullTableLabel} ({order.tableArea})
+                              </span>
+                            </div>
+                          ) : (
+                            <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 ${
+                              order.deliveryType === 'pickup' ? 'bg-amber-100/50 text-amber-700 border-amber-200' : 'bg-stone-100 text-stone-700 border-stone-200'
+                            }`}>
+                              {order.deliveryType === 'pickup' ? t('takeaway') : order.deliveryType}
+                            </span>
+                          )}
+                          <p className="text-[10px] font-bold text-stone-400 ml-auto whitespace-nowrap">
+                            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}
+                          </p>
+                        </div>
+
+                        {order.waiterId ? (
+                          <div className={`mt-4 flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all ${
+                            order.waiterId === auth.currentUser?.uid 
+                              ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                              : 'bg-stone-50 text-stone-500 border-stone-100'
+                          }`}>
+                            <UserCheck size={14} className={order.waiterId === auth.currentUser?.uid ? 'text-amber-500' : ''} />
+                            <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+                              {order.waiterId === auth.currentUser?.uid 
+                                ? t('you_are_handling_this', 'You are handling this order')
+                                : `${t('assigned_to', 'Assigned to')}: ${order.waiterName || 'Staff'}`
+                              }
                             </span>
                           </div>
                         ) : (
-                          <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 ${
-                            order.deliveryType === 'pickup' ? 'bg-amber-100/50 text-amber-700 border-amber-200' : 'bg-stone-100 text-stone-700 border-stone-200'
-                          }`}>
-                            {order.deliveryType === 'pickup' ? t('takeaway') : order.deliveryType}
-                          </span>
+                          <button 
+                            onClick={() => acceptOrder(order)}
+                            className="mt-4 w-full py-4 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-xl shadow-amber-400/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                          >
+                            <Navigation size={16} className="rotate-45" />
+                            {t('take_order', 'Take Order') as string}
+                          </button>
                         )}
-                        <p className="text-[10px] font-bold text-stone-400 ml-auto whitespace-nowrap">
-                          {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}
-                        </p>
                       </div>
 
-                      {order.waiterId ? (
-                        <div className={`mt-4 flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all ${
-                          order.waiterId === auth.currentUser?.uid 
-                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                            : 'bg-stone-50 text-stone-500 border-stone-100'
-                        }`}>
-                          <UserCheck size={14} className={order.waiterId === auth.currentUser?.uid ? 'text-amber-500' : ''} />
-                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-                            {order.waiterId === auth.currentUser?.uid 
-                              ? t('you_are_handling_this', 'You are handling this order')
-                              : `${t('assigned_to', 'Assigned to')}: ${order.waiterName || 'Staff'}`
-                            }
-                          </span>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => acceptOrder(order)}
-                          className="mt-4 w-full py-4 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-xl shadow-amber-400/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
-                        >
-                          <Navigation size={16} className="rotate-45" />
-                          {t('take_order', 'Take Order') as string}
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="bg-stone-50 rounded-[2rem] p-6 space-y-4 mb-6">
-                        {order.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-start text-sm">
-                            <div className="flex flex-col">
-                              <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
-                              {item.customization && (
-                                <span className="text-[10px] font-black uppercase text-amber-500 italic">
-                                  {item.customization.includes('|') ? (
-                                    <>
-                                      {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim()) as string}
-                                      {' • '}
-                                      {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_')) as string}
-                                    </>
-                                  ) : (
-                                    item.customization
-                                  )}
-                                </span>
-                              )}
-                              {(item as any).categoryName && (
-                                <span className="text-[8px] font-black uppercase tracking-widest text-amber-600">
-                                  {t(`categories.${(item as any).categoryName}`, (item as any).categoryName) as string} {(item as any).subSection ? `• ${(item as any).subSection.replace('_', ' ')}` : ''}
-                                </span>
-                              )}
+                      <div className="bg-stone-50 rounded-[2rem] p-6 space-y-4 mb-6">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-start text-sm">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
+                                {item.customization && (
+                                  <span className="text-[10px] font-black uppercase text-amber-500 italic">
+                                    {item.customization.includes('|') ? (
+                                      <>
+                                        {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim()) as string}
+                                        {' • '}
+                                        {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_')) as string}
+                                      </>
+                                    ) : (
+                                      item.customization
+                                    )}
+                                  </span>
+                                )}
+                                {(item as any).categoryName && (
+                                  <span className="text-[8px] font-black uppercase tracking-widest text-amber-600">
+                                    {t(`categories.${(item as any).categoryName}`, (item as any).categoryName) as string} {(item as any).subSection ? `• ${(item as any).subSection.replace('_', ' ')}` : ''}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs font-black text-stone-400">{item.price * item.quantity} MAD</span>
                             </div>
-                            <span className="text-xs font-black text-stone-400">{item.price * item.quantity} MAD</span>
-                          </div>
-                        ))}
-                        <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">{t('total', 'Total') as string}</span>
-                          <span className="text-lg font-black text-stone-900">{order.total} MAD</span>
-                       </div>
-                    </div>
-
-                    {order.deliveryNotes && (
-                      <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 italic">
-                        <MessageSquare size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                        <p className="text-xs font-bold text-stone-700 leading-relaxed">
-                          {order.deliveryNotes}
-                        </p>
+                          ))}
+                          <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
+                            <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">{t('total', 'Total') as string}</span>
+                            <span className="text-lg font-black text-stone-900">{order.total} MAD</span>
+                         </div>
                       </div>
-                    )}
 
-                    <div className="mb-6 px-2">
-                      <OrderTimer 
-                        createdAt={order.createdAt} 
-                        prepTime={order.prepTime} 
-                        status={order.status} 
-                        expectedReadyAt={order.expectedReadyAt}
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      {order.kitchenStatus && (
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
-                          order.kitchenStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
-                          order.kitchenStatus === 'ready' ? 'bg-blue-50 border-blue-100 text-blue-600' :
-                          order.kitchenStatus === 'preparing' ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                          'bg-stone-50 border-stone-100 text-stone-400'
-                        }`}>
-                          <ChefHat size={12} />
-                          <span className="text-[8px] font-black uppercase tracking-widest">K: {order.kitchenStatus}</span>
+                      {order.deliveryNotes && (
+                        <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 italic">
+                          <MessageSquare size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                          <p className="text-xs font-bold text-stone-700 leading-relaxed">
+                            {order.deliveryNotes}
+                          </p>
                         </div>
                       )}
-                      {order.barmanStatus && (
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
-                          order.barmanStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
-                          order.barmanStatus === 'ready' ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                          order.barmanStatus === 'preparing' ? 'bg-orange-50 border-orange-100 text-orange-600' :
-                          'bg-stone-50 border-stone-100 text-stone-400'
-                        }`}>
-                          <Coffee size={12} />
-                          <span className="text-[8px] font-black uppercase tracking-widest">B: {order.barmanStatus}</span>
-                        </div>
-                      )}
-                    </div>
 
-                    <div className="mt-6 pt-6 border-t border-stone-100">
-                       <button 
-                         onClick={() => completeOrder(order)} 
-                         className="w-full flex flex-col items-center gap-2 py-5 rounded-3xl bg-stone-950 text-white hover:bg-black shadow-xl shadow-stone-900/20 active:scale-95 transition-all"
-                       >
-                         <CheckCheck size={20} className="text-amber-400" />
-                         <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('complete')}</span>
-                         <span className="text-[8px] font-bold text-stone-500 uppercase tracking-tighter">{t('mark_as_served_for_cashier', 'Mark as Served & Send to Cashier')}</span>
-                       </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
+                      <div className="mb-6 px-2">
+                        <OrderTimer 
+                          createdAt={order.createdAt} 
+                          prepTime={order.prepTime} 
+                          status={order.status} 
+                          expectedReadyAt={order.expectedReadyAt}
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {order.kitchenStatus && (
+                          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
+                            order.kitchenStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
+                            order.kitchenStatus === 'ready' ? 'bg-blue-50 border-blue-100 text-blue-600' :
+                            order.kitchenStatus === 'preparing' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                            'bg-stone-50 border-stone-100 text-stone-400'
+                          }`}>
+                            <ChefHat size={12} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">K: {order.kitchenStatus}</span>
+                          </div>
+                        )}
+                        {order.barmanStatus && (
+                          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
+                            order.barmanStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
+                            order.barmanStatus === 'ready' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                            order.barmanStatus === 'preparing' ? 'bg-orange-50 border-orange-100 text-orange-600' :
+                            'bg-stone-50 border-stone-100 text-stone-400'
+                          }`}>
+                            <Coffee size={12} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">B: {order.barmanStatus}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-6 pt-6 border-t border-stone-100">
+                         <button 
+                           onClick={() => completeOrder(order)} 
+                           className="w-full flex flex-col items-center gap-2 py-5 rounded-3xl bg-stone-950 text-white hover:bg-black shadow-xl shadow-stone-900/20 active:scale-95 transition-all"
+                         >
+                           <CheckCheck size={20} className="text-amber-400" />
+                           <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('complete')}</span>
+                           <span className="text-[8px] font-bold text-stone-500 uppercase tracking-tighter">{t('mark_as_served_for_cashier', 'Mark as Served & Send to Cashier')}</span>
+                         </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
           </motion.div>
+        ) : (
+          <motion.div 
+            key="requests-grid"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+             {requests.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
+                 <Bell size={64} className="mb-4 opacity-20" />
+                 {t('no_active_requests', 'No active support requests')}
+               </div>
+             ) : (
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 {requests.map((req) => (
+                   <div key={req.id} className={`bg-white rounded-[2.5rem] p-6 border-2 transition-all ${req.status === 'new' ? 'border-amber-400 shadow-xl shadow-amber-400/5' : 'border-stone-100 opacity-60'}`}>
+                     <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-center gap-4">
+                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${req.status === 'new' ? 'bg-amber-400 text-stone-900 animate-pulse' : 'bg-stone-100 text-stone-400'}`}>
+                              <Bell size={24} />
+                           </div>
+                           <div>
+                              <h4 className="text-xl font-black text-stone-900 uppercase italic tracking-tight">{req.fullTableLabel || req.clientName}</h4>
+                              <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-0.5">{t('calling_waiter', 'Calling Waiter')}</p>
+                           </div>
+                        </div>
+                     </div>
+
+                     <div className="flex flex-col gap-3">
+                        {req.status === 'new' ? (
+                          <button 
+                            onClick={() => acceptRequest(req)}
+                            className="w-full py-4 bg-stone-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg"
+                          >
+                            {t('accept_call', 'Accept Call')}
+                          </button>
+                        ) : (
+                          <div className="space-y-3">
+                             <div className="flex items-center gap-2 px-4 py-2 bg-stone-50 border border-stone-100 rounded-xl">
+                                <UserCheck size={14} className="text-green-500" />
+                                <span className="text-[9px] font-black uppercase text-stone-500">{t('handled_by', 'Handled by')}: {req.waiterName}</span>
+                             </div>
+                             {req.waiterId === auth.currentUser?.uid && (
+                               <button 
+                                 onClick={() => completeRequest(req)}
+                                 className="w-full py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-green-700 transition-all shadow-lg"
+                               >
+                                 {t('mark_resolved', 'Mark Resolved')}
+                               </button>
+                             )}
+                          </div>
+                        )}
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             )}
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

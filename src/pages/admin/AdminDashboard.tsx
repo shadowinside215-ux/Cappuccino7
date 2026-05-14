@@ -166,49 +166,73 @@ export default function AdminDashboard() {
   useEffect(() => {
     // AUTO-CLEANUP TRIGGER (One-time use to clear test data)
     const runAutoCleanup = async () => {
-      const alreadyCleaned = sessionStorage.getItem('auto_cleanup_done');
+      const alreadyCleaned = sessionStorage.getItem('auto_cleanup_v3');
       if (alreadyCleaned) return;
 
-      console.log("🚀 Starting Automatic Test Data Cleanup...");
+      console.log("🚀 Starting Force Test Data Cleanup (v3)...");
       try {
-        // 1. Clear Orders
+        // 1. Clear Orders (Chunked)
         const orderSnap = await getDocs(collection(db, 'orders'));
-        const orderBatch = writeBatch(db);
-        orderSnap.docs.forEach(d => orderBatch.delete(d.ref));
-        await orderBatch.commit();
+        let batch = writeBatch(db);
+        let count = 0;
+        for (const d of orderSnap.docs) {
+          batch.delete(d.ref);
+          count++;
+          if (count >= 400) {
+            await batch.commit();
+            batch = writeBatch(db);
+            count = 0;
+          }
+        }
+        await batch.commit();
 
-        // 2. Clear Revenue (All tiers)
-        const revTiers = ['dailyRevenue', 'weeklyRevenue', 'monthlyRevenue', 'stats'];
-        for (const tier of revTiers) {
-          const snap = await getDocs(collection(db, tier));
-          const batch = writeBatch(db);
-          snap.docs.forEach(d => batch.delete(d.ref));
-          await batch.commit();
+        // 2. Clear All Revenue Data
+        const revCollections = ['dailyRevenue', 'weeklyRevenue', 'monthlyRevenue', 'stats', 'revenue'];
+        for (const coll of revCollections) {
+          try {
+            const snap = await getDocs(collection(db, coll));
+            if (!snap.empty) {
+              const rBatch = writeBatch(db);
+              snap.docs.forEach(d => rBatch.delete(d.ref));
+              await rBatch.commit();
+            }
+          } catch (e) {
+            console.warn(`Collection ${coll} clear failed or missing`);
+          }
         }
 
-        // 3. Clear Requests
+        // 3. Clear Waiter Requests
         const reqSnap = await getDocs(collection(db, 'waiterRequests'));
-        const reqBatch = writeBatch(db);
-        reqSnap.docs.forEach(d => reqBatch.delete(d.ref));
-        await reqBatch.commit();
+        if (!reqSnap.empty) {
+          const wBatch = writeBatch(db);
+          reqSnap.docs.forEach(d => wBatch.delete(d.ref));
+          await wBatch.commit();
+        }
 
-        // 4. Reset User Points
+        // 4. Reset ALL User Profiles Loyalty
         const userSnap = await getDocs(collection(db, 'users'));
-        const userBatch = writeBatch(db);
-        userSnap.docs.forEach(d => {
-          userBatch.update(d.ref, {
+        let uBatch = writeBatch(db);
+        count = 0;
+        for (const d of userSnap.docs) {
+          uBatch.update(d.ref, {
             points: 0,
             coffeeCount: 0,
             itemLoyalty: {}
           });
-        });
-        await userBatch.commit();
+          count++;
+          if (count >= 400) {
+            await uBatch.commit();
+            uBatch = writeBatch(db);
+            count = 0;
+          }
+        }
+        await uBatch.commit();
 
-        sessionStorage.setItem('auto_cleanup_done', 'true');
-        toast.success('DEEP CLEANUP COMPLETE: All test data has been wiped.');
-        window.location.reload(); // Refresh to show clean state
+        sessionStorage.setItem('auto_cleanup_v3', 'true');
+        toast.success('DEEP SYSTEM RESET: All test data, revenue, and points have been cleared.', { duration: 10000 });
+        window.location.reload(); 
       } catch (err) {
-        console.error("Auto-cleanup error:", err);
+        console.error("Cleanup error:", err);
       }
     };
 

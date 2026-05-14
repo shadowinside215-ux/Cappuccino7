@@ -64,18 +64,9 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
   const handleCallWaiter = async () => {
     if (!auth.currentUser || !activeDineInOrder) return;
     
-    // If order not taken yet, show notification and don't proceed
-    if (!activeDineInOrder.waiterId) {
-      toast(t('wait_for_waiter_to_take_order', 'Please wait for a waiter to take your order first'), {
-        icon: '⏳',
-        style: {
-          background: '#444',
-          color: '#fff',
-        }
-      });
-      return;
-    }
-
+    // If order not taken yet, we allow calling any waiter (unassigned)
+    const canCall = true;
+    
     setLoading(true);
 
     try {
@@ -88,7 +79,7 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
         fullTableLabel: activeDineInOrder.fullTableLabel,
         timestamp: serverTimestamp(),
         status: 'new',
-        waiterId: activeDineInOrder.waiterId, // Assign to the waiter who took the order
+        waiterId: activeDineInOrder.waiterId || null, // Can be null if not taken yet
         waiterName: activeDineInOrder.waiterName || null
       });
       toast.success(t('waiter_called', 'Waiter called! Someone will be with you shortly.'));
@@ -101,7 +92,6 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
 
   if (!activeDineInOrder) return null;
 
-  const isOrderTaken = !!activeDineInOrder.waiterId;
   const isRequestActive = !!activeRequest;
 
   return (
@@ -130,17 +120,17 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
       </AnimatePresence>
 
       <motion.button
-        whileHover={isOrderTaken && !isRequestActive ? { scale: 1.05 } : {}}
-        whileTap={isOrderTaken && !isRequestActive ? { scale: 0.95 } : {}}
+        whileHover={!isRequestActive ? { scale: 1.05 } : {}}
+        whileTap={!isRequestActive ? { scale: 0.95 } : {}}
         onClick={handleCallWaiter}
         disabled={loading || isRequestActive}
         className={`pointer-events-auto w-16 h-16 rounded-full flex items-center justify-center shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all border-4 ${
-          !isOrderTaken || isRequestActive 
+          isRequestActive 
             ? 'bg-stone-800 text-stone-400 border-stone-900 opacity-80 cursor-not-allowed' 
             : 'bg-amber-400 text-stone-900 hover:rotate-12 border-amber-500/50'
         }`}
       >
-        {loading ? <Loader2 className="animate-spin" /> : <Bell size={28} className={!isOrderTaken || isRequestActive ? 'opacity-30' : ''} />}
+        {loading ? <Loader2 className="animate-spin" /> : <Bell size={28} className={isRequestActive ? 'opacity-30' : ''} />}
       </motion.button>
     </div>
   );

@@ -8,7 +8,7 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore
 export const db = initializeFirestore(app, {
-  // experimentalForceLongPolling: true // Removed for better stability unless specifically needed
+  experimentalForceLongPolling: true
 }, firebaseConfig.firestoreDatabaseId || '(default)');
 
 export const auth = getAuth(app);
