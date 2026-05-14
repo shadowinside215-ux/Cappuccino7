@@ -391,16 +391,16 @@ export default function CashierDashboard() {
         <div className="flex-1 flex flex-col min-w-0">
           {view === 'pos' ? (
             <div className="flex-1 overflow-y-auto bg-bento-bg custom-scrollbar">
-              <div className="grid grid-cols-5 md:grid-cols-6 border-b border-bento-card-border">
+              <div className="grid grid-cols-4 md:grid-cols-5 border-b border-bento-card-border">
                 {filteredProducts.map(product => (
                   <motion.button
                     key={product.id}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => addToCart(product)}
-                    className="aspect-square bg-[#00ADC0] border border-black/10 flex flex-col items-center justify-center p-2 text-center group active:brightness-50 transition-all hover:brightness-110"
+                    className="aspect-square bg-[#00ADC0] border border-black/10 flex flex-col items-center justify-center p-4 text-center group active:brightness-50 transition-all hover:brightness-110"
                   >
-                    <span className="text-[9px] md:text-[10px] font-black uppercase leading-tight mb-2 text-white drop-shadow-sm line-clamp-2 px-1">{product.name}</span>
-                    <span className="text-[10px] md:text-[11px] font-black text-white/80 tabular-nums">{product.price.toFixed(2)}</span>
+                    <span className="text-[10px] md:text-[12px] font-black uppercase leading-tight mb-2 text-white drop-shadow-sm line-clamp-2 px-1">{product.name}</span>
+                    <span className="text-[11px] md:text-[13px] font-black text-white/80 tabular-nums">{product.price.toFixed(2)}</span>
                   </motion.button>
                 ))}
               </div>

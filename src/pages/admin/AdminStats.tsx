@@ -195,10 +195,15 @@ export default function AdminStats() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
-           <div className="flex items-center gap-2 mb-2">
-             <button onClick={() => navigate('/admin')} className="p-2 bg-bento-card-bg rounded-xl hover:bg-bento-bg transition-colors border border-bento-card-border">
-               <LayoutDashboard size={20} className="text-stone-500" />
+           <div className="flex items-center gap-3 mb-2">
+             <button 
+               onClick={() => navigate('/admin')} 
+               className="flex items-center gap-2 px-4 py-2 bg-bento-card-bg rounded-xl hover:bg-stone-100 transition-all border border-bento-card-border shadow-sm group"
+             >
+               <LayoutDashboard size={18} className="text-stone-500 group-hover:text-bento-primary transition-colors" />
+               <span className="text-[10px] font-black uppercase text-stone-600 tracking-widest">{t('back_to_dashboard', 'Back to Dashboard')}</span>
              </button>
+             <div className="h-4 w-px bg-stone-200 mx-1" />
              <span className="text-[10px] font-black uppercase text-stone-400 tracking-[0.2em]">Live Analytics</span>
            </div>
            <h1 className="text-4xl font-black text-bento-ink italic tracking-tighter uppercase">{t('revenue_statistics')}</h1>
