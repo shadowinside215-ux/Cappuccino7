@@ -239,13 +239,20 @@ export default function CashierDashboard() {
   };
 
   const updateQuantity = (productId: string, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.productId === productId) {
-        const newQty = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    }));
+    setCart(prev => {
+      return prev.map(item => {
+        if (item.productId === productId) {
+          const newQty = item.quantity + delta;
+          if (newQty <= 0) return null;
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      }).filter((item): item is OrderItem => item !== null);
+    });
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(prev => prev.filter(item => item.productId !== productId));
   };
 
   const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -751,7 +758,18 @@ export default function CashierDashboard() {
                         )}
                         <span className="text-[11px] font-bold uppercase tracking-tight max-w-[150px] leading-tight text-stone-800">{item.name}</span>
                      </div>
-                     <span className="font-black tabular-nums text-stone-900">{(item.price * item.quantity).toFixed(2)}</span>
+                     <div className="flex items-center gap-1.5 self-end">
+                        <span className="font-black tabular-nums text-stone-900">{(item.price * item.quantity).toFixed(2)}</span>
+                        {!selectedOrder && (
+                           <button 
+                             onClick={() => removeFromCart(item.productId)}
+                             className="p-1.5 text-stone-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                             title={t('pos_item_removed') as string}
+                           >
+                              <Trash2 size={14} />
+                           </button>
+                        )}
+                     </div>
                   </div>
                 ))}
                 
