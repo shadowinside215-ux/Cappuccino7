@@ -250,6 +250,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               
               <div className="aspect-[4/3] overflow-hidden">
                 <OptimizedImage 
+                  priority
                   src={selectedProduct.image || (selectedProduct.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')} 
                   containerClassName="w-full h-full"
                   className="w-full h-full object-cover"
@@ -800,6 +801,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                     <div className="flex flex-col sm:flex-row h-full">
                       <div className="sm:w-2/5 aspect-square relative overflow-hidden">
                         <OptimizedImage
+                          priority
                           src={product.image || (product.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')}
                           alt={product.name}
                           containerClassName="w-full h-full"

@@ -149,6 +149,7 @@ export default function AdminOrders() {
                       createdAt={order.createdAt} 
                       prepTime={order.prepTime} 
                       status={order.status} 
+                      expectedReadyAt={order.expectedReadyAt}
                     />
                   </div>
 

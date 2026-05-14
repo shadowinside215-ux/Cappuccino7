@@ -63,6 +63,19 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
 
   const handleCallWaiter = async () => {
     if (!auth.currentUser || !activeDineInOrder) return;
+    
+    // If order not taken yet, show notification and don't proceed
+    if (!activeDineInOrder.waiterId) {
+      toast(t('wait_for_waiter_to_take_order', 'Please wait for a waiter to take your order first'), {
+        icon: '⏳',
+        style: {
+          background: '#444',
+          color: '#fff',
+        }
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -75,8 +88,8 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
         fullTableLabel: activeDineInOrder.fullTableLabel,
         timestamp: serverTimestamp(),
         status: 'new',
-        waiterId: null,
-        waiterName: null
+        waiterId: activeDineInOrder.waiterId, // Assign to the waiter who took the order
+        waiterName: activeDineInOrder.waiterName || null
       });
       toast.success(t('waiter_called', 'Waiter called! Someone will be with you shortly.'));
     } catch (err) {
@@ -88,6 +101,9 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
 
   if (!activeDineInOrder) return null;
 
+  const isOrderTaken = !!activeDineInOrder.waiterId;
+  const isRequestActive = !!activeRequest;
+
   return (
     <div className="fixed bottom-24 right-6 z-[60] flex flex-col items-end gap-3 pointer-events-none">
       <AnimatePresence>
@@ -96,16 +112,16 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="bg-bento-card-bg/90 backdrop-blur-3xl border border-bento-card-border p-4 rounded-3xl shadow-2xl flex items-center gap-4 pointer-events-auto min-w-[240px]"
+            className="bg-stone-900/90 dark:bg-stone-800/90 backdrop-blur-3xl border border-white/10 p-4 rounded-3xl shadow-2xl flex items-center gap-4 pointer-events-auto min-w-[240px]"
           >
-            <div className={`p-3 rounded-2xl ${activeRequest.status === 'accepted' ? 'bg-amber-400 text-stone-900' : 'bg-bento-ink/10 text-bento-ink animate-pulse'}`}>
+            <div className={`p-3 rounded-2xl ${activeRequest.status === 'accepted' ? 'bg-amber-400 text-stone-900' : 'bg-white/10 text-white animate-pulse'}`}>
               {activeRequest.status === 'accepted' ? <User size={20} /> : <Bell size={20} />}
             </div>
             <div className="flex-1">
               <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">
                 {activeRequest.status === 'accepted' ? t('waiter_on_way', 'Waiter on the way!') : t('request_sent', 'Request Sent')}
               </p>
-              <p className="text-xs font-bold text-bento-ink">
+              <p className="text-xs font-bold text-white">
                 {activeRequest.status === 'accepted' ? t('waiter_assigned', { name: activeRequest.waiterName }) : t('waiting_for_waiter', 'Waiting for assistance...')}
               </p>
             </div>
@@ -114,17 +130,17 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
       </AnimatePresence>
 
       <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={isOrderTaken && !isRequestActive ? { scale: 1.05 } : {}}
+        whileTap={isOrderTaken && !isRequestActive ? { scale: 0.95 } : {}}
         onClick={handleCallWaiter}
-        disabled={loading || activeRequest !== null}
-        className={`pointer-events-auto w-16 h-16 rounded-full flex items-center justify-center shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all border-4 border-bento-bg ${
-          activeRequest 
-            ? 'bg-stone-500/50 grayscale cursor-not-allowed' 
-            : 'bg-amber-400 text-stone-900 hover:rotate-12'
+        disabled={loading || isRequestActive}
+        className={`pointer-events-auto w-16 h-16 rounded-full flex items-center justify-center shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all border-4 ${
+          !isOrderTaken || isRequestActive 
+            ? 'bg-stone-800 text-stone-400 border-stone-900 opacity-80 cursor-not-allowed' 
+            : 'bg-amber-400 text-stone-900 hover:rotate-12 border-amber-500/50'
         }`}
       >
-        {loading ? <Loader2 className="animate-spin" /> : <Bell size={28} className={activeRequest ? 'opacity-40' : ''} />}
+        {loading ? <Loader2 className="animate-spin" /> : <Bell size={28} className={!isOrderTaken || isRequestActive ? 'opacity-30' : ''} />}
       </motion.button>
     </div>
   );

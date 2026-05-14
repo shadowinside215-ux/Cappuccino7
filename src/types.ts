@@ -83,7 +83,8 @@ export interface Order {
   vendeur?: string;
   deliveryType: 'delivery' | 'pickup' | 'dine-in' | 'takeaway';
   prepTime: number; // in minutes
-  estimatedReadyAt?: any; // Firestore Timestamp
+  estimatedReadyAt?: any; // legacy field
+  expectedReadyAt?: any; // Firestore Timestamp
   preparingAt?: any; // Firestore Timestamp
   readyAt?: any; // Firestore Timestamp
   readyInMinutes?: number;

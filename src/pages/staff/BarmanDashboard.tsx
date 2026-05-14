@@ -8,6 +8,8 @@ import { Order } from '../../types';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
+import { OrderTimer } from '../../components/OrderTimer';
+
 enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -274,11 +276,15 @@ export default function BarmanDashboard() {
 
                 {/* Info Bar */}
                 <div className="flex items-center justify-between py-4 border-y border-bento-card-border mb-8">
-                   <div className="flex items-center gap-2">
-                     <Timer size={16} className="text-stone-500" />
-                     <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest text-center">EXACTLY 10 MIN</span>
+                   <div className="flex-1">
+                     <OrderTimer 
+                       createdAt={order.createdAt} 
+                       prepTime={order.prepTime} 
+                       status={order.status} 
+                       expectedReadyAt={order.expectedReadyAt}
+                     />
                    </div>
-                   <div className="text-[10px] font-black text-stone-500 uppercase">
+                   <div className="text-[10px] font-black text-stone-500 uppercase ml-4">
                      {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'NOW'}
                    </div>
                 </div>

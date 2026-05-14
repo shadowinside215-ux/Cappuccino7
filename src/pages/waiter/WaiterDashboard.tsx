@@ -34,22 +34,15 @@ const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/235
 export default function WaiterDashboard() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [clients, setClients] = useState<UserProfile[]>([]);
-  const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'clients'>('orders');
-  const [searchTerm, setSearchTerm] = useState('');
+  const activeTab = 'orders' as const;
 
   useEffect(() => {
     let unsubscribeOrders: (() => void) | null = null;
-    let unsubscribeClients: (() => void) | null = null;
-    let unsubscribeRequests: (() => void) | null = null;
 
     const unsubAuth = auth.onAuthStateChanged((user) => {
       // Clean up previous listeners if auth state changes
       if (unsubscribeOrders) unsubscribeOrders();
-      if (unsubscribeClients) unsubscribeClients();
-      if (unsubscribeRequests) unsubscribeRequests();
 
       if (!user) {
         setLoading(false);
@@ -107,47 +100,11 @@ export default function WaiterDashboard() {
         handleFirestoreError(error, OperationType.LIST, 'orders');
         setLoading(false);
       });
-
-      // Requests subscription (Call Waiter)
-      const qRequests = query(collection(db, 'waiterRequests'), orderBy('timestamp', 'desc'));
-      unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WaiterRequest));
-        
-        // Filter: Show if not completed AND (unassigned OR assigned to current waiter)
-        const activeReqs = data.filter(r => 
-          r.status !== 'completed' && 
-          (r.waiterId === null || r.waiterId === user.uid)
-        );
-        
-        setRequests(activeReqs);
-
-        const lastReqCount = parseInt(sessionStorage.getItem('last_request_count') || '0');
-        if (activeReqs.length > lastReqCount) {
-          const audio = new Audio(NOTIFICATION_SOUND);
-          audio.play().catch(() => {});
-          toast.success(t('new_waiter_request', 'New Waiter Assistance Request!') as string, { icon: '🔔', duration: 5000 });
-        }
-        sessionStorage.setItem('last_request_count', activeReqs.length.toString());
-      }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'waiterRequests');
-      });
-
-      // Clients subscription
-      const qClients = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-      unsubscribeClients = onSnapshot(qClients, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-        setClients(data);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'users');
-        setLoading(false);
-      });
     });
 
     return () => {
       unsubAuth();
       if (unsubscribeOrders) unsubscribeOrders();
-      if (unsubscribeClients) unsubscribeClients();
-      if (unsubscribeRequests) unsubscribeRequests();
     };
   }, []);
 
@@ -301,11 +258,6 @@ export default function WaiterDashboard() {
     }
   };
 
-  const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-10">
@@ -333,40 +285,6 @@ export default function WaiterDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-           {/* Tab Switcher */}
-           <div className="flex p-1.5 bg-white rounded-[2rem] shadow-sm border border-stone-100">
-              <button 
-                onClick={() => setActiveTab('orders')}
-                className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                  activeTab === 'orders' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                <ShoppingBag size={14} />
-                {t('orders') as string} ({orders.length})
-              </button>
-              <button 
-                onClick={() => setActiveTab('requests')}
-                className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 relative ${
-                  activeTab === 'requests' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                <Bell size={14} />
-                {(t('requests', 'Requests') as string)} ({requests.length})
-                {requests.some(r => r.status === 'new') && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-ping" />
-                )}
-              </button>
-              <button 
-                onClick={() => setActiveTab('clients')}
-                className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                  activeTab === 'clients' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                <Users size={14} />
-                {(t('clients_list', 'Clients') as string)} ({clients.length})
-              </button>
-           </div>
-
            <button 
              onClick={() => {
                localStorage.removeItem('waiter_session_active');
@@ -380,14 +298,13 @@ export default function WaiterDashboard() {
       </div>
 
       <AnimatePresence mode="wait">
-        {activeTab === 'orders' ? (
-          <motion.div 
-            key="orders-grid"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-8"
-          >
+        <motion.div 
+          key="orders-grid"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="space-y-8"
+        >
             {orders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
                 <Coffee size={64} className="mb-4 opacity-20" />
@@ -409,19 +326,6 @@ export default function WaiterDashboard() {
                           <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer') as string}</p>
                           <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
                         </div>
-                        {(() => {
-                          const client = clients.find(c => c.uid === order.userId);
-                          const hasReward = client?.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11);
-                          if (hasReward) {
-                            return (
-                              <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-3 py-1 rounded-full animate-bounce shadow-lg">
-                                <Gift size={12} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">{t('reward_ready') as string}</span>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -516,6 +420,7 @@ export default function WaiterDashboard() {
                         createdAt={order.createdAt} 
                         prepTime={order.prepTime} 
                         status={order.status} 
+                        expectedReadyAt={order.expectedReadyAt}
                       />
                     </div>
 
@@ -563,176 +468,6 @@ export default function WaiterDashboard() {
               </div>
             )}
           </motion.div>
-        ) : activeTab === 'requests' ? (
-          <motion.div 
-            key="requests-list"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="space-y-6"
-          >
-            {requests.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
-                <Bell size={64} className="mb-4 opacity-20" />
-                {t('no_active_requests', 'No active assistance requests')}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
-                {requests.map((req) => (
-                  <motion.div
-                    layout
-                    key={req.id}
-                    className={`bg-white rounded-[2.5rem] p-6 shadow-xl border relative overflow-hidden ${
-                      req.status === 'new' ? 'ring-2 ring-red-400 border-red-100' : 'border-stone-100'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${req.status === 'new' ? 'bg-red-50 text-red-500 animate-pulse' : 'bg-amber-100 text-amber-600'}`}>
-                          <Bell size={24} />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest leading-none mb-1">{t('table', 'Table') as string}</p>
-                          <h3 className="text-2xl font-black text-stone-900 uppercase italic leading-none">{req.fullTableLabel}</h3>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('time', 'Time') as string}</p>
-                        <p className="text-sm font-black text-stone-900">{req.timestamp?.toDate ? req.timestamp.toDate().toLocaleTimeString() : 'Now'}</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-stone-50 rounded-2xl p-4 mb-6">
-                      <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">{t('client', 'Client') as string}</p>
-                      <p className="font-bold text-stone-700">{req.clientName}</p>
-                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter mt-1">{req.tableArea} Zone</p>
-                    </div>
-
-                    {req.status === 'accepted' ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 mb-4">
-                          <UserCheck size={18} />
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-widest">{t('handling_by', 'Handling by') as string}</span>
-                            <span className="text-xs font-bold leading-none">{req.waiterName}</span>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => completeRequest(req)}
-                          className="w-full py-4 bg-green-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-green-200 flex items-center justify-center gap-2"
-                        >
-                          <CheckCheck size={18} />
-                          {t('mark_completed', 'Mark Completed') as string}
-                        </button>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={() => acceptRequest(req)}
-                        className="w-full py-4 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-amber-200 flex items-center justify-center gap-2"
-                      >
-                        <Navigation size={18} />
-                        {t('accept_request', 'Accept Request') as string}
-                      </button>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        ) : (
-          <motion.div 
-            key="clients-list"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
-          >
-            <div className="flex bg-white p-4 rounded-3xl shadow-sm border border-stone-100 max-w-xl">
-               <Search className="text-stone-300 mr-3" />
-               <input 
-                 type="text" 
-                 placeholder={t('search_clients_placeholder') as string}
-                 className="flex-1 bg-transparent outline-none text-sm font-bold"
-                 value={searchTerm}
-                 onChange={(e) => setSearchTerm(e.target.value)}
-               />
-            </div>
-
-            <div className="bg-white rounded-[3rem] shadow-xl border border-stone-100 overflow-hidden">
-               <div className="overflow-x-auto">
-                 <table className="w-full text-left">
-                   <thead>
-                     <tr className="border-b border-stone-50">
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client') as string}</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('status') as string}</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('loyalty_points', 'Points') as string}</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('contact') as string}</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('type') as string}</th>
-                     </tr>
-                   </thead>
-                   <tbody>
-                     {filteredClients.map((client) => (
-                       <tr key={client.uid} className="border-b border-stone-50 hover:bg-stone-50 transition-colors">
-                         <td className="px-8 py-6">
-                            <div className="flex items-center gap-4">
-                               <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center font-black text-amber-600">
-                                  {client.name.charAt(0).toUpperCase()}
-                               </div>
-                               <div>
-                                  <p className="font-black text-stone-900 uppercase italic leading-none mb-1">{client.name}</p>
-                                  <p className="text-[10px] font-bold text-stone-400">UID: {client.uid.substring(0, 8)}</p>
-                               </div>
-                            </div>
-                         </td>
-                         <td className="px-8 py-6">
-                            {(() => {
-                              const activeOrder = orders.find(o => o.userId === client.uid && o.status !== 'delivered');
-                              if (activeOrder) {
-                                return (
-                                  <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2 text-amber-600 font-bold">
-                                      <Timer size={14} className="animate-pulse" />
-                                      <span className="text-xs">{t('active_order_label') as string}</span>
-                                    </div>
-                                    <OrderTimer 
-                                      createdAt={activeOrder.createdAt} 
-                                      prepTime={activeOrder.prepTime} 
-                                      status={activeOrder.status} 
-                                    />
-                                  </div>
-                                );
-                              }
-                              return <span className="text-xs text-stone-400">{t('no_active_orders_label') as string}</span>;
-                            })()}
-                         </td>
-                         <td className="px-8 py-6">
-                            <div className="flex flex-col gap-1">
-                               <div className="text-sm font-black text-stone-900">{client.points} {t('pts_short') as string}</div>
-                               {client.itemLoyalty && Object.entries(client.itemLoyalty).some(([_, count]) => (count as number) >= 11) && (
-                                 <div className="flex items-center gap-1.5 bg-amber-400 text-stone-900 px-2 py-0.5 rounded-lg w-fit shadow-lg shadow-amber-400/20 ring-2 ring-white/20">
-                                   <Gift size={10} />
-                                   <span className="text-[8px] font-black uppercase tracking-tight">12 - {t('get_free_order') as string}</span>
-                                 </div>
-                               )}
-                            </div>
-                         </td>
-                         <td className="px-8 py-6 text-sm font-bold text-stone-500">{client.email}</td>
-                         <td className="px-8 py-6">
-                            <div className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                              client.isAdmin ? 'bg-stone-900 text-white' : 
-                              client.isWaiter ? 'bg-amber-400 text-stone-900' : 'bg-stone-100 text-stone-500'
-                            }`}>
-                               {client.isAdmin ? (t('admin_role') as string) : client.isWaiter ? (t('waiter_role') as string) : (t('customer_role') as string)}
-                            </div>
-                         </td>
-                       </tr>
-                     ))}
-                   </tbody>
-                 </table>
-               </div>
-            </div>
-          </motion.div>
-        )}
       </AnimatePresence>
     </div>
   );

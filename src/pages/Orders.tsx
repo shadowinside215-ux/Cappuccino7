@@ -289,6 +289,7 @@ export default function Orders() {
                         prepTime={order.prepTime} 
                         status={order.status} 
                         variant="client"
+                        expectedReadyAt={order.expectedReadyAt}
                       />
                     </div>
                     <p className="text-[10px] text-white/40 font-black uppercase tracking-widest font-mono">

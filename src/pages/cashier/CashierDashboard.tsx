@@ -46,6 +46,7 @@ import { generateThermalReceipt, printToThermalPrinter } from '../../lib/thermal
 import toast from 'react-hot-toast';
 import { format, startOfDay, endOfDay, isToday, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { OrderTimer } from '../../components/OrderTimer';
 
 import { useTranslation } from 'react-i18next';
 
@@ -433,6 +434,15 @@ export default function CashierDashboard() {
                                <span>{item.price * item.quantity} MAD</span>
                             </div>
                           ))}
+                       </div>
+
+                       <div className="mb-4">
+                          <OrderTimer 
+                            createdAt={order.createdAt} 
+                            prepTime={order.prepTime} 
+                            status={order.status} 
+                            expectedReadyAt={order.expectedReadyAt}
+                          />
                        </div>
 
                        <div className="grid grid-cols-2 gap-2 mt-auto">

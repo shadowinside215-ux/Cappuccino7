@@ -44,9 +44,12 @@ export default function OptimizedImage({
       return;
     }
 
-    setIsLoaded(false);
+    // Only hide if NOT priority to allow seamless swapping
+    if (!priority) {
+      setIsLoaded(false);
+    }
     setError(false);
-  }, [src, safeSrc]);
+  }, [src, safeSrc, priority]);
 
   const handleLoad = () => {
     setIsLoaded(true);
@@ -58,8 +61,8 @@ export default function OptimizedImage({
   };
 
   // Determine if we should show the loading state
-  // If we have priority, we might want to hide the loader if it's already cached
-  const showLoader = !isLoaded && !error && safeSrc;
+  // We prioritize speed/immediate appearance over smooth fading for the "native" feel the user wants
+  const showLoader = !isLoaded && !error && safeSrc && !priority;
 
   return (
     <div className={`relative overflow-hidden ${containerClassName}`}>
@@ -70,9 +73,9 @@ export default function OptimizedImage({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center bg-stone-100 dark:bg-stone-900/50 z-20"
+            className="absolute inset-0 flex items-center justify-center bg-stone-100 dark:bg-stone-900/10 z-20"
           >
-            <Loader2 className="w-6 h-6 text-stone-300 animate-spin" />
+            <Loader2 className="w-5 h-5 text-stone-300 animate-spin" />
           </motion.div>
         )}
 
@@ -81,14 +84,9 @@ export default function OptimizedImage({
             key="error"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-stone-900/40 p-4 text-center z-10"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-stone-900/20 p-4 text-center z-10"
           >
-            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-2">
-              <Coffee className="w-5 h-5 text-stone-700 dark:text-stone-700" />
-            </div>
-            <p className="text-[8px] font-black text-stone-700 dark:text-stone-800 uppercase tracking-[0.2em] italic">
-              CAPPUCCINO 7
-            </p>
+            <Coffee className="w-5 h-5 text-stone-700/20 mb-1" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -101,14 +99,13 @@ export default function OptimizedImage({
           alt={alt}
           onLoad={handleLoad}
           onError={handleError}
-          initial={priority ? { opacity: 1 } : { opacity: 0, scale: 1.05 }}
+          initial={priority ? { opacity: 1 } : { opacity: 0 }}
           animate={{ 
-            opacity: isLoaded ? 1 : (priority ? 1 : 0),
-            scale: isLoaded ? 1 : (priority ? 1 : 1.05)
+            opacity: (isLoaded || priority) ? 1 : 0
           }}
           transition={{ 
-            duration: 0.4,
-            ease: "easeOut"
+            duration: 0.2,
+            ease: "linear"
           }}
           className={`${className} relative z-0`}
         />

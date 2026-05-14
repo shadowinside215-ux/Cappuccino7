@@ -8,13 +8,13 @@ interface OrderTimerProps {
   prepTime: number;
   status: OrderStatus;
   variant?: 'admin' | 'client';
+  expectedReadyAt?: any;
 }
 
-export function OrderTimer({ createdAt, prepTime, status, variant = 'admin' }: OrderTimerProps) {
+export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', expectedReadyAt }: OrderTimerProps) {
   const { t } = useTranslation();
   const [elapsed, setElapsed] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const driftRef = React.useRef<number | null>(null);
 
   useEffect(() => {
     const calculateTimes = () => {
@@ -22,36 +22,33 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin' }: O
       
       let createdDate: Date | null = null;
       if (createdAt) {
-        if (typeof createdAt.toDate === 'function') {
-          createdDate = createdAt.toDate();
-        } else if (createdAt instanceof Date) {
-          createdDate = createdAt;
-        } else if (typeof createdAt === 'object' && createdAt.seconds) {
-          createdDate = new Date(createdAt.seconds * 1000);
-        } else {
-          createdDate = new Date(createdAt);
-        }
+        if (typeof createdAt.toDate === 'function') createdDate = createdAt.toDate();
+        else if (createdAt instanceof Date) createdDate = createdAt;
+        else if (typeof createdAt === 'object' && createdAt.seconds) createdDate = new Date(createdAt.seconds * 1000);
+        else createdDate = new Date(createdAt);
+      }
+      
+      let targetDate: Date | null = null;
+      if (expectedReadyAt) {
+        if (typeof expectedReadyAt.toDate === 'function') targetDate = expectedReadyAt.toDate();
+        else if (expectedReadyAt instanceof Date) targetDate = expectedReadyAt;
+        else if (typeof expectedReadyAt === 'object' && expectedReadyAt.seconds) targetDate = new Date(expectedReadyAt.seconds * 1000);
+        else targetDate = new Date(expectedReadyAt);
       }
       
       if (!createdDate || isNaN(createdDate.getTime())) return;
 
-      // Handle Clock Drift
-      // Reference: If server 'createdAt' is in the future compared to client 'now', 
-      // we need to adjust our perception of 'now' to match server time.
-      if (driftRef.current === null) {
-        driftRef.current = createdDate.getTime() - now;
-      }
-
-      const adjustedNow = now + driftRef.current;
-      const diffSecs = Math.floor((adjustedNow - createdDate.getTime()) / 1000);
+      const diffSecs = Math.floor((now - createdDate.getTime()) / 1000);
       setElapsed(diffSecs);
 
       const durationMins = prepTime || 30;
       const isActive = status !== 'delivered' && status !== 'cancelled' && (variant === 'client' ? status !== 'ready' : true);
       
       if (isActive) {
-        const targetDate = new Date(createdDate.getTime() + durationMins * 60000);
-        let diff = Math.floor((targetDate.getTime() - adjustedNow) / 1000);
+        if (!targetDate || isNaN(targetDate.getTime())) {
+          targetDate = new Date(createdDate.getTime() + durationMins * 60000);
+        }
+        let diff = Math.floor((targetDate.getTime() - now) / 1000);
         setTimeLeft(diff);
       } else {
         setTimeLeft(null);
@@ -89,7 +86,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin' }: O
       <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border animate-in fade-in zoom-in duration-500 transition-colors ${styles}`}>
         <Timer size={14} className={isOverdue ? 'animate-pulse' : ''} />
         <span className="text-[10px] font-black uppercase tracking-widest leading-none tabular-nums">
-          {isOverdue ? t('ready_soon', 'Ready Soon') : `${t('ready_in', 'Ready in')} ${displayTime}`}
+          {isOverdue ? t('ready_time_reached', 'Ready time reached') : `${t('ready_in', 'Ready in')} ${displayTime}`}
         </span>
       </div>
     );
@@ -112,7 +109,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin' }: O
        <Clock size={12} className={isActive && isOverdue ? 'animate-pulse' : (isActive ? 'text-white' : 'text-amber-400')} />
        <span className="tabular-nums">
          {isActive 
-          ? (timeLeft !== null ? `${isOverdue ? '-' : ''}${formatSecs(timeLeft)} ${t('waiting').toUpperCase()}` : '--:--') 
+          ? (timeLeft !== null ? `${isOverdue ? (t('overdue', 'OVERDUE') + ' ') : ''}${formatSecs(timeLeft)} ${t('waiting').toUpperCase()}` : '--:--') 
           : `${formatSecs(elapsed)} ${t('total_duration').toUpperCase()}`}
        </span>
     </div>

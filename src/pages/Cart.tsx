@@ -163,9 +163,9 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       const pointsEarned = totalItems;
       const isGuest = auth.currentUser.isAnonymous;
 
-      // Category detection for kitchen (30m) vs barman (10m)
-      const kitchenKeywords = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle', 'petit déjeuner', 'omelette', 'tacos', 'panini', 'oeuf', 'egg'];
-      const barmanKeywords = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink', 'cappuccino', 'latte', 'espresso', 'water', 'eau', 'soda', 'coke', 'fanta', 'sprite'];
+      // Category detection: Food (30m) vs Drinks (10m) per user requirements
+      const foodKeywords = ['food', 'dishes', 'breakfast', 'pizza', 'burger', 'sandwich', 'salad', 'crepe', 'waffle', 'pancake', 'pasta', 'meal', 'petit déjeuner', 'omelette', 'tacos', 'panini', 'oeuf', 'egg', 'dish'];
+      const drinkKeywords = ['drink', 'juice', 'coffee', 'smoothie', 'mojito', 'milkshake', 'ice tea', 'frappuccino', 'jus', 'café', 'boisson', 'thé', 'iced', 'frappé', 'espresso', 'latte', 'cappuccino', 'soda', 'coke', 'fanta', 'sprite', 'water', 'eau'];
 
       const itemsWithMetadata = [];
       const originalCartItems = [...items];
@@ -181,82 +181,43 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             const lowerName = item.name.toLowerCase();
 
             const isBreakfast = lowerCat.includes('breakfast') || lowerName.includes('petit déjeuner');
-            // Check if the item name explicitly mentions a drink
-            const drinkMatch = barmanKeywords.find(kw => lowerName.includes(kw));
-            
-            // If it's a breakfast combo (Food + Drink)
-            if (isBreakfast && drinkMatch) {
-              // Clean name for kitchen (remove drink mention)
-              let foodName = item.name;
-              // Simple regex to remove "+ Drink" or "with Drink" patterns
-              barmanKeywords.forEach(kw => {
-                const regex = new RegExp(`(\\+|with|and|&|\\s|\\/)*${kw}\\b`, 'gi');
-                foodName = foodName.replace(regex, '').trim();
-              });
+            const isFoodByKW = foodKeywords.some(kw => lowerName.includes(kw) || lowerCat.includes(kw));
+            const isDrinkByKW = drinkKeywords.some(kw => lowerName.includes(kw) || lowerCat.includes(kw));
 
-              // Create Food Part for Kitchen
-              itemsWithMetadata.push({
-                ...item,
-                name: foodName || item.name, // Fallback to original if we cleaned everything by mistake
-                categoryName,
-                subSection: productData.subSection || '',
-                system: 'kitchen',
-                isComboPart: true,
-                comboType: 'food',
-                pointsWorth: item.quantity
-              });
-              
-              // Create Drink Part for Barman
-              // Extract the drink part or just use the matched keyword
-              const drinkLabel = drinkMatch.charAt(0).toUpperCase() + drinkMatch.slice(1);
-              itemsWithMetadata.push({
-                ...item,
-                name: `${t('drink', 'Drink')}: ${drinkLabel}`,
-                price: 0,
-                categoryName,
-                subSection: productData.subSection || '',
-                system: 'barman',
-                isComboPart: true,
-                comboType: 'drink',
-                pointsWorth: 0
-              });
-            } else {
-              // Standard routing
-              let system: 'kitchen' | 'barman' = 'barman';
-              
-              // If it's purely a drink, it goes to barman even if in breakfast category
-              const matchesDrink = barmanKeywords.some(kw => lowerName.includes(kw));
-              const matchesFood = kitchenKeywords.some(kw => lowerName.includes(kw) || lowerCat.includes(kw));
+            // Determine routing and individual prep time for metadata (used by sectional views)
+            let system: 'kitchen' | 'barman' = 'barman';
+            let itemPrepTime = 10;
 
-              if (matchesDrink) {
-                system = 'barman';
-              } else if (matchesFood) {
-                system = 'kitchen';
-              }
-
-              itemsWithMetadata.push({
-                ...item,
-                categoryName,
-                subSection: productData.subSection || '',
-                system,
-                pointsWorth: item.quantity
-              });
+            if (isFoodByKW || isBreakfast) {
+              system = 'kitchen';
+              itemPrepTime = 30;
+            } else if (isDrinkByKW) {
+              system = 'barman';
+              itemPrepTime = 10;
             }
+
+            itemsWithMetadata.push({
+              ...item,
+              categoryName,
+              subSection: productData.subSection || '',
+              system,
+              prepTime: itemPrepTime,
+              pointsWorth: item.quantity
+            });
           } else {
-            itemsWithMetadata.push({ ...item, categoryName: 'Menu', subSection: '', system: 'barman' });
+            itemsWithMetadata.push({ ...item, categoryName: 'Menu', subSection: '', system: 'barman', prepTime: 10 });
           }
         } catch (e) {
           console.error("Error fetching item metadata", e);
-          itemsWithMetadata.push({ ...item, categoryName: 'Menu', subSection: '', system: 'barman' });
+          itemsWithMetadata.push({ ...item, categoryName: 'Menu', subSection: '', system: 'barman', prepTime: 10 });
         }
       }
 
       const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen');
-      const hasBarmanItems = itemsWithMetadata.some(item => item.system === 'barman');
-
       const prepTimeMinutes = hasKitchenItems ? 30 : 10;
-      const now = new Date();
-      const estimatedReadyAt = new Date(now.getTime() + prepTimeMinutes * 60000);
+      
+      const nowRaw = Date.now();
+      const expectedReadyAt = new Date(nowRaw + prepTimeMinutes * 60000);
 
       const orderData = {
         userId: auth.currentUser.uid,
@@ -265,9 +226,9 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         items: itemsWithMetadata,
         total: total,
         status: 'pending' as OrderStatus,
-        isPaid: false, // MANDATORY: Revenue is only counted on Pay in POS/Cashier
+        isPaid: false,
         kitchenStatus: hasKitchenItems ? 'pending' : 'completed',
-        barmanStatus: hasBarmanItems ? 'pending' : 'completed',
+        barmanStatus: itemsWithMetadata.some(item => item.system === 'barman') ? 'pending' : 'completed',
         deliveryType,
         tableZone: deliveryType === 'dine-in' ? tableZone : null,
         tableArea: deliveryType === 'dine-in' ? tableArea : null,
@@ -275,7 +236,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         fullTableLabel: deliveryType === 'dine-in' ? fullTableLabel : null,
         waiterStatus: deliveryType === 'dine-in' ? 'New' : undefined,
         prepTime: prepTimeMinutes,
-        estimatedReadyAt: estimatedReadyAt,
+        expectedReadyAt: expectedReadyAt,
         address: address || (deliveryType === 'dine-in' ? `Table ${fullTableLabel} (${tableArea})` : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
         deliveryNotes,
         ...(finalLocation ? {
