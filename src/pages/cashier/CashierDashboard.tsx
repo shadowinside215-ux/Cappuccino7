@@ -47,6 +47,7 @@ import toast from 'react-hot-toast';
 import { format, startOfDay, endOfDay, isToday, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { OrderTimer } from '../../components/OrderTimer';
+import OptimizedImage from '../../components/ui/OptimizedImage';
 
 import { useTranslation } from 'react-i18next';
 
@@ -231,6 +232,7 @@ export default function CashierDashboard() {
         name: product.name,
         price: product.price,
         quantity: 1,
+        image: product.image,
         categoryName: categories.find(c => c.id === product.categoryId)?.name || 'Menu'
       }];
     });
@@ -391,17 +393,30 @@ export default function CashierDashboard() {
         {/* Left Side: Product Grid or Pending View */}
         <div className="flex-1 flex flex-col min-w-0">
           {view === 'pos' ? (
-            <div className="flex-1 overflow-y-auto bg-bento-bg custom-scrollbar">
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border-b border-bento-card-border">
+            <div className="flex-1 overflow-y-auto bg-bento-bg custom-scrollbar p-1 sm:p-2 md:p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-1 sm:gap-2 md:gap-4">
                 {filteredProducts.map(product => (
                   <motion.button
                     key={product.id}
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={() => addToCart(product)}
-                    className="aspect-[4/3] bg-[#00ADC0] border border-black/10 flex flex-col items-center justify-center p-8 text-center group active:brightness-50 transition-all hover:brightness-110 shadow-inner"
+                    className="flex flex-col bg-white dark:bg-stone-900 border border-stone-200 dark:border-white/5 rounded-2xl overflow-hidden group active:brightness-90 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1"
                   >
-                    <span className="text-sm md:text-lg lg:text-xl font-black uppercase leading-tight mb-4 text-white drop-shadow-md line-clamp-3 px-2 tracking-tight">{product.name}</span>
-                    <span className="text-base md:text-xl font-black text-white px-4 py-2 bg-black/20 rounded-xl shadow-lg ring-1 ring-white/10">{product.price.toFixed(2)} DH</span>
+                    <div className="aspect-square w-full bg-stone-100 dark:bg-stone-800/50 overflow-hidden relative">
+                       <OptimizedImage 
+                         src={product.image} 
+                         alt={product.name}
+                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                         containerClassName="w-full h-full"
+                         showOverlay={false}
+                       />
+                       <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 shadow-lg">
+                          <span className="text-[10px] sm:text-xs font-black text-white tabular-nums">{product.price.toFixed(2)}</span>
+                       </div>
+                    </div>
+                    <div className="p-3 sm:p-4 flex flex-col items-center justify-center text-center flex-1">
+                      <span className="text-[9px] sm:text-[10px] md:text-[11px] font-black uppercase leading-tight line-clamp-2 text-stone-900 dark:text-stone-100 tracking-tight">{product.name}</span>
+                    </div>
                   </motion.button>
                 ))}
               </div>
@@ -725,7 +740,16 @@ export default function CashierDashboard() {
                              {item.quantity}
                           </div>
                         )}
-                        <span className="text-[11px] font-bold uppercase tracking-tight max-w-[180px] leading-tight text-stone-800">{item.name}</span>
+                        {item.image && (
+                          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-stone-100 ring-1 ring-black/5 shadow-sm">
+                            <OptimizedImage 
+                              src={item.image} 
+                              className="w-full h-full object-cover" 
+                              showOverlay={false}
+                            />
+                          </div>
+                        )}
+                        <span className="text-[11px] font-bold uppercase tracking-tight max-w-[150px] leading-tight text-stone-800">{item.name}</span>
                      </div>
                      <span className="font-black tabular-nums text-stone-900">{(item.price * item.quantity).toFixed(2)}</span>
                   </div>
