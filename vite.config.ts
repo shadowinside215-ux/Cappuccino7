@@ -12,26 +12,21 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: [],
         manifest: {
           name: 'Cappuccino7',
           short_name: 'Cap7',
           description: 'Premium Coffee & Breakfast in Salé',
-          theme_color: '#5A3E2B',
+          theme_color: '#9c661c',
           icons: [
             {
-              src: 'pwa-192x192.png',
-              sizes: '192x192',
+              src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png',
+              sizes: '1024x1024',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png'
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
+              src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png',
+              sizes: '1024x1024',
               type: 'image/png',
               purpose: 'any maskable'
             }
