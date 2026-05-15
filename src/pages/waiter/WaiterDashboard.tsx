@@ -36,21 +36,37 @@ export default function WaiterDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'requests'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'ready'>('orders');
+  const [waiterProfile, setWaiterProfile] = useState<UserProfile | null>(null);
+  const profileRef = React.useRef<UserProfile | null>(null);
+  const prevOrdersRef = React.useRef<Order[]>([]);
+
+  useEffect(() => {
+    profileRef.current = waiterProfile;
+  }, [waiterProfile]);
 
   useEffect(() => {
     let unsubscribeOrders: (() => void) | null = null;
     let unsubscribeRequests: (() => void) | null = null;
+    let unsubscribeProfile: (() => void) | null = null;
 
     const unsubAuth = auth.onAuthStateChanged((user) => {
       // Clean up previous listeners if auth state changes
       if (unsubscribeOrders) unsubscribeOrders();
       if (unsubscribeRequests) unsubscribeRequests();
+      if (unsubscribeProfile) unsubscribeProfile();
 
       if (!user) {
         setLoading(false);
         return;
       }
+
+      // Fetch waiter profile
+      unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+        if (docSnap.exists()) {
+          setWaiterProfile(docSnap.data() as UserProfile);
+        }
+      });
 
       // Orders subscription
       const qOrders = query(
@@ -60,24 +76,56 @@ export default function WaiterDashboard() {
 
       unsubscribeOrders = onSnapshot(qOrders, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
-        // Keep active orders (waiter view)
-        const activeOrders = data.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
-        setOrders(activeOrders);
+        
+        // Waiter Profile for zone filtering
+        const userDoc = snapshot.docs.find(d => d.id === user.uid); // This is wrong, profile is in users collection
+        // Already handled profile in separate listener.
+
+        setOrders(data);
         
         const lastOrderCount = parseInt(sessionStorage.getItem('last_order_count') || '0');
+        const activeOrders = data.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+
         if (activeOrders.length > lastOrderCount) {
-          const audio = new Audio(NOTIFICATION_SOUND);
-          audio.play().catch(e => console.log('Audio blocked', e));
-          toast.success(t('new_order_toast', 'New Order Received!') as string, { icon: '🔔', duration: 5000 });
+          // Play sound and toast only if it's in the waiter's zone
+          // Need to check if profile is loaded
         }
 
         // Check for specific staff state changes
         snapshot.docChanges().forEach((change) => {
           if (change.type === 'modified') {
             const newData = change.doc.data() as Order;
-            const oldOrder = orders.find(o => o.id === change.doc.id);
+            const oldOrder = prevOrdersRef.current.find(o => o.id === change.doc.id);
             
-            if (oldOrder) {
+            // Check if order belongs to waiter's zone
+            const currentProfile = profileRef.current;
+            const isMyZone = currentProfile?.assignedZone ? newData.tableZone === currentProfile.assignedZone : true;
+
+            if (oldOrder && isMyZone) {
+              // Client Modified Order Notification
+              if (newData.isModified && !oldOrder.isModified) {
+                toast.error(`${t('order_modified_alert', 'Order Modified by Client!')} - ${newData.fullTableLabel || newData.customerName}`, {
+                  icon: '📝',
+                  duration: 10000,
+                  position: 'top-center',
+                  style: { background: '#ef4444', color: '#fff', fontWeight: 'bold' }
+                });
+                const audio = new Audio(NOTIFICATION_SOUND);
+                audio.play().catch(() => {});
+              }
+
+              // Client Cancelled Order Notification
+              if (newData.status === 'cancelled' && oldOrder.status !== 'cancelled') {
+                toast.error(`${t('order_cancelled_alert', 'Order CANCELLED by Client!')} - ${newData.fullTableLabel || newData.customerName}`, {
+                  icon: '❌',
+                  duration: 12000,
+                  position: 'top-center',
+                  style: { background: '#ef4444', color: '#fff', fontWeight: 'bold' }
+                });
+                const audio = new Audio(NOTIFICATION_SOUND);
+                audio.play().catch(() => {});
+              }
+
               // Kitchen/Bar Notification: Order Ready
               const kitchenJustReady = newData.kitchenStatus === 'ready' && oldOrder.kitchenStatus !== 'ready';
               const barmanJustReady = newData.barmanStatus === 'ready' && oldOrder.barmanStatus !== 'ready';
@@ -97,6 +145,7 @@ export default function WaiterDashboard() {
           }
         });
 
+        prevOrdersRef.current = data;
         sessionStorage.setItem('last_order_count', activeOrders.length.toString());
         setLoading(false);
       }, (error) => {
@@ -125,8 +174,12 @@ export default function WaiterDashboard() {
           if (change.type === 'added') {
             const req = { id: change.doc.id, ...change.doc.data() } as WaiterRequest;
             
-            // Only notify if it's assigned to this waiter or unassigned
-            if (!req.waiterId || req.waiterId === auth.currentUser?.uid) {
+            // Filter by zone
+            const currentProfile = profileRef.current;
+            const isMyZone = currentProfile?.assignedZone ? req.tableZone === currentProfile.assignedZone : true;
+
+            // Only notify if it's assigned to this waiter or unassigned AND in my zone
+            if (isMyZone && (!req.waiterId || req.waiterId === auth.currentUser?.uid)) {
               toast.error(
                 `${t('waiter_called_toast', 'Customer Calling!')} - ${req.fullTableLabel || req.clientName}`,
                 {
@@ -311,6 +364,23 @@ export default function WaiterDashboard() {
     }
   };
 
+  const filteredOrders = orders.filter(o => 
+    o.status !== 'delivered' && 
+    o.status !== 'cancelled' && 
+    (!waiterProfile?.assignedZone || o.tableZone === waiterProfile.assignedZone)
+  );
+
+  const filteredRequests = requests.filter(r => 
+    !waiterProfile?.assignedZone || r.tableZone === waiterProfile.assignedZone
+  );
+
+  const readyToServeOrders = orders.filter(o => 
+    (o.kitchenStatus === 'ready' || o.barmanStatus === 'ready') && 
+    o.status !== 'delivered' && 
+    o.status !== 'cancelled' &&
+    (!waiterProfile?.assignedZone || o.tableZone === waiterProfile.assignedZone)
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-10">
@@ -332,7 +402,7 @@ export default function WaiterDashboard() {
               {t('waiter_console') as string}
             </h1>
             <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em]">
-              Palace Taha • {t('active_terminal') as string}
+              Palace Taha • {waiterProfile?.assignedZone ? `Zone ${waiterProfile.assignedZone} (${waiterProfile.assignedZone === 'A' ? 'Inside' : 'Outside'})` : t('active_terminal') as string}
             </p>
           </div>
         </div>
@@ -343,16 +413,27 @@ export default function WaiterDashboard() {
                onClick={() => setActiveTab('orders')}
                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'orders' ? 'bg-white text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
              >
-               {t('orders', 'Orders') as string} ({orders.length})
+               {t('orders', 'Orders') as string} ({filteredOrders.length})
+             </button>
+             <button 
+               onClick={() => setActiveTab('ready')}
+               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'ready' ? 'bg-white text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+             >
+               {t('ready_to_serve', 'Ready') as string} ({readyToServeOrders.length})
+               {readyToServeOrders.length > 0 && (
+                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 text-white text-[8px] rounded-full flex items-center justify-center animate-pulse">
+                   {readyToServeOrders.length}
+                 </span>
+               )}
              </button>
              <button 
                onClick={() => setActiveTab('requests')}
                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'requests' ? 'bg-white text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
              >
                {t('requests_tab', 'Calls') as string}
-               {requests.filter(r => r.status === 'new').length > 0 && (
+               {filteredRequests.filter(r => r.status === 'new').length > 0 && (
                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center animate-pulse">
-                   {requests.filter(r => r.status === 'new').length}
+                   {filteredRequests.filter(r => r.status === 'new').length}
                  </span>
                )}
              </button>
@@ -379,14 +460,14 @@ export default function WaiterDashboard() {
             exit={{ opacity: 0, x: 20 }}
             className="space-y-8"
           >
-              {orders.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
                   <Coffee size={64} className="mb-4 opacity-20" />
                   {t('no_active_orders')}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
-                  {orders.map((order) => (
+                  {filteredOrders.map((order) => (
                     <motion.div
                       layout
                       key={order.id}
@@ -397,7 +478,14 @@ export default function WaiterDashboard() {
                       <div className="mb-6">
                         <div className="flex justify-between items-start mb-1">
                           <div className="flex flex-col">
-                            <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer') as string}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer') as string}</p>
+                              {order.isModified && (
+                                <span className="bg-red-500 text-white text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter animate-pulse">
+                                  Modified
+                                </span>
+                              )}
+                            </div>
                             <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
                           </div>
                         </div>
@@ -538,6 +626,79 @@ export default function WaiterDashboard() {
                 </div>
               )}
           </motion.div>
+        ) : activeTab === 'ready' ? (
+          <motion.div 
+            key="ready-grid"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="space-y-8"
+          >
+              {readyToServeOrders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
+                  <CheckCircle2 size={64} className="mb-4 opacity-20" />
+                  {t('nothing_ready_to_serve', 'Nothing ready to serve')}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {readyToServeOrders.map((order) => (
+                    <motion.div
+                      layout
+                      key={order.id}
+                      className="bg-white rounded-[2.5rem] p-8 border-4 border-green-500 shadow-2xl relative overflow-hidden"
+                    >
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('ready_now', 'Ready Now') as string}</p>
+                          <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
+                          <div className="mt-2 flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-2xl shadow-lg">
+                            <Navigation size={14} className="text-white" />
+                            <span className="text-sm font-black italic uppercase tracking-tighter">
+                              {order.fullTableLabel} ({order.tableArea})
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                           {order.kitchenStatus === 'ready' && (
+                             <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl">
+                               <ChefHat size={12} />
+                               <span className="text-[8px] font-black uppercase">{t('kitchen')}</span>
+                             </div>
+                           )}
+                           {order.barmanStatus === 'ready' && (
+                             <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl">
+                               <Coffee size={12} />
+                               <span className="text-[8px] font-black uppercase">{t('barman')}</span>
+                             </div>
+                           )}
+                        </div>
+                      </div>
+
+                      <div className="bg-stone-50 rounded-2xl p-4 mb-6">
+                         {order.items.filter(i => {
+                            if (order.kitchenStatus === 'ready' && order.barmanStatus === 'ready') return true;
+                            if (order.kitchenStatus === 'ready') return i.system === 'kitchen' || i.system === 'both';
+                            if (order.barmanStatus === 'ready') return i.system === 'barman';
+                            return true;
+                         }).map((item, idx) => (
+                           <div key={idx} className="flex justify-between items-center text-sm mb-1 last:mb-0">
+                             <span className="font-bold text-stone-700">{item.quantity}x {item.name}</span>
+                           </div>
+                         ))}
+                      </div>
+
+                      <button 
+                        onClick={() => completeOrder(order)}
+                        className="w-full py-4 bg-green-500 text-white rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl hover:bg-green-600 transition-all flex items-center justify-center gap-3"
+                      >
+                        <CheckCheck size={18} />
+                        {t('mark_served', 'Mark Served') as string}
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+          </motion.div>
         ) : (
           <motion.div 
             key="requests-grid"
@@ -546,14 +707,14 @@ export default function WaiterDashboard() {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-             {requests.length === 0 ? (
-               <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
-                 <Bell size={64} className="mb-4 opacity-20" />
-                 {t('no_active_requests', 'No active support requests')}
-               </div>
-             ) : (
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {requests.map((req) => (
+             {filteredRequests.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
+                  <Bell size={64} className="mb-4 opacity-20" />
+                  {t('no_active_requests')}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredRequests.map((req) => (
                    <div key={req.id} className={`bg-white rounded-[2.5rem] p-6 border-2 transition-all ${req.status === 'new' ? 'border-amber-400 shadow-xl shadow-amber-400/5' : 'border-stone-100 opacity-60'}`}>
                      <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-4">

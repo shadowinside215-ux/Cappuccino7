@@ -9,14 +9,14 @@ import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, q
 import toast from 'react-hot-toast';
 
 const staffAccounts = [
-  { username: "admin", password: "admin7000", role: "admin", displayName: "Admin" },
-  { username: "cashier", password: "cashier3000", role: "cashier", displayName: "Cashier" },
-  { username: "kitchen", password: "kitchen7000", role: "kitchen", displayName: "Kitchen" },
-  { username: "barman", password: "barman5000", role: "barman", displayName: "Barman" },
-  { username: "waiter", password: "waiter1", role: "waiter", waiterId: "waiter1", displayName: "Waiter 1" },
-  { username: "waiter", password: "waiter2", role: "waiter", waiterId: "waiter2", displayName: "Waiter 2" },
-  { username: "waiter", password: "waiter3", role: "waiter", waiterId: "waiter3", displayName: "Waiter 3" },
-  { username: "waiter", password: "waiter4", role: "waiter", waiterId: "waiter4", displayName: "Waiter 4" }
+  { id: 'admin', username: "admin", password: "admin7000", role: "admin", displayName: "Admin" },
+  { id: 'cashier', username: "cashier", password: "cashier9000", role: "cashier", displayName: "Cashier" },
+  { id: 'kitchen', username: "kitchen", password: "kitchen7000", role: "kitchen", displayName: "Kitchen" },
+  { id: 'barman', username: "barman", password: "barman5000", role: "barman", displayName: "Barman" },
+  { id: 'waiter1', username: "waiter", password: "waiter1", role: "waiter", displayName: "Waiter 1", assignedZone: 'A' },
+  { id: 'waiter2', username: "waiter", password: "waiter2", role: "waiter", displayName: "Waiter 2", assignedZone: 'B' },
+  { id: 'waiter3', username: "waiter", password: "waiter3", role: "waiter", displayName: "Waiter 3", assignedZone: 'A' },
+  { id: 'waiter4', username: "waiter", password: "waiter4", role: "waiter", displayName: "Waiter 4", assignedZone: 'B' }
 ];
 
 export default function WaiterLogin() {
@@ -35,18 +35,47 @@ export default function WaiterLogin() {
       const cleanUsername = username.trim().toLowerCase();
       const cleanPassword = password.trim();
 
-      const account = staffAccounts.find(acc => 
-        acc.username === cleanUsername && 
-        acc.password === (acc.role === 'waiter' ? password.trim() : cleanPassword)
+      // Fetch dynamic staff configs from Firestore
+      let dynamicStaffAccounts: any[] = [];
+      try {
+        const staffSnap = await getDocs(collection(db, 'staffConfigs'));
+        dynamicStaffAccounts = staffSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      } catch (firestoreErr) {
+        console.warn("Could not fetch dynamic staff configs, relying entirely on static accounts", firestoreErr);
+      }
+
+      // Merge dynamic accounts over static accounts
+      const accountsToSearch = staffAccounts.map(staticAcc => {
+        const dynamicAcc = dynamicStaffAccounts.find(d => d.id === staticAcc.id);
+        return dynamicAcc ? { ...staticAcc, ...dynamicAcc } : staticAcc;
+      });
+      // Add any dynamic accounts that don't exist in static accounts
+      dynamicStaffAccounts.forEach(dAcc => {
+        if (!accountsToSearch.find(a => a.id === dAcc.id)) {
+          accountsToSearch.push(dAcc);
+        }
+      });
+
+      const account = accountsToSearch.find((acc: any) => 
+        acc.username.toLowerCase() === cleanUsername && 
+        acc.password === cleanPassword
       );
 
       if (account) {
+        const role = account.role || (
+                     account.id === 'kitchen' ? 'kitchen' : 
+                     account.id === 'barman' ? 'barman' : 
+                     account.id === 'cashier' ? 'cashier' : 
+                     account.id === 'admin' ? 'admin' :
+                     account.id.startsWith('waiter') ? 'waiter' : 'staff');
+
         // Prepare session
         const staffSession = {
-          role: account.role,
+          role: role,
           displayName: account.displayName,
-          waiterId: (account as any).waiterId || null,
+          waiterId: role === 'waiter' ? account.id : null,
           username: account.username,
+          assignedZone: account.assignedZone || null,
           authenticatedAt: new Date().toISOString()
         };
 
@@ -54,7 +83,7 @@ export default function WaiterLogin() {
         localStorage.setItem('staffSession', JSON.stringify(staffSession));
         
         // Waiter specific legacy flags
-        if (account.role === 'waiter') {
+        if (role === 'waiter') {
           localStorage.setItem('waiter_session_active', 'true');
         }
 
@@ -67,15 +96,16 @@ export default function WaiterLogin() {
           await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             name: account.displayName,
-            role: account.role,
+            role: role,
             isStaff: true,
-            isWaiter: account.role === 'waiter',
-            isKitchen: account.role === 'kitchen',
-            isBarman: account.role === 'barman',
-            isCashier: account.role === 'cashier',
-            isDriver: account.role === 'driver',
-            isAdmin: account.role === 'admin',
-            waiterId: (account as any).waiterId || null,
+            isWaiter: role === 'waiter',
+            isKitchen: role === 'kitchen',
+            isBarman: role === 'barman',
+            isCashier: role === 'cashier',
+            isDriver: role === 'driver',
+            isAdmin: role === 'admin',
+            waiterId: role === 'waiter' ? account.id : null,
+            assignedZone: account.assignedZone || null,
             updatedAt: serverTimestamp()
           }, { merge: true });
         } catch (firebaseErr) {
@@ -85,7 +115,7 @@ export default function WaiterLogin() {
         toast.success(`${account.displayName} Activated`);
         
         // Routing logic
-        switch (account.role) {
+        switch (role) {
           case 'admin': navigate('/admin'); break;
           case 'cashier': navigate('/cashier/dashboard'); break;
           case 'kitchen': navigate('/kitchen/dashboard'); break;
@@ -98,7 +128,8 @@ export default function WaiterLogin() {
 
       toast.error('Invalid username or password');
     } catch (err: any) {
-      toast.error('Invalid username or password');
+      console.error(err);
+      toast.error('Invalid username or password' + (err.message ? ': ' + err.message : ''));
     } finally {
       setLoading(false);
     }

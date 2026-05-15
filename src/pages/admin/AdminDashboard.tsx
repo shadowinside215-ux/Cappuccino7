@@ -30,7 +30,20 @@ export default function AdminDashboard() {
   const [isCreator, setIsCreator] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
+  const [waiters, setWaiters] = useState<UserProfile[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Listener for staff/waiters to check zone assignments
+    const q = query(collection(db, 'users'), where('role', '==', 'waiter'));
+    return onSnapshot(q, (snap) => {
+      const waitersData = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+      setWaiters(waitersData);
+    });
+  }, []);
+
+  const hasZoneAWaiter = waiters.some(w => w.assignedZone === 'A');
+  const hasZoneBWaiter = waiters.some(w => w.assignedZone === 'B');
 
   const fetchProductsForMapping = async () => {
     try {
@@ -702,6 +715,37 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+      {(!hasZoneAWaiter || !hasZoneBWaiter) && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-red-500 text-white p-6 rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-white/20 rounded-2xl">
+              <AlertCircle size={32} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black uppercase italic tracking-tighter">Staff Warning: Zone Assignment</h3>
+              <p className="text-sm font-medium opacity-90">
+                {!hasZoneAWaiter && !hasZoneBWaiter 
+                  ? "NO WAITERS ASSIGNED TO ANY ZONE!" 
+                  : !hasZoneAWaiter 
+                    ? "Zone A (Inside) has no assigned waiter." 
+                    : "Zone B (Outside) has no assigned waiter."}
+                {" Call Waiter requests and orders will be seen by all active waiters as fallback."}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => navigate('/admin/staff')}
+            className="bg-white text-red-600 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-stone-100 transition-all shadow-lg"
+          >
+            Assign Staff Now
+          </button>
+        </motion.div>
+      )}
 
       {isEmpty && (
         <div className="card accent-card overflow-hidden relative">

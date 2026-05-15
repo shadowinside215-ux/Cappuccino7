@@ -52,6 +52,7 @@ export default function BarmanDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const prevOrdersRef = React.useRef<Order[]>([]);
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -75,6 +76,35 @@ export default function BarmanDashboard() {
         if (change.type === 'added') {
           hasNewOrder = true;
         }
+        if (change.type === 'modified') {
+          const newData = change.doc.data() as Order;
+          const oldOrder = prevOrdersRef.current.find(o => o.id === change.doc.id);
+          
+          if (oldOrder) {
+            // Cancelled
+            if (newData.status === 'cancelled' && oldOrder.status !== 'cancelled') {
+              toast.error(`${t('order_cancelled_alert', 'Order CANCELLED by Client!')} - ${newData.fullTableLabel || newData.customerName}`, {
+                icon: '❌',
+                duration: 12000,
+                position: 'top-center',
+                style: { background: '#ef4444', color: '#fff', fontWeight: 'bold' }
+              });
+              const audio = new Audio(NOTIFICATION_SOUND);
+              audio.play().catch(() => {});
+            }
+            // Modified
+            else if (newData.isModified && !oldOrder.isModified) {
+              toast.error(`${t('order_modified_alert', 'Order Modified by Client!')} - ${newData.fullTableLabel || newData.customerName}`, {
+                icon: '📝',
+                duration: 12000,
+                position: 'top-center',
+                style: { background: '#ef4444', color: '#fff', fontWeight: 'bold' }
+              });
+              const audio = new Audio(NOTIFICATION_SOUND);
+              audio.play().catch(() => {});
+            }
+          }
+        }
       });
 
       snapshot.forEach((doc) => {
@@ -87,6 +117,8 @@ export default function BarmanDashboard() {
 
       // Sort by creation time
       ordersData.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      
+      prevOrdersRef.current = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
       
       setOrders(ordersData);
       setLoading(false);

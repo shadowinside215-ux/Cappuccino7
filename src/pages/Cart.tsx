@@ -25,7 +25,15 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const [isLocating, setIsLocating] = useState(false);
   const [locatingError, setLocatingError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const editId = localStorage.getItem('editingOrderId');
+    if (editId) {
+      setEditingOrderId(editId);
+    }
+  }, []);
 
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -126,52 +134,36 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       return;
     }
 
-    // Logic for delivery requirements
-    let finalLocation = location;
-    if (deliveryType === 'delivery') {
-      if (!address.trim()) {
-        toast.error(t('location_required'));
-        return;
-      }
-
-      if (!finalLocation) {
-        setLoading(true);
-        toast.loading("Capturing high-accuracy GPS...", { id: 'geo' });
-        try {
-          finalLocation = await captureGPS();
-          toast.success(t('location_captured'), { id: 'geo' });
-        } catch (err) {
-          toast.dismiss('geo');
-          // We allow fallback if address is provided, but we warned them
-          console.warn("GPS capture failed, continuing with manual address if present", err);
-        } finally {
-          setLoading(false);
-        }
-      }
-    }
-
-    if (deliveryType === 'dine-in' && !tableNumber) {
-      toast.error(t('select_table_required', 'Please select your table number'));
-      return;
-    }
-
     setLoading(true);
     try {
+      // Basic time limit validation for updates
+      if (editingOrderId) {
+        const orderSnap = await getDoc(doc(db, 'orders', editingOrderId));
+        if (orderSnap.exists()) {
+          const order = orderSnap.data();
+          const createdAt = order.createdAt?.toDate().getTime();
+          if (createdAt && (Date.now() - createdAt) > 5 * 60 * 1000) {
+            toast.error(t('edit_time_exceeded', 'Edit window (5 minutes) has passed. Order can no longer be modified.'));
+            localStorage.removeItem('editingOrderId');
+            localStorage.removeItem('editingOrderOriginalItems');
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       const tableZone = tableArea === 'Inside' ? 'A' : 'B';
       const fullTableLabel = `${tableZone}${tableNumber}`;
-
+      
       const pointsEarned = totalItems;
       const isGuest = auth.currentUser.isAnonymous;
 
-      // Category detection: Food (30m) vs Drinks (10m) per user requirements
-      // Added more inclusive keywords to handle translation variations and common menu names
+      // Category detection
       const foodKeywords = ['food', 'dishes', 'breakfast', 'pizza', 'burger', 'sandwich', 'salad', 'crepe', 'waffle', 'pancake', 'pasta', 'meal', 'petit déjeuner', 'omelette', 'omlette', 'tacos', 'panini', 'oeuf', 'egg', 'dish', 'viande', 'plat', 'steak', 'chicken', 'poulet', 'fish', 'poisson', 'rice', 'riz', 'soup', 'soupe', 'taco', 'burrito', 'noodle', 'wrap', 'bento', 'box'];
       const drinkKeywords = ['drink', 'juice', 'coffee', 'smoothie', 'mojito', 'milkshake', 'ice tea', 'frappuccino', 'jus', 'café', 'boisson', 'thé', 'iced', 'frappé', 'espresso', 'latte', 'cappuccino', 'soda', 'coke', 'fanta', 'sprite', 'water', 'eau', 'shake', 'tea', 'lemonade', 'limonade', 'beverage', 'cocktail', 'mocktail', 'fizz', 'brew'];
 
       const itemsWithMetadata = [];
-      const originalCartItems = [...items];
-
-      for (const item of originalCartItems) {
+      for (const item of items) {
         try {
           const productDoc = await getDoc(doc(db, 'products', item.productId));
           if (productDoc.exists()) {
@@ -181,15 +173,12 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
             const lowerCat = categoryName.toLowerCase();
             const lowerName = item.name.toLowerCase();
 
-            const isBreakfast = lowerCat.includes('breakfast') || lowerName.includes('petit déjeuner');
             const isFoodByKW = foodKeywords.some(kw => lowerName.includes(kw) || lowerCat.includes(kw));
             const isDrinkByKW = drinkKeywords.some(kw => lowerName.includes(kw) || lowerCat.includes(kw));
 
-            // Determine routing and individual prep time for metadata (used by sectional views)
             let system: 'kitchen' | 'barman' = 'barman';
             let itemPrepTime = 10;
-
-            if (isFoodByKW || isBreakfast) {
+            if (isFoodByKW || lowerCat.includes('breakfast')) {
               system = 'kitchen';
               itemPrepTime = 30;
             } else if (isDrinkByKW) {
@@ -202,32 +191,26 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               categoryName,
               subSection: productData.subSection || '',
               system,
-              prepTime: itemPrepTime,
-              pointsWorth: item.quantity
+              prepTime: itemPrepTime
             });
           } else {
-            itemsWithMetadata.push({ ...item, categoryName: 'Menu', subSection: '', system: 'barman', prepTime: 10 });
+            itemsWithMetadata.push({ ...item, categoryName: 'Menu', system: 'barman', prepTime: 10 });
           }
         } catch (e) {
-          console.error("Error fetching item metadata", e);
-          itemsWithMetadata.push({ ...item, categoryName: 'Menu', subSection: '', system: 'barman', prepTime: 10 });
+          itemsWithMetadata.push({ ...item, categoryName: 'Menu', system: 'barman', prepTime: 10 });
         }
       }
 
       const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen');
       const prepTimeMinutes = hasKitchenItems ? 30 : 10;
-      
-      const nowRaw = Date.now();
-      const expectedReadyAt = new Date(nowRaw + prepTimeMinutes * 60000);
+      const expectedReadyAt = new Date(Date.now() + prepTimeMinutes * 60000);
 
-      const orderData = {
+      const orderData: any = {
         userId: auth.currentUser.uid,
         customerName: userProfile?.name || auth.currentUser.displayName || (isGuest ? t('guest', 'Guest') : t('customer', 'Customer')),
         customerPhone: phone || userProfile?.phone || '',
         items: itemsWithMetadata,
         total: total,
-        status: 'pending' as OrderStatus,
-        isPaid: false,
         kitchenStatus: hasKitchenItems ? 'pending' : 'completed',
         barmanStatus: itemsWithMetadata.some(item => item.system === 'barman') ? 'pending' : 'completed',
         deliveryType,
@@ -235,67 +218,56 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         tableArea: deliveryType === 'dine-in' ? tableArea : null,
         tableNumber: deliveryType === 'dine-in' ? tableNumber : null,
         fullTableLabel: deliveryType === 'dine-in' ? fullTableLabel : null,
-        waiterStatus: deliveryType === 'dine-in' ? 'New' : undefined,
         prepTime: prepTimeMinutes,
         expectedReadyAt: expectedReadyAt,
-        address: address || (deliveryType === 'dine-in' ? `Table ${fullTableLabel} (${tableArea})` : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
+        address: address || (deliveryType === 'dine-in' ? `Table ${fullTableLabel}` : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
         deliveryNotes,
-        ...(finalLocation ? {
-          location: {
-            lat: finalLocation.lat,
-            lng: finalLocation.lng
-          }
-        } : {}),
-        pointsEarned: pointsEarned,
-        createdAt: serverTimestamp()
+        updatedAt: serverTimestamp()
       };
 
-      const orderRef = await addDoc(collection(db, 'orders'), orderData);
-      
-      // Removed: Automatic revenue addition on client confirmation.
-      // Revenue MUST only be added when cashier confirms payment.
-      
-      // Update User Profile with new point system
-      if (!isGuest) {
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        
-        // Prepare updates for each item loyalty
-        const loyaltyUpdates: Record<string, any> = {
-          points: increment(pointsEarned)
-        };
-        
-        items.forEach(item => {
-          // Use dot notation to increment inside the map
-          loyaltyUpdates[`itemLoyalty.${item.productId}`] = increment(item.quantity);
-        });
-        
-        await updateDoc(userRef, loyaltyUpdates);
+      if (editingOrderId) {
+        orderData.isModified = true;
+        // Check if items actually changed
+        const originalItemsStr = localStorage.getItem('editingOrderOriginalItems');
+        const currentItemsStr = JSON.stringify(items);
+        if (originalItemsStr === currentItemsStr) {
+          toast.success(t('no_changes_detected', 'No changes detected. Order remains the same.'));
+        } else {
+          await updateDoc(doc(db, 'orders', editingOrderId), orderData);
+          toast.success(t('order_updated', 'Order updated successfully! Waiter notified.'));
+        }
+        localStorage.removeItem('editingOrderId');
+        localStorage.removeItem('editingOrderOriginalItems');
+      } else {
+        orderData.status = 'pending' as OrderStatus;
+        orderData.createdAt = serverTimestamp();
+        orderData.isPaid = false;
+        orderData.waiterStatus = deliveryType === 'dine-in' ? 'New' : undefined;
+        await addDoc(collection(db, 'orders'), orderData);
+        toast.success(isGuest ? 'Order placed! Create an account to save your points ☕' : 'Order placed successfully!');
       }
-
+      
       localStorage.removeItem('cart');
-      localStorage.setItem('review_trigger_order_completed', Date.now().toString());
-      window.dispatchEvent(new Event('order_completed'));
+      window.dispatchEvent(new Event('cartUpdated'));
       setItems([]);
       
-      if (isGuest) {
-        toast.success('Order placed! Create an account to save your points ☕', {
-          duration: 6000,
-          icon: '✨'
-        });
-      } else {
-        toast.success('Order placed successfully!');
-      }
-      
-      // Small delay to allow ReviewPopup to trigger before navigation
-      setTimeout(() => {
-        navigate('/orders');
-      }, 500);
+      setTimeout(() => navigate('/orders'), 500);
     } catch (error) {
       console.error(error);
-      toast.error('Failed to place order');
+      toast.error('Failed to process order');
     } finally {
       setLoading(false);
     }
+  };
+
+  const cancelEdit = () => {
+    localStorage.removeItem('editingOrderId');
+    localStorage.removeItem('editingOrderOriginalItems');
+    localStorage.removeItem('cart');
+    window.dispatchEvent(new Event('cartUpdated'));
+    setItems([]);
+    toast.success(t('edit_cancelled', 'Edit mode cancelled. Original order remains active.'));
+    navigate('/orders');
   };
 
   const getLocation = () => {
@@ -371,13 +343,46 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 100 }}
-          className="text-5xl md:text-7xl font-black text-bento-ink italic tracking-tighter uppercase drop-shadow-lg"
+          className="text-5xl md:text-7xl font-black text-bento-ink italic tracking-tighter uppercase drop-shadow-lg flex items-center gap-4"
         >
           {t('cart')}
+          {editingOrderId && (
+            <span className="text-xl bg-amber-400 text-stone-900 px-6 py-2 rounded-2xl italic tracking-tight font-black animate-pulse">
+              EDITING ORDER #{editingOrderId.slice(-6).toUpperCase()}
+            </span>
+          )}
         </motion.h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
+            {editingOrderId && (
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-amber-400/10 border border-amber-400/20 p-6 rounded-[2rem] flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3 text-amber-500">
+                  <AlertCircle size={20} />
+                  <p className="text-xs font-black uppercase tracking-widest leading-relaxed">
+                    You are editing an existing order. Your original order remains active until you click "Update Order".
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                  <button 
+                    onClick={() => navigate('/')}
+                    className="bg-amber-400 text-stone-900 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
+                  >
+                    Add Items
+                  </button>
+                  <button 
+                    onClick={cancelEdit}
+                    className="bg-transparent text-amber-400 border border-amber-400/50 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-amber-500/10 transition-all"
+                  >
+                    Cancel Edit
+                  </button>
+                </div>
+              </motion.div>
+            )}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -605,7 +610,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                 className="w-full bg-bento-primary text-bento-bg py-8 rounded-[3rem] font-black text-2xl shadow-[0_30px_60px_rgba(0,0,0,0.4)] hover:scale-[1.03] active:scale-[0.97] transition-all disabled:opacity-50 uppercase tracking-tight group overflow-hidden relative"
               >
                 <div className="relative z-10 flex items-center justify-center gap-3">
-                  {loading ? '...' : t('confirm_order')}
+                  {loading ? '...' : (editingOrderId ? t('update_order', 'Update Order') : t('confirm_order'))}
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-shimmer" />
               </button>

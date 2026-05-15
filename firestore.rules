@@ -79,15 +79,16 @@ service cloud.firestore {
     }
     
     function isStaff() {
-      if (!isSignedIn()) return false;
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let hasUser = exists(userPath);
+      let hasUser = isSignedIn() && exists(userPath);
       let userData = hasUser ? get(userPath).data : null;
-      return (hasUser && (userData.get('isStaff', false) == true || userData.get('role', '') in ['admin', 'waiter', 'kitchen', 'barman', 'cashier', 'driver'])) ||
-             exists(/databases/$(database)/documents/waiters/$(request.auth.uid)) ||
-             exists(/databases/$(database)/documents/kitchen/$(request.auth.uid)) ||
-             exists(/databases/$(database)/documents/barman/$(request.auth.uid)) ||
-             exists(/databases/$(database)/documents/cashiers/$(request.auth.uid));
+      return isSignedIn() && (
+        (hasUser && (userData.get('isStaff', false) == true || userData.get('role', '') in ['admin', 'waiter', 'kitchen', 'barman', 'cashier', 'driver'])) ||
+        exists(/databases/$(database)/documents/waiters/$(request.auth.uid)) ||
+        exists(/databases/$(database)/documents/kitchen/$(request.auth.uid)) ||
+        exists(/databases/$(database)/documents/barman/$(request.auth.uid)) ||
+        exists(/databases/$(database)/documents/cashiers/$(request.auth.uid))
+      );
     }
     
     function incoming() { return request.resource.data; }
@@ -164,22 +165,25 @@ service cloud.firestore {
       
       allow create: if isSignedIn();
       
-      allow update: if isStaff() && (
-        // Action: Staff self-assignment (Take Order) - Relaxed hasAny for flexibility
-        (existing().get('waiterId', null) == null && incoming().diff(existing()).affectedKeys().hasAny(['waiterId', 'waiterName', 'waiterStatus', 'status', 'updatedAt'])) ||
-        
-        // Action: Assigned staff updating status and timing metrics
-        (existing().get('waiterId', null) == request.auth.uid && incoming().diff(existing()).affectedKeys().hasAny(['status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'updatedAt', 'waiterStatus', 'deliveredAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt'])) ||
-        
-        // Action: Admin or Cashier updating payment or overall status
-        ((isAdmin() || isCashier()) && incoming().diff(existing()).affectedKeys().hasAny(['isPaid', 'paymentMethod', 'status', 'updatedAt', 'deliveredAt', 'paidAt', 'waiterId', 'waiterName'])) ||
-        
-        // Action: Kitchen/Barman updating their specific status
-        ((isKitchen() || isBarman() || isAdmin()) && incoming().diff(existing()).affectedKeys().hasAny(['kitchenStatus', 'barmanStatus', 'status', 'updatedAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt'])) ||
-        
-        // Action: Driver updating delivery status
-        (isDriver() && existing().get('deliveryType', '') == 'delivery' && incoming().diff(existing()).affectedKeys().hasAny(['status', 'updatedAt', 'deliveredAt']))
-      );
+      allow update: if (isOwner(existing().userId) && existing().status == 'pending' && 
+        (!('createdAt' in existing()) || existing().createdAt == null || (request.time.toMillis() - existing().createdAt.toMillis() < 300000)) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'items', 'total', 'isModified', 'kitchenStatus', 'barmanStatus', 'deliveryType', 'tableZone', 'tableArea', 'tableNumber', 'fullTableLabel', 'prepTime', 'expectedReadyAt', 'address', 'deliveryNotes', 'customerName', 'customerPhone'])) ||
+        (isStaff() && (
+          // Action: Staff self-assignment (Take Order) - Relaxed hasAny for flexibility
+          (existing().get('waiterId', null) == null && incoming().diff(existing()).affectedKeys().hasAny(['waiterId', 'waiterName', 'waiterStatus', 'status', 'updatedAt'])) ||
+          
+          // Action: Assigned staff updating status and timing metrics
+          (existing().get('waiterId', null) == request.auth.uid && incoming().diff(existing()).affectedKeys().hasAny(['status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'updatedAt', 'waiterStatus', 'deliveredAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt'])) ||
+          
+          // Action: Admin or Cashier updating payment or overall status
+          ((isAdmin() || isCashier()) && incoming().diff(existing()).affectedKeys().hasAny(['isPaid', 'paymentMethod', 'status', 'updatedAt', 'deliveredAt', 'paidAt', 'waiterId', 'waiterName'])) ||
+          
+          // Action: Kitchen/Barman updating their specific status
+          ((isKitchen() || isBarman() || isAdmin()) && incoming().diff(existing()).affectedKeys().hasAny(['kitchenStatus', 'barmanStatus', 'status', 'updatedAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt'])) ||
+          
+          // Action: Driver updating delivery status
+          (isDriver() && existing().get('deliveryType', '') == 'delivery' && incoming().diff(existing()).affectedKeys().hasAny(['status', 'updatedAt', 'deliveredAt']))
+        ));
       
       allow delete: if isAdmin();
     }
@@ -217,7 +221,7 @@ service cloud.firestore {
     }
 
     match /waiterRequests/{requestId} {
-      allow read, list: if isSignedIn();
+      allow read: if isSignedIn();
       allow create: if isSignedIn() && isValidWaiterRequest(incoming());
       allow update: if isStaff() && (
         // Unassigned or assigned to self or admin
@@ -230,9 +234,8 @@ service cloud.firestore {
 
     // --- Staff Configs ---
     match /staffConfigs/{id} {
-      // Allow get so staff can verify credentials without listing the whole collection
-      allow get: if true; 
-      allow list: if isAdmin();
+      // Allow list and get so staff can verify credentials before full auth
+      allow read: if true; 
       allow write: if isAdmin();
     }
   }

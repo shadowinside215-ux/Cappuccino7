@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Order, OrderStatus, WaiterRequest } from '../types';
+import { Order, OrderStatus, WaiterRequest, OrderItem } from '../types';
 import { Clock, CheckCircle2, Package, Truck, Coffee, Award, MapPin, Plus, ExternalLink, MessageCircle, Timer, Bell, User, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { OrderTimer } from '../components/OrderTimer';
@@ -39,21 +39,6 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
   const handleCall = async () => {
     if (!auth.currentUser) return;
     
-    if (!order.waiterId) {
-      toast(t('wait_for_waiter_assignment', 'Please wait for a waiter to take your order before calling.'), {
-        icon: '⏳',
-        duration: 4000,
-        style: {
-          borderRadius: '1.5rem',
-          background: '#2D241E',
-          color: '#fff',
-          fontWeight: 'bold',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -67,10 +52,10 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
         fullTableLabel: order.fullTableLabel,
         timestamp: serverTimestamp(),
         status: 'new',
-        waiterId: order.waiterId,
+        waiterId: order.waiterId || null,
         waiterName: order.waiterName || null
       });
-      toast.success(t('waiter_called', 'Assigned waiter called!'));
+      toast.success(t('assistance_requested', 'Assistance requested!'));
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'waiterRequests');
     } finally {
@@ -79,8 +64,6 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
   };
 
   if (order.status === 'delivered' || order.status === 'cancelled') return null;
-
-  const isAssigned = !!order.waiterId;
 
   return (
     <div className="mt-8 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -102,20 +85,17 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
                   {request.status === 'accepted' ? t('waiter_on_way', 'Waiter on way') : t('waiter_called', 'Notification sent')}
                 </p>
                 <p className="text-xs font-bold text-white leading-none">
-                  {request.status === 'accepted' ? t('waiter_assigned', { name: request.waiterName }) : t('waiting_for_waiter', 'Waiting for assistance...')}
+                  {request.status === 'accepted' ? t('waiter_assigned_to_help', { name: request.waiterName }) : t('waiting_for_help_msg', 'A waiter from your zone is coming...')}
                 </p>
               </div>
             </motion.div>
           ) : (
             <div className="flex flex-col gap-1">
               <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] font-serif italic">
-                {isAssigned ? t('assistance_ready', 'Assistance Available') : t('waiting_for_assignment', 'Assignment Pending')}
+                {t('assistance_zone', 'Zone Assistance')}
               </p>
               <p className="text-xs font-bold text-white/40 italic">
-                {!isAssigned 
-                  ? t('wait_for_waiter_to_take', 'Wait for a waiter to take your order...')
-                  : t('need_help', 'Need assistance? Tap to call your waiter.')
-                }
+                {t('need_help_zone', 'Tap to call a waiter assigned to your table zone.')}
               </p>
             </div>
           )}
@@ -128,23 +108,20 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
         className={`w-full sm:w-auto px-10 py-5 rounded-[2rem] font-black uppercase text-[10px] tracking-[0.3em] transition-all flex items-center justify-center gap-3 shadow-2xl relative overflow-hidden group ${
           request 
             ? 'bg-stone-950/80 text-white/20 cursor-not-allowed border border-white/5 shadow-inner' 
-            : !isAssigned
-              ? 'bg-stone-900 text-stone-600 border border-white/10 cursor-not-allowed grayscale'
-              : 'bg-amber-400 text-stone-900 hover:scale-105 active:scale-95 shadow-[0_20px_40px_rgba(251,191,36,0.2)]'
+            : 'bg-amber-400 text-stone-900 hover:scale-105 active:scale-95 shadow-[0_20px_40px_rgba(251,191,36,0.2)]'
         }`}
       >
         {loading ? (
           <Loader2 size={16} className="animate-spin" />
         ) : (
-          <Bell size={16} className={isAssigned && !request ? 'animate-bounce' : ''} />
+          <Bell size={16} className={!request ? 'animate-bounce' : ''} />
         )}
         {t('call_waiter', 'Call Waiter')}
-        {isAssigned && !request && <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />}
+        {!request && <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />}
       </button>
     </div>
   );
 };
-
 
 const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
@@ -162,8 +139,73 @@ export default function Orders() {
   const { settings: brand } = useBrandSettings();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const navigate = useNavigate();
   const isGuest = auth.currentUser?.isAnonymous;
+
+  const isWithinTimeLimit = (order: Order) => {
+    if (!order.createdAt) return true; // Allow operation if locally we don't have createdAt yet (or missing)
+    const createdAt = order.createdAt.toDate().getTime();
+    const now = Date.now();
+    const diff = now - createdAt;
+    return diff < 5 * 60 * 1000; // 5 minutes
+  };
+
+  const initiateCancel = (order: Order) => {
+    if (order.status !== 'pending') {
+      toast.error(t('cannot_cancel_preparing', 'Order is already being prepared and can no longer be changed.'));
+      return;
+    }
+
+    if (!isWithinTimeLimit(order)) {
+      toast.error(t('cancel_time_exceeded', 'Cancellation window (5 minutes) has passed.'));
+      return;
+    }
+    
+    setConfirmCancelId(order.id);
+  };
+
+  const handleCancelOrder = async (order: Order) => {
+    setConfirmCancelId(null);
+    setCancellingId(order.id);
+    try {
+      await updateDoc(doc(db, 'orders', order.id), {
+        status: 'cancelled',
+        updatedAt: serverTimestamp()
+      });
+      toast.success(t('order_cancelled', 'Order cancelled successfully'));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleEditOrder = (order: Order) => {
+    if (order.status !== 'pending') {
+      toast.error(t('cannot_edit_preparing', 'Order is already being prepared and can no longer be changed.'));
+      return;
+    }
+
+    if (!isWithinTimeLimit(order)) {
+      toast.error(t('edit_time_exceeded', 'Edit window (5 minutes) has passed.'));
+      return;
+    }
+
+    // Move items to cart and enter edit mode
+    // We DON'T cancel the order here. 
+    // We just set locally that we are editing this specific order.
+    localStorage.setItem('cart', JSON.stringify(order.items));
+    localStorage.setItem('editingOrderId', order.id);
+    localStorage.setItem('editingOrderOriginalItems', JSON.stringify(order.items));
+    
+    // Broadcast cart update
+    window.dispatchEvent(new Event('cartUpdated'));
+    
+    toast.success(t('entering_edit_mode', 'Entering edit mode... Original order remains active until you confirm changes.'));
+    navigate('/');
+  };
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -178,7 +220,7 @@ export default function Orders() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)).filter(o => o.status !== 'cancelled'));
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'orders');
@@ -296,9 +338,51 @@ export default function Orders() {
                       {order.createdAt?.toDate().toLocaleDateString(i18n.language, { month: 'long', day: 'numeric' })} {t('at', 'at')} {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                  <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 text-center min-w-[140px] group-hover:bg-white/10 transition-all">
-                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 leading-none">{t('total_paid')}</p>
-                    <p className="text-3xl font-black text-white leading-none tabular-nums mt-1">{order.total} DH</p>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {order.status === 'pending' && isWithinTimeLimit(order) && (
+                      <div className="flex items-center gap-2">
+                        {confirmCancelId === order.id ? (
+                          <>
+                            <span className="text-[10px] text-red-400 font-black uppercase tracking-widest">{t('confirm_cancel', 'Are you sure?')}</span>
+                            <button
+                              onClick={() => handleCancelOrder(order)}
+                              disabled={cancellingId === order.id}
+                              className="px-4 py-2 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 disabled:opacity-50"
+                            >
+                              {cancellingId === order.id ? <Loader2 size={12} className="animate-spin" /> : t('yes_cancel', 'Yes, Cancel')}
+                            </button>
+                            <button
+                              onClick={() => setConfirmCancelId(null)}
+                              disabled={cancellingId === order.id}
+                              className="px-4 py-2 bg-stone-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-stone-600 transition-all disabled:opacity-50"
+                            >
+                              {t('no', 'No')}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleEditOrder(order)}
+                              className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-500/20 hover:bg-blue-500/30 transition-all"
+                            >
+                              {t('edit_order', 'Edit Order')}
+                            </button>
+                            <button
+                              onClick={() => initiateCancel(order)}
+                              disabled={cancellingId === order.id}
+                              className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500/30 transition-all disabled:opacity-50"
+                            >
+                              {cancellingId === order.id ? <Loader2 size={12} className="animate-spin" /> : t('cancel_order', 'Cancel')}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 text-center min-w-[140px] group-hover:bg-white/10 transition-all">
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 leading-none">{t('total_paid')}</p>
+                      <p className="text-3xl font-black text-white leading-none tabular-nums mt-1">{order.total} DH</p>
+                    </div>
                   </div>
                 </div>
                 

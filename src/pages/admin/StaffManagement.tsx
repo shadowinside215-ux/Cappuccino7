@@ -12,6 +12,7 @@ interface StaffConfig {
   username: string;
   password: string;
   displayName: string;
+  assignedZone?: 'A' | 'B';
 }
 
 export default function StaffManagement() {
@@ -26,10 +27,10 @@ export default function StaffManagement() {
       if (snap.empty) {
         // Initialize defaults if empty
         const defaults: StaffConfig[] = [
-          { id: 'waiter1', username: 'waiter', password: 'waiter1', displayName: 'Waiter 1' },
-          { id: 'waiter2', username: 'waiter', password: 'waiter2', displayName: 'Waiter 2' },
-          { id: 'waiter3', username: 'waiter', password: 'waiter3', displayName: 'Waiter 3' },
-          { id: 'waiter4', username: 'waiter', password: 'waiter4', displayName: 'Waiter 4' },
+          { id: 'waiter1', username: 'waiter', password: 'waiter1', displayName: 'Waiter 1', assignedZone: 'A' },
+          { id: 'waiter2', username: 'waiter', password: 'waiter2', displayName: 'Waiter 2', assignedZone: 'B' },
+          { id: 'waiter3', username: 'waiter', password: 'waiter3', displayName: 'Waiter 3', assignedZone: 'A' },
+          { id: 'waiter4', username: 'waiter', password: 'waiter4', displayName: 'Waiter 4', assignedZone: 'B' },
           { id: 'kitchen', username: 'kitchen', password: 'kitchen7000', displayName: 'Kitchen' },
           { id: 'barman', username: 'barman', password: 'barman5000', displayName: 'Barman' },
           { id: 'cashier', username: 'cashier', password: 'cashier9000', displayName: 'Cashier' },
@@ -46,7 +47,15 @@ export default function StaffManagement() {
           if (id === 'kitchen') return { id, username: 'kitchen', password: 'kitchen7000', displayName: 'Kitchen' };
           if (id === 'barman') return { id, username: 'barman', password: 'barman5000', displayName: 'Barman' };
           if (id === 'cashier') return { id, username: 'cashier', password: 'cashier9000', displayName: 'Cashier' };
-          return { id, username: 'waiter', password: id, displayName: `Waiter ${id.slice(-1)}` };
+          
+          const isZoneA = id === 'waiter1' || id === 'waiter3';
+          return { 
+            id, 
+            username: 'waiter', 
+            password: id, 
+            displayName: `Waiter ${id.slice(-1)}`,
+            assignedZone: (isZoneA ? 'A' : 'B') as 'A' | 'B'
+          };
         });
         merged.sort((a, b) => a.id.localeCompare(b.id));
         setConfigs(merged);
@@ -156,6 +165,26 @@ export default function StaffManagement() {
                   />
                 </div>
               </div>
+
+              {config.id.startsWith('waiter') && (
+                <div>
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1.5 ml-1">Assigned Zone</label>
+                  <div className="flex bg-stone-50 p-1 rounded-2xl border border-stone-100">
+                    <button
+                      onClick={() => handleUpdate(config.id, 'assignedZone', 'A')}
+                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'A' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      Zone A (Inside)
+                    </button>
+                    <button
+                      onClick={() => handleUpdate(config.id, 'assignedZone', 'B')}
+                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'B' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      Zone B (Outside)
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         ))}

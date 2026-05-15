@@ -15,6 +15,7 @@ export interface UserProfile {
   isDriver?: boolean;
   isCashier?: boolean;
   isAnonymous?: boolean;
+  assignedZone?: 'A' | 'B';
   createdAt: string;
 }
 
@@ -104,6 +105,7 @@ export interface Order {
     lng: number;
   };
   pointsEarned: number;
+  isModified?: boolean;
   createdAt: any; // Firestore Timestamp
 }
 
