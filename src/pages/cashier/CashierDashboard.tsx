@@ -34,7 +34,8 @@ import {
   Snowflake,
   Grape,
   Milk,
-  Navigation
+  Navigation,
+  Sandwich
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, doc, setDoc, updateDoc, serverTimestamp, increment, addDoc, Timestamp } from 'firebase/firestore';
@@ -63,6 +64,15 @@ const CATEGORY_ICONS: Record<string, any> = {
   'Jus': Grape,
   'Milkshakes': Milk,
   'Frappuccinos': Coffee,
+  'Sandwiches': Sandwich,
+  'Sandwich': Sandwich,
+  'Panini': Sandwich,
+  'Tacos': Sandwich,
+  'Burger': Sandwich,
+  'سندويشات': Sandwich,
+  'فطور': Coffee,
+  'حلويات': Cookie,
+  'مشروبات': Coffee,
 };
 
 export default function CashierDashboard() {
@@ -78,6 +88,7 @@ export default function CashierDashboard() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showMobileCart, setShowMobileCart] = useState(false);
   const { settings: brand } = useBrandSettings();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -375,54 +386,87 @@ export default function CashierDashboard() {
 
   return (
     <div className="h-screen bg-bento-bg text-bento-ink flex flex-col font-mono overflow-hidden select-none">
-      {/* View Switcher Tabs */}
-      <div className="h-14 bg-bento-card-bg border-b border-bento-card-border flex items-center px-4 gap-4">
-         <button 
-           onClick={() => setView('pos')}
-           className={`px-6 h-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${view === 'pos' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
-         >
-           Terminal POS
-         </button>
-         <button 
-           onClick={() => setView('pending')}
-           className={`px-6 h-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 relative ${view === 'pending' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
-         >
-           {t('pos_pending_payments')}
-           {unpaidOrders.length > 0 && (
-             <span className="absolute top-2 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center animate-pulse">
-               {unpaidOrders.length}
-             </span>
-           )}
-         </button>
+      {/* View Switcher Tabs - POS / PENDING / STAFF */}
+      <div className="h-14 bg-bento-card-bg border-b border-bento-card-border flex items-center px-4 gap-2 md:gap-4 shrink-0 overflow-x-auto">
+         <div className="flex-1 flex gap-2 md:gap-4">
+           <button 
+             onClick={() => setView('pos')}
+             className={`px-4 md:px-6 h-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 whitespace-nowrap ${view === 'pos' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
+           >
+             Terminal POS
+           </button>
+           <button 
+             onClick={() => setView('pending')}
+             className={`px-4 md:px-6 h-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 relative whitespace-nowrap ${view === 'pending' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
+           >
+             {t('pos_pending_payments')}
+             {unpaidOrders.length > 0 && (
+               <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[8px] rounded-full font-black">
+                 {unpaidOrders.length}
+               </span>
+             )}
+           </button>
+         </div>
+
+         {/* Identify/Operator Button in Top Bar for mobile visibility */}
+         <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowVendeurGrid(true)}
+              className="px-2 py-1 bg-blue-600/10 text-blue-400 border border-blue-600/20 rounded-lg text-[8px] font-black uppercase flex items-center gap-1"
+            >
+              <User size={12} />
+              <span className="max-w-[60px] truncate">{activeVendeur}</span>
+            </button>
+            <button 
+              onClick={() => setShowClosureModal(true)}
+              className="p-1.5 bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20"
+            >
+              <LogOut size={14} />
+            </button>
+         </div>
+         
+         {/* Mobile Cart Toggle */}
+         <div className="md:hidden">
+            <button 
+              onClick={() => setShowMobileCart(!showMobileCart)}
+              className={`p-2 rounded-xl border transition-all flex items-center gap-2 ${showMobileCart ? 'bg-amber-500 border-amber-600 text-stone-900' : 'bg-stone-500/10 border-stone-500/20 text-stone-500'}`}
+            >
+               <ShoppingCart size={18} />
+               {cart.length > 0 && <span className="text-[10px] font-black">{cart.length}</span>}
+            </button>
+         </div>
       </div>
       
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Left Side: Product Grid or Pending View */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={`flex-1 flex flex-col min-w-0 ${showMobileCart ? 'hidden md:flex' : 'flex'}`}>
           {view === 'pos' ? (
-            <div className="flex-1 overflow-y-auto bg-bento-bg custom-scrollbar p-1 sm:p-2 md:p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-1 sm:gap-2 md:gap-4">
-                {filteredProducts.map(product => (
+            <div className="flex-1 overflow-y-auto bg-bento-bg custom-scrollbar p-2 md:p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 md:gap-4 pb-20 md:pb-0">
+                {filteredProducts.map((product, idx) => (
                   <motion.button
                     key={product.id}
                     whileTap={{ scale: 0.96 }}
-                    onClick={() => addToCart(product)}
-                    className="flex flex-col bg-white dark:bg-stone-900 border border-stone-200 dark:border-white/5 rounded-2xl overflow-hidden group active:brightness-90 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1"
+                    onClick={() => {
+                      addToCart(product);
+                    }}
+                    className="flex flex-col bg-white dark:bg-stone-950 border border-stone-200 dark:border-white/5 rounded-2xl overflow-hidden group active:brightness-90 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1"
                   >
-                    <div className="aspect-square w-full bg-stone-100 dark:bg-stone-800/50 overflow-hidden relative">
+                    <div className="aspect-square w-full bg-stone-100 dark:bg-stone-900 overflow-hidden relative">
                        <OptimizedImage 
                          src={product.image} 
                          alt={product.name}
                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                          containerClassName="w-full h-full"
                          showOverlay={false}
+                         priority={idx < 12}
                        />
                        <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 shadow-lg">
-                          <span className="text-[10px] sm:text-xs font-black text-white tabular-nums">{product.price.toFixed(2)}</span>
+                          <span className="text-[10px] sm:text-xs font-black text-white tabular-nums">{product.price.toFixed(0)} MAD</span>
                        </div>
                     </div>
-                    <div className="p-3 sm:p-4 flex flex-col items-center justify-center text-center flex-1">
-                      <span className="text-[9px] sm:text-[10px] md:text-[11px] font-black uppercase leading-tight line-clamp-2 text-stone-900 dark:text-stone-100 tracking-tight">{product.name}</span>
+                    <div className="p-2 sm:p-4 flex flex-col items-center justify-center text-center flex-1">
+                      <span className="text-[10px] sm:text-[11px] font-black uppercase leading-tight line-clamp-2 text-stone-900 dark:text-stone-100 tracking-tight">{product.name}</span>
                     </div>
                   </motion.button>
                 ))}
@@ -585,88 +629,91 @@ export default function CashierDashboard() {
           )}
 
           {/* Categories Bottom Bar - Matching the theme */}
-          <div className="h-24 bg-bento-bg border-t border-bento-card-border flex items-center relative">
-             <div className="flex flex-col h-full bg-bento-card-bg border-r border-bento-card-border px-2 justify-center gap-1 z-20">
-                <div className="flex gap-1 mb-1">
+          <div className="h-20 md:h-24 bg-bento-bg border-t border-bento-card-border flex items-center relative shrink-0">
+             <div className="flex flex-row md:flex-col h-full bg-bento-card-bg border-r border-bento-card-border px-2 md:px-3 items-center justify-center gap-2 md:gap-1 z-20">
+                <div className="flex gap-1 md:mb-1">
                    <button 
                      onClick={() => i18n.changeLanguage('en')}
-                     className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-colors ${i18n.language === 'en' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'bg-stone-500/10 text-stone-500 hover:text-bento-ink'}`}
+                     className={`px-1.5 md:px-2 py-0.5 rounded text-[7px] md:text-[8px] font-black uppercase transition-colors ${i18n.language === 'en' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'bg-stone-500/10 text-stone-500 hover:text-bento-ink'}`}
                    >
                      EN
                    </button>
                    <button 
                      onClick={() => i18n.changeLanguage('fr')}
-                     className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-colors ${i18n.language === 'fr' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'bg-stone-500/10 text-stone-500 hover:text-bento-ink'}`}
+                     className={`px-1.5 md:px-2 py-0.5 rounded text-[7px] md:text-[8px] font-black uppercase transition-colors ${i18n.language === 'fr' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'bg-stone-500/10 text-stone-500 hover:text-bento-ink'}`}
                    >
                      FR
                    </button>
+                   <button 
+                     onClick={() => i18n.changeLanguage('ar')}
+                     className={`px-1.5 md:px-2 py-0.5 rounded text-[7px] md:text-[8px] font-black uppercase transition-colors ${i18n.language === 'ar' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'bg-stone-500/10 text-stone-500 hover:text-bento-ink'}`}
+                   >
+                     AR
+                   </button>
                 </div>
-                <button 
-                  onClick={() => setShowVendeurGrid(true)}
-                  className="px-3 py-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg text-[8px] font-black uppercase"
-                >
-                  {activeVendeur}
-                </button>
-                <div className="flex gap-1">
-                   <button onClick={() => setShowJournalModal(true)} className="p-1.5 bg-stone-500/10 rounded-lg text-stone-400 hover:text-bento-ink" title={t('pos_journal')}><History size={14} /></button>
-                   <button onClick={() => setShowClosureModal(true)} className="p-1.5 bg-stone-500/10 rounded-lg text-red-500 hover:bg-red-500/10" title={t('pos_closure')}><LogOut size={14} /></button>
+                <div className="flex gap-2">
+                   <button onClick={() => setShowJournalModal(true)} className="p-2 md:p-1.5 bg-stone-500/10 rounded-lg text-stone-500 hover:text-bento-ink" title={t('pos_journal')}><History size={16} /></button>
+                   <button onClick={() => setShowClosureModal(true)} className="p-2 md:p-1.5 bg-stone-500/10 rounded-lg text-red-500 hover:bg-red-500/20" title={t('pos_closure')}><LogOut size={16} /></button>
                 </div>
              </div>
 
-             <div className="h-full px-4 border-r border-bento-card-border flex items-center bg-bento-bg/50">
-                <Search size={14} className="text-stone-500 mr-2" />
+             <div className="h-full px-2 md:px-4 border-r border-bento-card-border flex items-center bg-bento-bg/50">
+                <Search size={14} className="text-stone-500 mr-2 shrink-0" />
                 <input 
                   type="text" 
                   placeholder={t('pos_search')} 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent border-none outline-none text-[10px] font-black uppercase text-bento-ink placeholder:text-stone-400 w-32"
+                  className="bg-transparent border-none outline-none text-[9px] md:text-[10px] font-black uppercase text-bento-ink placeholder:text-stone-400 w-24 md:w-32"
                 />
              </div>
-             <button 
-               onClick={() => scrollCategories('left')}
-               className="absolute left-0 z-10 h-full w-12 bg-black/20 flex items-center justify-center text-bento-ink hover:bg-black/40 transition-colors"
-             >
-               <ChevronLeft size={24} />
-             </button>
              
-             <div 
-               ref={categoryScrollRef}
-               className="flex h-full overflow-x-auto custom-scrollbar-hide scroll-smooth flex-1 items-center px-12 gap-px bg-bento-bg"
-             >
+             <div className="flex-1 flex overflow-hidden relative h-full">
                 <button 
-                  onClick={() => setSelectedCategory('all')}
-                  className={`flex-shrink-0 min-w-[120px] h-full flex flex-col items-center justify-center gap-1 border-r border-bento-card-border uppercase text-[9px] font-black transition-all ${selectedCategory === 'all' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'text-stone-500 hover:bg-bento-card-bg'}`}
+                  onClick={() => scrollCategories('left')}
+                  className="absolute left-0 z-10 h-full w-8 md:w-12 bg-black/20 flex items-center justify-center text-bento-ink hover:bg-black/40 transition-colors"
                 >
-                  <LayoutGrid size={16} />
-                  {t('pos_all')}
+                  <ChevronLeft size={20} />
                 </button>
-                {categories.map(cat => {
-                  const Icon = getCategoryIcon(cat.name);
-                  return (
+                
+                <div 
+                  ref={categoryScrollRef}
+                  className="flex h-full overflow-x-auto custom-scrollbar-hide scroll-smooth flex-1 items-center px-8 md:px-12 gap-px bg-bento-bg"
+                >
                     <button 
-                      key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex-shrink-0 min-w-[140px] h-full flex flex-col items-center justify-center gap-1 border-r border-bento-card-border uppercase text-[9px] font-black transition-all ${selectedCategory === cat.id ? 'bg-bento-card-bg text-bento-ink border-b-2 border-amber-500' : 'text-stone-500 hover:bg-bento-card-bg'}`}
+                      onClick={() => setSelectedCategory('all')}
+                      className={`flex-shrink-0 min-w-[100px] md:min-w-[120px] h-full flex flex-col items-center justify-center gap-1 border-r border-bento-card-border uppercase text-[8px] md:text-[9px] font-black transition-all ${selectedCategory === 'all' ? 'bg-amber-500 text-stone-900 shadow-sm' : 'text-stone-500 hover:bg-bento-card-bg'}`}
                     >
-                      <Icon size={16} />
-                      {cat.name}
+                      <LayoutGrid size={16} />
+                      {t('pos_all')}
                     </button>
-                  );
-                })}
-             </div>
+                    {categories.map(cat => {
+                      const Icon = getCategoryIcon(cat.name);
+                      return (
+                        <button 
+                          key={cat.id}
+                          onClick={() => setSelectedCategory(cat.id)}
+                          className={`flex-shrink-0 min-w-[110px] md:min-w-[140px] h-full flex flex-col items-center justify-center gap-1 border-r border-bento-card-border uppercase text-[8px] md:text-[9px] font-black transition-all ${selectedCategory === cat.id ? 'bg-bento-card-bg text-bento-ink border-b-2 border-amber-500' : 'text-stone-500 hover:bg-bento-card-bg'}`}
+                        >
+                          <Icon size={16} />
+                          {cat.name}
+                        </button>
+                      );
+                    })}
+                </div>
 
-             <button 
-               onClick={() => scrollCategories('right')}
-               className="absolute right-0 z-10 h-full w-12 bg-black/20 flex items-center justify-center text-bento-ink hover:bg-black/40 transition-colors"
-             >
-               <ChevronRight size={24} />
-             </button>
+                <button 
+                  onClick={() => scrollCategories('right')}
+                  className="absolute right-0 z-10 h-full w-8 md:w-12 bg-black/20 flex items-center justify-center text-bento-ink hover:bg-black/40 transition-colors"
+                >
+                  <ChevronRight size={20} />
+                </button>
+             </div>
           </div>
         </div>
 
         {/* Right Side: Virtual Ticket */}
-        <div className="w-[300px] md:w-[350px] bg-bento-card-bg text-bento-ink flex flex-col shadow-2xl relative border-l border-bento-card-border overflow-hidden">
+        <div className={`w-full md:w-[280px] lg:w-[400px] bg-bento-card-bg text-bento-ink flex flex-col shadow-2xl relative border-l border-bento-card-border overflow-hidden shrink-0 ${showMobileCart ? 'flex' : 'hidden md:flex'}`}>
            {/* Order Queue Header */}
            <div className="h-20 bg-stone-100 dark:bg-stone-900 border-b border-bento-card-border flex items-center px-4 gap-2 overflow-x-auto custom-scrollbar-hide shrink-0">
               <button 
@@ -786,18 +833,18 @@ export default function CashierDashboard() {
            {/* Totals & Payments Section */}
            <div className="flex flex-col">
               {/* Total Display (Dark Blue-Gray) */}
-              <div className="bg-[#1D3244] p-6 flex justify-between items-end border-t border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] shrink-0">
-                 <span className="text-[10px] font-black uppercase text-white/50 tracking-widest">{t('pos_total_price')}</span>
+              <div className="bg-[#1D3244] p-4 md:p-6 flex justify-between items-end border-t border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] shrink-0">
+                 <span className="text-[9px] md:text-[10px] font-black uppercase text-white/50 tracking-widest">{t('pos_total_price')}</span>
                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">
+                    <span className="text-3xl md:text-5xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">
                       {(selectedOrder ? selectedOrder.total : totalPrice).toFixed(2)}
                     </span>
-                    <span className="text-sm font-bold text-white/60">MAD</span>
+                    <span className="text-[10px] md:text-sm font-bold text-white/60">MAD</span>
                  </div>
               </div>
 
               {/* Payment Buttons (Large blocks as in image) */}
-              <div className="h-32 grid grid-cols-3 gap-px bg-[#111] p-px border-t border-white/5 shrink-0">
+              <div className="h-24 md:h-32 grid grid-cols-3 gap-px bg-[#111] p-px border-t border-white/5 shrink-0">
                  <button 
                    onClick={() => selectedOrder ? handleMarkPaid(selectedOrder, 'cash') : handleCheckout('cash')}
                    disabled={!selectedOrder && cart.length === 0}

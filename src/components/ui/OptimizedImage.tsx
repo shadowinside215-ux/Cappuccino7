@@ -77,6 +77,8 @@ export default function OptimizedImage({
           initial={priority ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: (isLoaded || priority) ? 1 : 0 }}
           transition={{ duration: 0.1 }}
+          loading={priority ? "eager" : "lazy"}
+          {...(priority ? { fetchPriority: "high" } : {})}
           className={`${className} relative z-0`}
           style={{ ...props.style, display: error && !priority ? 'none' : 'block' }}
         />

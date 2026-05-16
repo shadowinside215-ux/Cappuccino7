@@ -36,6 +36,20 @@ export default defineConfig(({mode}) => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           runtimeCaching: [
             {
+              urlPattern: /^https:\/\/storage\.googleapis\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-storage-images',
+                expiration: {
+                  maxEntries: 20,
+                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 Year
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
               urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
               handler: 'CacheFirst',
               options: {

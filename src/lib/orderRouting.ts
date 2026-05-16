@@ -2,8 +2,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { OrderItem } from '../types';
 
-const kitchenKeywords = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle', 'petit déjeuner', 'omelette', 'tacos', 'panini', 'oeuf', 'egg'];
-const barmanKeywords = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink', 'cappuccino', 'latte', 'espresso', 'water', 'eau', 'soda', 'coke', 'fanta', 'sprite'];
+const kitchenKeywords = ['meal', 'food', 'burger', 'pizza', 'pasta', 'breakfast', 'sandwich', 'salad', 'crepe', 'pancake', 'waffle', 'petit déjeuner', 'omelette', 'tacos', 'panini', 'oeuf', 'egg', 'brunch', 'سندويش', 'ساندويش', 'برجر', 'بيتزا', 'فطور'];
+const barmanKeywords = ['juice', 'jus', 'drink', 'boisson', 'coffee', 'café', 'tea', 'thé', 'infusion', 'ice cream', 'glace', 'smoothie', 'mojito', 'milkshake', 'iced drink', 'frappuccino', 'hot drink', 'cappuccino', 'latte', 'espresso', 'water', 'eau', 'soda', 'coke', 'fanta', 'sprite', 'عصير', 'قهوة', 'شاي'];
 
 export async function processOrderItems(items: OrderItem[]): Promise<OrderItem[]> {
   const itemsWithMetadata: OrderItem[] = [];
