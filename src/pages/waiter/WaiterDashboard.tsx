@@ -210,6 +210,7 @@ export default function WaiterDashboard() {
       unsubAuth();
       if (unsubscribeOrders) unsubscribeOrders();
       if (unsubscribeRequests) unsubscribeRequests();
+      if (unsubscribeProfile) unsubscribeProfile();
     };
   }, []);
 

@@ -65,32 +65,7 @@ export default function OptimizedImage({
   const showLoader = !isLoaded && !error && safeSrc && !priority;
 
   return (
-    <div className={`relative overflow-hidden ${containerClassName}`}>
-      <AnimatePresence mode="wait">
-        {showLoader && (
-          <motion.div
-            key="loader"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center bg-stone-100 dark:bg-stone-900/10 z-20"
-          >
-            <Loader2 className="w-5 h-5 text-stone-300 animate-spin" />
-          </motion.div>
-        )}
-
-        {(error || !safeSrc) && !showLoader && (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-stone-900/20 p-4 text-center z-10"
-          >
-            <Coffee className="w-5 h-5 text-stone-700/20 mb-1" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+    <div className={`relative overflow-hidden bg-bento-card-bg/20 ${containerClassName}`}>
       {safeSrc && (
         <motion.img
           {...props}
@@ -100,15 +75,17 @@ export default function OptimizedImage({
           onLoad={handleLoad}
           onError={handleError}
           initial={priority ? { opacity: 1 } : { opacity: 0 }}
-          animate={{ 
-            opacity: (isLoaded || priority) ? 1 : 0
-          }}
-          transition={{ 
-            duration: 0.2,
-            ease: "linear"
-          }}
+          animate={{ opacity: (isLoaded || priority) ? 1 : 0 }}
+          transition={{ duration: 0.1 }}
           className={`${className} relative z-0`}
+          style={{ ...props.style, display: error && !priority ? 'none' : 'block' }}
         />
+      )}
+
+      {error && !priority && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100 dark:bg-stone-900/20 p-4 text-center z-10">
+          <Coffee className="w-5 h-5 text-stone-700/20 mb-1" />
+        </div>
       )}
 
       {/* Decorative inner shadow for "sinking in" effect - only show if requested */}

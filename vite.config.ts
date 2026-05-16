@@ -20,12 +20,12 @@ export default defineConfig(({mode}) => {
           theme_color: '#9c661c',
           icons: [
             {
-              src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png',
+              src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png?v=2',
               sizes: '1024x1024',
               type: 'image/png'
             },
             {
-              src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png',
+              src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png?v=2',
               sizes: '1024x1024',
               type: 'image/png',
               purpose: 'any maskable'

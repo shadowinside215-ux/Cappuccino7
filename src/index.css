@@ -72,6 +72,14 @@
   h1, h2, h3, h4, .font-serif {
     @apply font-serif;
   }
+  
+  img {
+    @apply transition-opacity duration-300;
+  }
+  
+  img[src=""], img:not([src]) {
+    @apply opacity-0;
+  }
 }
 
 .card {

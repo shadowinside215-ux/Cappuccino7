@@ -621,31 +621,6 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               </div>
             </footer>
           )}
-
-          {!isStaffView && !isLoginPage && (
-            <footer className="relative z-[100] max-w-2xl mx-auto px-6 pb-32 pt-20 text-center">
-              <div className="p-8 border border-bento-card-border bg-bento-card-bg/10 backdrop-blur-md rounded-[3rem] shadow-2xl">
-                <div className="flex justify-center gap-4 flex-wrap mb-6">
-                  {[
-                    { to: "/waiter/login", label: t('waiter_access') },
-                    { to: "/cashier/login", label: t('cashier_access', 'POS Cashier') },
-                    { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen') },
-                    { to: "/barman/login", label: t('barman_access', 'Barman') },
-                    { to: "/admin/login", label: t('admin_access') },
-                  ].map((link) => (
-                    <Link 
-                      key={link.to}
-                      to={link.to} 
-                      className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-500 hover:text-amber-600 transition-all flex items-center gap-1 group bg-amber-500/5 px-3 py-1.5 rounded-full border border-amber-500/20"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-                <p className="text-[10px] font-black text-amber-500/40 uppercase tracking-[0.3em] font-serif italic">Cappuccino7 artisan experience</p>
-              </div>
-            </footer>
-          )}
         </>
       )}
     </div>

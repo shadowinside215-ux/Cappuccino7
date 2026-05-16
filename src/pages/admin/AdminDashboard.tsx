@@ -249,7 +249,7 @@ export default function AdminDashboard() {
       }
     };
 
-    runAutoCleanup();
+    // runAutoCleanup() disabled to prevent permission errors
   }, []);
 
   useEffect(() => {
@@ -716,37 +716,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-      {(!hasZoneAWaiter || !hasZoneBWaiter) && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-red-500 text-white p-6 rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6"
-        >
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-white/20 rounded-2xl">
-              <AlertCircle size={32} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black uppercase italic tracking-tighter">Staff Warning: Zone Assignment</h3>
-              <p className="text-sm font-medium opacity-90">
-                {!hasZoneAWaiter && !hasZoneBWaiter 
-                  ? "NO WAITERS ASSIGNED TO ANY ZONE!" 
-                  : !hasZoneAWaiter 
-                    ? "Zone A (Inside) has no assigned waiter." 
-                    : "Zone B (Outside) has no assigned waiter."}
-                {" Call Waiter requests and orders will be seen by all active waiters as fallback."}
-              </p>
-            </div>
-          </div>
-          <button 
-            onClick={() => navigate('/admin/staff')}
-            className="bg-white text-red-600 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-stone-100 transition-all shadow-lg"
-          >
-            Assign Staff Now
-          </button>
-        </motion.div>
-      )}
-
       {isEmpty && (
         <div className="card accent-card overflow-hidden relative">
           <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -785,22 +754,8 @@ export default function AdminDashboard() {
             <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-2xl w-fit mb-4">
               <TrendingUp size={20} />
             </div>
-            {revError ? (
-              <div className="flex flex-col gap-1">
-                <p className="text-red-500 text-[10px] font-black uppercase tracking-widest">{t('access_denied')}</p>
-                <button 
-                  onClick={() => navigate('/admin/login')}
-                  className="text-bento-ink text-[10px] font-black underline decoration-amber-400 underline-offset-4 text-left"
-                >
-                  {t('re_authenticate')}
-                </button>
-              </div>
-            ) : (
-              <>
-                <p className="text-3xl md:text-4xl font-black text-bento-ink mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_mad')}</p>
-              </>
-            )}
+            <p className="text-3xl md:text-4xl font-black text-bento-ink mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_mad')}</p>
             
             <button 
               onClick={resetTodayRevenue}
@@ -893,7 +848,7 @@ export default function AdminDashboard() {
 
         </div>
         
-        <div className="grid grid-cols-7 gap-1 md:gap-4 h-48 items-end opacity-40 pointer-events-none blur-[1px]">
+        <div className="grid grid-cols-7 gap-1 md:gap-4 h-48 items-end">
           {Array.from({ length: 7 }).map((_, i) => {
             const date = new Date();
             date.setDate(date.getDate() - (6 - i));

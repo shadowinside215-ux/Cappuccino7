@@ -60,6 +60,7 @@ export default function AdminMenu() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -75,6 +76,10 @@ export default function AdminMenu() {
     subSection: '',
     image: '',
     isAvailable: true
+  });
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    order: 0
   });
   const [editItem, setEditItem] = useState<Partial<Product>>({});
   const [editCategory, setEditCategory] = useState<Partial<Category>>({});
@@ -246,6 +251,27 @@ export default function AdminMenu() {
     }
   };
 
+  const handleAddCategory = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newCategory.name) {
+      toast.error('Category name is required');
+      return;
+    }
+    try {
+      // Set order to end
+      const maxOrder = categories.length > 0 ? Math.max(...categories.map(c => c.order || 0)) : 0;
+      await addDoc(collection(db, 'categories'), {
+        ...newCategory,
+        order: maxOrder + 1
+      });
+      setIsAddingCategory(false);
+      setNewCategory({ name: '', order: 0 });
+      toast.success('Category created successfully!');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'categories');
+    }
+  };
+
   const toggleAvailability = async (product: Product) => {
     try {
       await updateDoc(doc(db, 'products', product.id), { isAvailable: !product.isAvailable });
@@ -324,13 +350,48 @@ export default function AdminMenu() {
             <LogOut size={20} /> <span className="font-bold uppercase tracking-widest text-[10px]">Exit Section</span>
           </button>
           <button 
-            onClick={() => setIsAdding(true)}
+            onClick={() => {
+              setIsAdding(false);
+              setIsAddingCategory(!isAddingCategory);
+            }}
+            className="bg-stone-50 dark:bg-stone-900 text-bento-primary p-4 rounded-2xl flex items-center gap-2 hover:bg-stone-100 transition-all border border-stone-100 dark:border-white/5 shadow-sm active:scale-95"
+          >
+            <Plus size={20} className={isAddingCategory ? 'rotate-45 transition-transform' : 'transition-transform'} /> 
+            <span className="font-bold uppercase tracking-widest text-[10px]">Add Category</span>
+          </button>
+          <button 
+            onClick={() => {
+              setIsAddingCategory(false);
+              setIsAdding(true);
+            }}
             className="bg-bento-primary text-white p-4 rounded-2xl flex items-center gap-2 hover:bg-bento-ink transition-all shadow-lg active:scale-95"
           >
             <Plus size={20} /> <span className="font-bold uppercase tracking-widest text-xs">Add Item</span>
           </button>
         </div>
       </div>
+
+      {isAddingCategory && (
+        <form onSubmit={handleAddCategory} className="card !p-8 animate-in fade-in slide-in-from-top-4 space-y-6 !bg-white border-2 border-bento-primary/10 shadow-2xl">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-xl text-bento-primary uppercase tracking-tighter italic">Create New Category</h3>
+            <button type="button" onClick={() => setIsAddingCategory(false)} className="text-stone-300 hover:text-stone-500 transition-colors"><X size={24} /></button>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <input 
+              type="text" placeholder="e.g. BREAKFAST, FRESH JUICES, SPECIALS" required 
+              value={newCategory.name} onChange={e => setNewCategory({...newCategory, name: e.target.value})}
+              className="flex-1 bg-stone-50 border border-stone-100 rounded-xl p-4 focus:ring-2 focus:ring-bento-primary transition-all outline-none font-bold placeholder:font-normal"
+            />
+            <button 
+              type="submit" 
+              className="bg-bento-primary text-white px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg hover:bg-stone-900 transition-all"
+            >
+              Save Category
+            </button>
+          </div>
+        </form>
+      )}
 
       {isAdding && (
         <form onSubmit={handleAddItem} className="card !p-8 animate-in fade-in slide-in-from-top-4 space-y-6 !bg-[#FDF8F3] border-2 border-bento-accent/10 shadow-2xl">
@@ -462,6 +523,17 @@ export default function AdminMenu() {
                 <h2 className="text-sm font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">{cat.name}</h2>
                 <div className="h-px bg-stone-100 w-full" />
                 <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setNewItem({ ...newItem, categoryId: cat.id });
+                      setIsAdding(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="p-2 text-bento-accent hover:scale-110 transition-transform"
+                    title={`Add item to ${cat.name}`}
+                  >
+                    <Plus size={20} />
+                  </button>
                   <button 
                     onClick={() => {
                       setEditingCategoryId(cat.id);

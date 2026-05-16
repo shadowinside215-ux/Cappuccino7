@@ -19,8 +19,8 @@ export interface BrandSettings {
   googleMapsLink?: string;
 }
 
-const DEFAULT_LOGO = 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png';
-const DEFAULT_HERO = 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=80&w=1600';
+const DEFAULT_LOGO = 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png?v=2';
+const DEFAULT_HERO = 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=80&w=1200&auto=format&fit=crop';
 
 export function useBrandSettings() {
   const [settings, setSettings] = useState<BrandSettings>({
