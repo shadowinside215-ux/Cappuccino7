@@ -558,7 +558,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
           <Navbar userProfile={userProfile} />
           <ReviewPopup />
-          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl mx-auto px-6 pb-24 pt-24 lg:pt-10'}`}>
+          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl lg:max-w-7xl mx-auto px-6 pb-24 pt-24 lg:pt-10'}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

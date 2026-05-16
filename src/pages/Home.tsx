@@ -787,7 +787,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                       </span>
                     </div>
                   )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8 tabular-nums">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 tabular-nums">
                     {sections[secKey].map((product, idx) => (
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -798,8 +798,8 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         onClick={() => setSelectedProduct(product)}
                         className="group relative bg-bento-card-bg/5 backdrop-blur-3xl rounded-[2.5rem] border border-bento-card-border overflow-hidden hover:bg-bento-card-bg/10 transition-all duration-500 cursor-pointer shadow-2xl"
                       >
-                    <div className="flex flex-col sm:flex-row h-full">
-                      <div className="sm:w-2/5 aspect-square relative overflow-hidden">
+                    <div className="flex flex-col md:flex-row h-full">
+                      <div className="md:w-2/5 aspect-square relative overflow-hidden">
                         <OptimizedImage
                           priority
                           src={product.image || (product.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')}
