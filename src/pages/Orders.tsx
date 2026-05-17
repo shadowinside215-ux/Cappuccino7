@@ -381,9 +381,18 @@ export default function Orders() {
                         )}
                       </div>
                     )}
-                    <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 text-center min-w-[140px] group-hover:bg-white/10 transition-all">
-                      <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 leading-none">{t('total_paid')}</p>
-                      <p className="text-3xl font-black text-white leading-none tabular-nums mt-1">{order.total} DH</p>
+                    <div className="flex flex-col gap-2">
+                       <button
+                        onClick={() => navigate(`/order-confirmation/${order.id}`)}
+                        className="px-6 py-2 bg-[#d4af37] text-stone-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#c4a030] transition-all flex items-center justify-center gap-2"
+                      >
+                        <Award size={14} />
+                        {t('view_ticket', 'Digital Ticket')}
+                      </button>
+                      <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 text-center min-w-[140px] group-hover:bg-white/10 transition-all">
+                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 leading-none">{t('total_paid')}</p>
+                        <p className="text-3xl font-black text-white leading-none tabular-nums mt-1">{order.total} DH</p>
+                      </div>
                     </div>
                   </div>
                 </div>

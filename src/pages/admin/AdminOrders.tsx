@@ -3,9 +3,10 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getD
 import { db } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
 import { awardOrderPoints } from '../../services/orderService';
-import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag, Award, Gift, ChefHat } from 'lucide-react';
+import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag, Award, Gift, ChefHat, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { OrderTimer } from '../../components/OrderTimer';
 
 const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivered'];
@@ -13,6 +14,7 @@ const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'd
 
 export default function AdminOrders() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -230,12 +232,19 @@ export default function AdminOrders() {
                   </div>
                 </div>
                 
-                <div className="flex flex-col items-end md:w-56">
+                <div className="flex flex-col items-end md:w-56 gap-3">
                   <p className="text-4xl font-black text-brown-950 mb-1 leading-none">{order.total.toFixed(0)} DH</p>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex items-center gap-2">
                     <Clock size={12} />
                     {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
+                  <button 
+                    onClick={() => navigate(`/order-confirmation/${order.id}`)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white text-stone-900 rounded-xl text-[10px] font-black uppercase tracking-widest border border-stone-200 hover:bg-stone-50 transition-all shadow-sm"
+                  >
+                    <Eye size={12} />
+                    Digital Ticket
+                  </button>
                 </div>
               </div>
 

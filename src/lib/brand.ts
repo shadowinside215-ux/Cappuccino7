@@ -10,6 +10,7 @@ export interface BrandSettings {
   profileBgUrl?: string;
   loginBgUrl?: string;
   updatedAt?: string;
+  phone?: string;
   // Review Popup Settings
   reviewPopupEnabled?: boolean;
   reviewPopupFrequencyDays?: number;

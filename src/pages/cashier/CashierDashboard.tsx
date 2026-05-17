@@ -38,7 +38,8 @@ import {
   Sandwich,
   Wifi,
   WifiOff,
-  Database
+  Database,
+  Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, doc, setDoc, updateDoc, serverTimestamp, increment, addDoc, Timestamp, onSnapshotsInSync } from 'firebase/firestore';
@@ -1038,12 +1039,20 @@ export default function CashierDashboard() {
                            <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest self-center opacity-40">{order.deliveryType}</span>
                         </div>
                         <span className="text-right pr-6 text-2xl font-black text-bento-ink tabular-nums group-hover:scale-110 transition-transform origin-right">{order.total.toFixed(2)}</span>
-                        <div className="flex justify-center">
+                        <div className="flex justify-center gap-2">
                            <button 
                              onClick={() => handlePrintOrder(order)}
-                             className="p-3 bg-bento-bg text-amber-500 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-lg"
+                             className="p-3 bg-stone-100 text-stone-600 rounded-xl hover:bg-stone-200 transition-all"
+                             title="Print Thermal Receipt"
                            >
                              <Printer size={18} />
+                           </button>
+                           <button 
+                             onClick={() => navigate(`/order-confirmation/${order.id}`)}
+                             className="p-3 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-all shadow-lg"
+                             title="View Digital Ticket"
+                           >
+                             <Eye size={18} />
                            </button>
                         </div>
                      </div>

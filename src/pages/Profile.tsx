@@ -3,7 +3,7 @@ import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Product } from '../types';
 import { collection, query, where, getDocs, updateDoc, doc, setDoc } from 'firebase/firestore';
-import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon, Phone } from 'lucide-react';
+import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon, Phone, ListOrdered } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -164,6 +164,15 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             {t('profile')}
           </motion.h1>
           <div className="flex gap-4">
+            <motion.button 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={() => navigate('/orders')}
+              className="hidden sm:flex items-center gap-3 px-6 bg-[#d4af37] text-stone-900 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all"
+            >
+              <ListOrdered size={18} />
+              {t('my_orders', 'My Orders')}
+            </motion.button>
             <motion.button 
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}

@@ -22,6 +22,7 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminStats from './pages/admin/AdminStats';
 import Login from './pages/Login';
 import AdminLogin from './pages/admin/AdminLogin';
+import OrderConfirmation from './pages/OrderConfirmation';
 import WaiterLogin from './pages/waiter/WaiterLogin';
 import WaiterDashboard from './pages/waiter/WaiterDashboard';
 import KitchenLogin from './pages/staff/KitchenLogin';
@@ -573,6 +574,8 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/cart" element={<Cart userProfile={userProfile} />} />
                   <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
                   <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
+                  <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
+                  <Route path="/track/:id" element={<OrderConfirmation />} />
                   <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} userProfile={userProfile} />} />
                   
                   <Route path="/admin/login" element={<AdminLogin />} />

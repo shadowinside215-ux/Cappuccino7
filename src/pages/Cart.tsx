@@ -220,6 +220,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         fullTableLabel: deliveryType === 'dine-in' ? fullTableLabel : null,
         prepTime: prepTimeMinutes,
         expectedReadyAt: expectedReadyAt,
+        pointsEarned: pointsEarned,
         address: address || (deliveryType === 'dine-in' ? `Table ${fullTableLabel}` : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
         deliveryNotes,
         updatedAt: serverTimestamp()
@@ -243,15 +244,22 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         orderData.createdAt = serverTimestamp();
         orderData.isPaid = false;
         orderData.waiterStatus = deliveryType === 'dine-in' ? 'New' : undefined;
-        await addDoc(collection(db, 'orders'), orderData);
+        const docRef = await addDoc(collection(db, 'orders'), orderData);
         toast.success(isGuest ? 'Order placed! Create an account to save your points ☕' : 'Order placed successfully!');
+        
+        localStorage.removeItem('cart');
+        window.dispatchEvent(new Event('cartUpdated'));
+        setItems([]);
+        
+        setTimeout(() => navigate(`/order-confirmation/${docRef.id}`), 500);
+        return;
       }
       
       localStorage.removeItem('cart');
       window.dispatchEvent(new Event('cartUpdated'));
       setItems([]);
       
-      setTimeout(() => navigate('/orders'), 500);
+      setTimeout(() => navigate(editingOrderId ? `/order-confirmation/${editingOrderId}` : '/orders'), 500);
     } catch (error) {
       console.error(error);
       toast.error('Failed to process order');
