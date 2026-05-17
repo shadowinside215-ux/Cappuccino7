@@ -166,6 +166,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
         name: product.name,
         price: product.price,
         image: product.image,
+        description: product.description,
         quantity: 1,
         customization: customization
       });

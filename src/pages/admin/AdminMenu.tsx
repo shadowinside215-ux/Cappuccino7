@@ -425,7 +425,7 @@ export default function AdminMenu() {
                     className="w-full bg-stone-50 border border-stone-100 rounded-xl p-4 focus:ring-2 focus:ring-bento-accent transition-all outline-none appearance-none font-medium"
                   >
                     <option value="">Category</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {categories.map(c => <option key={c.id} value={c.id}>{t(`categories.${c.id}`, c.name)}</option>)}
                   </select>
                 </div>
               </div>
@@ -520,7 +520,7 @@ export default function AdminMenu() {
           return (
             <section key={cat.id} className="space-y-6">
               <div className="flex items-center gap-4 group/cat">
-                <h2 className="text-sm font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">{cat.name}</h2>
+                <h2 className="text-sm font-black text-stone-300 uppercase tracking-[0.4em] whitespace-nowrap pl-1">{t(`categories.${cat.id}`, cat.name)}</h2>
                 <div className="h-px bg-stone-100 w-full" />
                 <div className="flex items-center gap-2">
                   <button 
@@ -641,10 +641,10 @@ export default function AdminMenu() {
                                   {product.subSection.replace('crepes_', '')}
                                 </span>
                               )}
-                              <h3 className="font-bold text-bento-ink truncate leading-tight">{product.name}</h3>
+                              <h3 className="font-bold text-bento-ink truncate leading-tight">{t(`products.${product.name}`, product.name)}</h3>
                             </div>
                             <p className="text-xs font-black text-bento-accent mt-1">{product.price} DH</p>
-                            <p className="text-[10px] text-stone-400 truncate mt-1">{product.description || 'No description provided'}</p>
+                            <p className="text-[10px] text-stone-400 truncate mt-1">{t(`descriptions.${product.name}`, product.description || 'No description provided')}</p>
                           </div>
                             <div className="flex flex-col gap-2 relative">
                               <button 

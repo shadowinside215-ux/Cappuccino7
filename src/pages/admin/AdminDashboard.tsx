@@ -447,183 +447,199 @@ export default function AdminDashboard() {
         { id: 'plats-gourmands', name: '🥘 PLATS GOURMANDS', order: 16 },
         { id: 'pates', name: '🍝 PÂTES', order: 17 },
         { id: 'crepes-desserts', name: '🥞 Crêpes & Desserts', order: 18 },
-        { id: 'healthy-food', name: '🥗 HEALTHY FOOD', order: 19 },
-        { id: 'extras', name: '➕ EXTRAS', order: 20 }
+        { id: 'pancakes-gaufres', name: '🥞 Pancakes & Gaufres', order: 19 },
+        { id: 'ice-cream', name: '🍦 Ice Cream', order: 20 },
+        { id: 'afternoon-tea', name: '🍰 Afternoon Tea', order: 21 },
+        { id: 'healthy-food', name: '🥗 HEALTHY FOOD', order: 22 },
       ];
 
       const productsData: Record<string, any[]> = {
         'breakfast': [
-          { name: 'Occidental', price: 38 },
-          { name: 'Amazigh', price: 45 },
-          { name: 'Gourmand', price: 48 },
-          { name: 'Ftour Fassi', price: 45 },
-          { name: 'Ftour Chamali', price: 58 },
-          { name: 'Omelette Spéciale', price: 48 },
-          { name: 'Cappuccino7 Breakfast', price: 68 },
-          { name: 'Healthy Breakfast', price: 60 },
-          { name: 'Turkie', price: 68 },
-          { name: 'Anglais', price: 85 },
-          { name: 'Brunch (1 personne)', price: 87, s: 'brunch' },
-          { name: 'Brunch (2 personnes)', price: 150, s: 'brunch' }
+          { name: 'Occidental', price: 38, d: 'Deux viennoiseries, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
+          { name: 'Amazigh', price: 45, d: 'Beghrir, Harcha, Mlaoui, Amlou, Fromage, Miel, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
+          { name: 'Gourmand', price: 48, d: 'Oeufs au plat brouillés avec fromage, panier de pain, jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
+          { name: 'Ftour Fassi', price: 45, d: 'Oeufs au khlii, Huile d’olive, olives, miel, Amlou, Fromage, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
+          { name: 'Ftour Chamali', price: 58, d: 'Beghrir, Harcha, Mlaoui, Huile d’olive, olives, miel, Amlou, Fromage, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
+          { name: 'Omelette Spéciale', price: 48, d: 'Trois œufs, jambon de bœuf, fromage, champignons, poivrons rouges' },
+          { name: 'Cappuccino7 Breakfast', price: 68, d: 'Saumon fumé, œufs brouillés, avocat, fromage frais, pain de campagne, jus detox' },
+          { name: 'Healthy Breakfast', price: 60, d: 'Muesli aux fruits secs, yaourt nature, fruits de saison, miel, jus vert' },
+          { name: 'Turkie', price: 68, d: 'Sucuk (saucisson turc), olives, tomates, concombres, feta, miel, pain turc' },
+          { name: 'Anglais', price: 85, d: 'Oeufs, bacon de bœuf, saucisses, haricots blancs à la tomate, champignons, tomates grillées, toast' },
+          { name: 'Brunch (1 personne)', price: 87, s: 'brunch', d: 'Omelette, jambon, fromage, pancakes, jus detox, salade de fruits' },
+          { name: 'Brunch (2 personnes)', price: 150, s: 'brunch', d: 'Grand assortiment complet pour deux personnes avec boissons chaudes et froides' }
         ],
         'petites-faims': [
-          { name: 'Omlette nature', price: 20 },
-          { name: 'Omlette Fromage', price: 25 },
-          { name: 'Omlette Fromage Champignion', price: 28 },
-          { name: 'Beghrir Amlou', price: 30 },
-          { name: 'Croque Monsieur', price: 35 },
-          { name: 'Croque Madame', price: 35 }
+          { name: 'Omlette nature', price: 20, d: 'Deux grains d\'œufs frais, sel, poivre' },
+          { name: 'Omlette Fromage', price: 25, d: 'Oeufs, fromage emmental fondu' },
+          { name: 'Omlette Fromage Champignion', price: 28, d: 'Oeufs, champignons de Paris, fromage' },
+          { name: 'Beghrir Amlou', price: 30, d: 'Crêpe marocaine (mille trous) servie avec du véritable Amlou' },
+          { name: 'Croque Monsieur', price: 35, d: 'Pain de mie, jambon, fromage, sauce béchamel' },
+          { name: 'Croque Madame', price: 35, d: 'Pain de mie, jambon, fromage, œuf au plat sur le dessus' }
         ],
         'coffee': [
-          { name: 'Lait chaude', price: 14 },
-          { name: 'Espresso', price: 14 },
-          { name: 'Café americain', price: 15 },
-          { name: 'Lait parfumé', price: 14 },
-          { name: 'Café crème', price: 15 },
-          { name: 'Nespresso', price: 15 },
-          { name: 'Latté Macchiato', price: 16 },
-          { name: 'Double Espresso', price: 18 },
-          { name: 'Cappuccino Italien', price: 18 },
-          { name: 'Chocolat chaud', price: 18 },
-          { name: 'Cappuccino viennois', price: 25 },
-          { name: 'Café au miel', price: 18 }
+          { name: 'Lait chaude', price: 14, d: 'Lait entier onctueux servi bien chaud' },
+          { name: 'Espresso', price: 14, d: 'Café court intense et riche en arôme' },
+          { name: 'Café americain', price: 15, d: 'Espresso allongé à l\'eau chaude' },
+          { name: 'Lait parfumé', price: 14, d: 'Lait chaud aromatisé au choix' },
+          { name: 'Café crème', price: 15, d: 'Espresso with a touch of cream' },
+          { name: 'Nespresso', price: 15, d: 'Variétés premium de capsules Nespresso' },
+          { name: 'Latté Macchiato', price: 16, d: 'Trois couches : lait chaud, espresso, mousse de lait' },
+          { name: 'Double Espresso', price: 18, d: 'Double dose de caféine pour un goût intense' },
+          { name: 'Cappuccino Italien', price: 18, d: 'Espresso, lait chaud et mousse de lait dense' },
+          { name: 'Chocolat chaud', price: 18, d: 'Onctueux chocolat fondu mélangé au lait' },
+          { name: 'Cappuccino viennois', price: 25, d: 'Espresso, lait chaud et crème chantilly' },
+          { name: 'Café au miel', price: 18, d: 'Espresso doux sucré au miel naturel' }
         ],
         'tea': [
-          { name: 'Thé à la menthe', price: 14 },
-          { name: 'Lipton', price: 14 },
-          { name: 'Verveine', price: 14 },
-          { name: 'Infusion thé bio', price: 16 }
+          { name: 'Thé à la menthe', price: 14, d: 'Thé vert traditionnel à la menthe fraîche' },
+          { name: 'Lipton', price: 14, d: 'Thé noir classique Lipton' },
+          { name: 'Verveine', price: 14, d: 'Infusion de feuilles de verveine apaisantes' },
+          { name: 'Infusion thé bio', price: 16, d: 'Sélection de plantes biologiques de saison' }
         ],
         'special-hot': [
-          { name: 'Mocaccino', price: 20 },
-          { name: 'Noisette Macchiato', price: 20 },
-          { name: 'Caramel Macchiato', price: 22 },
-          { name: 'Chocolat viennois', price: 22 },
-          { name: 'Chocolat Fondue', price: 28 },
-          { name: 'Chocolat Bresilien', price: 30 }
+          { name: 'Mocaccino', price: 20, d: 'Espresso, chocolat, lait chaud' },
+          { name: 'Noisette Macchiato', price: 20, d: 'Macchiato parfumé à la noisette grillée' },
+          { name: 'Caramel Macchiato', price: 22, d: 'Macchiato avec une sauce caramel onctueuse' },
+          { name: 'Chocolat viennois', price: 22, d: 'Chocolat chaud surmonté de chantilly' },
+          { name: 'Chocolat Fondue', price: 28, d: 'Fontaine de chocolat chaud avec accompagnements' },
+          { name: 'Chocolat Bresilien', price: 30, d: 'Chocolat noir intense aux notes de café' }
         ],
         'iced-latte': [
-          { name: 'Caramel & cream', price: 25 },
-          { name: 'Noisette', price: 25 },
-          { name: 'Happy moka', price: 25 }
+          { name: 'Caramel & cream', price: 25, d: 'Café glacé, caramel, crème légère' },
+          { name: 'Noisette', price: 25, d: 'Café glacé au goût de noisette' },
+          { name: 'Happy moka', price: 25, d: 'Mélange glacé café et chocolat' }
         ],
         'ice-tea': [
-          { name: 'Pêche', price: 30 },
-          { name: 'Citron', price: 30 },
-          { name: 'Framboise', price: 30 }
+          { name: 'Pêche', price: 30, d: 'Infusion glacée à la pêche douce' },
+          { name: 'Citron', price: 30, d: 'Infusion glacée au citron acidulé' },
+          { name: 'Framboise', price: 30, d: 'Infusion glacée aux baies rouges' }
         ],
         'juices': [
-          { name: 'Orange', price: 25 },
-          { name: 'Citron', price: 25 },
-          { name: 'Carotte', price: 25 },
-          { name: 'Pomme', price: 25 },
-          { name: 'Banane', price: 25 },
-          { name: 'Mangue', price: 25 },
-          { name: 'Fraise', price: 25 },
-          { name: 'Ananas', price: 25 },
-          { name: 'Kiwi', price: 25 },
-          { name: 'Panaché', price: 35 },
-          { name: 'Avocat fruits secs', price: 30 },
-          { name: 'Zazaa', price: 48 }
+          { name: 'Orange', price: 25, d: 'Jus d\'orange 100% pur pressé' },
+          { name: 'Citron', price: 25, d: 'Limonade fraîche maison' },
+          { name: 'Carotte', price: 25, d: 'Jus de carottes du jardin pressées' },
+          { name: 'Pomme', price: 25, d: 'Jus de pommes croquantes' },
+          { name: 'Banane', price: 25, d: 'Nectar de banane onctueux' },
+          { name: 'Mangue', price: 25, d: 'Purée de mangue mûre' },
+          { name: 'Fraise', price: 25, d: 'Jus de fraises de saison' },
+          { name: 'Ananas', price: 25, d: 'Jus d\'ananas tropical' },
+          { name: 'Kiwi', price: 25, d: 'Jus de kiwi frais vitaminé' },
+          { name: 'Panaché', price: 35, d: 'Mélange de plusieurs fruits pressés' },
+          { name: 'Avocat fruits secs', price: 30, d: 'Avocat, lait et fruits secs variés' },
+          { name: 'Zazaa', price: 48, d: 'Boisson spéciale signature Cappuccino' }
         ],
         'frappuccino': [
-          { name: 'Caramel & Cream', price: 35 },
-          { name: 'Caramel Beurre salé', price: 35 },
-          { name: 'Moka Chocolate', price: 35 },
-          { name: 'Noisette', price: 35 },
-          { name: 'Amaretto', price: 35 }
+          { name: 'Caramel & Cream', price: 35, d: 'Mix glacé caramel et crème' },
+          { name: 'Caramel Beurre salé', price: 35, d: 'Mix glacé au caramel beurre salé' },
+          { name: 'Moka Chocolate', price: 35, d: 'Mix glacé café et copeaux de chocolat' },
+          { name: 'Noisette', price: 35, d: 'Mix glacé aux éclats de noisettes' },
+          { name: 'Amaretto', price: 35, d: 'Mix glacé à l\'arôme d\'amande' }
         ],
         'milkshakes': [
-          { name: 'Caramel Shake', price: 40 },
-          { name: 'Orange shake', price: 40 },
-          { name: 'Mixed berries (fruits rouges)', price: 40 },
-          { name: 'Mango Alphonso', price: 40 },
-          { name: 'Chocolat Oreo', price: 40 },
-          { name: 'Fruit de la passion', price: 40 },
-          { name: 'Fraise', price: 40 }
+          { name: 'Caramel Shake', price: 40, d: 'Glace vanille, lait, caramel' },
+          { name: 'Orange shake', price: 40, d: 'Glace vanille, jus d\'orange, zeste' },
+          { name: 'Mixed berries (fruits rouges)', price: 40, d: 'Fruits rouges mixés, glace vanille' },
+          { name: 'Mango Alphonso', price: 40, d: 'Mangue Alphonso, lait, glace' },
+          { name: 'Chocolat Oreo', price: 40, d: 'Oreo concassé, chocolat fondu, lait' },
+          { name: 'Fruit de la passion', price: 40, d: 'Nectar de passion, glace vanille' },
+          { name: 'Fraise', price: 40, d: 'Fraises fraîches, lait, crème' }
         ],
         'smoothies': [
-          { name: 'Detox Maison', price: 35 },
-          { name: 'Berry Explosion', price: 35 },
-          { name: 'Mango Madness', price: 35 },
-          { name: 'Tropical paradise', price: 35 }
+          { name: 'Detox Maison', price: 35, d: 'Pomme verte, céleri, concombre, citron' },
+          { name: 'Berry Explosion', price: 35, d: 'Fraises, myrtilles, framboises' },
+          { name: 'Mango Madness', price: 35, d: 'Mangue, orange, gingembre' },
+          { name: 'Tropical paradise', price: 35, d: 'Ananas, coco, passion' }
         ],
         'mojitos': [
-          { name: 'Classique', price: 25 },
-          { name: 'Mango mojito', price: 25 },
-          { name: 'Berries mojito', price: 25 },
-          { name: 'Passion mojito', price: 25 },
-          { name: 'Ananas mojito', price: 25 },
-          { name: 'Blue mojito', price: 25 },
-          { name: 'Concombre mojito', price: 25 },
-          { name: 'Strawberry mojito', price: 25 }
+          { name: 'Classique', price: 25, d: 'Menthe, citron vert, soda' },
+          { name: 'Mango mojito', price: 25, d: 'Mangue, menthe, citron' },
+          { name: 'Berries mojito', price: 25, d: 'Fruits rouges, menthe, citron' },
+          { name: 'Passion mojito', price: 25, d: 'Nectar de passion, menthe' },
+          { name: 'Ananas mojito', price: 25, d: 'Ananas, citron, soda' },
+          { name: 'Blue mojito', price: 25, d: 'Curacao bleu, menthe, citron' },
+          { name: 'Concombre mojito', price: 25, d: 'Concombre frais, menthe' },
+          { name: 'Strawberry mojito', price: 25, d: 'Fraises, menthe, soda' }
         ],
         'salads': [
-          { name: 'Salade Marocaine', price: 35 },
-          { name: 'Salade Thon', price: 40 },
-          { name: 'Salade Royale', price: 55 },
-          { name: 'Salade Niçoise', price: 42 },
-          { name: 'Salade du Chef', price: 65 }
+          { name: 'Salade Marocaine', price: 35, d: 'Tomates, oignons, poivrons rouges et verts, concombres' },
+          { name: 'Salade Thon', price: 40, d: 'Thon, laitue, maïs, carottes, oignons, tomates, poivrons, œufs durs, sauce vinaigrette' },
+          { name: 'Salade Royale', price: 55, d: 'Saumon fumé, crevettes, avocat, mangue, mâche, sauce agrumes' },
+          { name: 'Salade Niçoise', price: 42, d: 'Thon, pommes de terre, haricots verts, œufs, olives, tomates' },
+          { name: 'Salade du Chef', price: 65, d: 'Jambon, fromage, œuf dur, tomates, maïs, laitue, concombres, concombres, haricots verts' }
         ],
         'burgers': [
-          { name: 'Burger Furri', price: 45, d: 'Viande hachée, Jambon, Fromage, Tomate, Oignon, Laitue, Sauce blanche, Eau minérale' },
+          { name: 'Burger Furri', price: 45, d: 'Deux steaks (viande hachée), Jambon, double fromage, Tomate, Oignon, Laitue, Sauce blanche' },
           { name: 'Burger Viande hachée', price: 45, d: 'Viande hachée, Laitue, Fromage, Tomate, Oignon' },
-          { name: 'Chicken Burger', price: 40, d: 'Poulet haché, Fromage, Tomate, Oignon, Laitue, Soda ou Eau minérale' },
-          { name: 'Chicken Kids Burger (mini burger)', price: 35, d: 'Poulet haché, Fromage, Tomate, Oignon, Laitue' },
-          { name: 'Beef Kids Burger (mini burger)', price: 38, d: 'Viande hachée, Fromage, Tomate, Laitue' }
+          { name: 'Chicken Burger', price: 40, d: 'Poulet haché, Laitue, Fromage, Tomate, Oignon, Sauce moutarde miel' },
+          { name: 'Chicken Kids Burger (mini burger)', price: 35, d: 'Mini burger au poulet, fromage, ketchup, Laitue' },
+          { name: 'Beef Kids Burger (mini burger)', price: 38, d: 'Mini burger à la viande hachée, fromage, ketchup, Laitue' }
         ],
         'sandwiches': [
-          { name: 'Sandwich Thon (froids)', price: 35, d: 'Oignon, Laitue, Tomate, Fromage, Sauce fraîcheur' },
-          { name: 'Sandwich Jambon (froids)', price: 35, d: 'Laitue, Tomate, Fromage, Sauce mayonnaise, Moutarde' },
-          { name: 'Sandwich Viande hachée (chauds)', price: 45, d: 'Viande hachée, Fromage, Tomate, Laitue, Sauce fromage crème' },
-          { name: 'Sandwich Poulet (chauds)', price: 40, d: 'Poulet, Tomate, Laitue, Oignon, Olives vertes, Sauce pistou' }
+          { name: 'Sandwich Thon (froids)', price: 35, d: 'Thon, maïs, carottes râpées, oignon rouge, laitue, tomates, œuf dur, sauce mayonnaise' },
+          { name: 'Sandwich Jambon (froids)', price: 35, d: 'Jambon de bœuf, fromage edam, laitue, tomates, sauce andalouse' },
+          { name: 'Sandwich Viande hachée (chauds)', price: 45, d: 'Viande hachée grillée, oignons caramélisés, fromage, sauce burger' },
+          { name: 'Sandwich Poulet (chauds)', price: 40, d: 'Émincé de poulet mariné, poivrons, fromage, oignons, sauce curry' }
         ],
         'pizza': [
-          { name: 'Margarita', price: 35 },
-          { name: 'Vegeterienne', price: 45 },
-          { name: 'Thon', price: 50 },
-          { name: 'Quatre Fromages', price: 55 },
-          { name: 'Viande Hachée', price: 55 },
-          { name: 'Fruit de mer', price: 65 }
+          { name: 'Margarita', price: 35, d: 'Sauce tomate, mozzarella, origan, basilic frais' },
+          { name: 'Vegeterienne', price: 45, d: 'Poivrons, champignons, oignons, olives noires, maïs, courgettes' },
+          { name: 'Thon', price: 50, d: 'Thon, oignons, mozzarella, olives noires, origan' },
+          { name: 'Quatre Fromages', price: 55, d: 'Mozzarella, fromage bleu, emmental, parmesan, crème fraîche' },
+          { name: 'Viande Hachée', price: 55, d: 'Viande hachée, poivrons, mozzarella, sauce tomate' },
+          { name: 'Fruit de mer', price: 65, d: 'Crevettes, calamars, ail, mozzarella, sauce tomate' }
         ],
         'plats-gourmands': [
-          { name: 'Escaloppe de poulet à la crème', price: 75 },
-          { name: 'Emincé de boeuf', price: 85 },
-          { name: 'Cordon Bleu', price: 80 }
+          { name: 'Escaloppe de poulet à la crème', price: 75, d: 'Filet de poulet, sauce aux champignons, riz basmati ou frites' },
+          { name: 'Emincé de boeuf', price: 85, d: 'Fines lamelles de bœuf sautées, poivrons, sauce soja, riz blanc' },
+          { name: 'Cordon Bleu', price: 80, d: 'Blanc de poulet pané farci au fromage et jambon, frites et salade' }
         ],
         'pates': [
-          { name: 'Bolognaise', price: 45 },
-          { name: 'Carbonara', price: 50 },
-          { name: 'Pesto', price: 45 },
-          { name: 'Fruits de mer', price: 60 }
+          { name: 'Bolognaise', price: 45, d: 'Sauce tomate maison, viande hachée, parmesan, basilic frais' },
+          { name: 'Carbonara', price: 50, d: 'Crème fraîche, lardons fumés, jaune d’œuf, parmesan' },
+          { name: 'Pesto', price: 45, d: 'Sauce pesto maison au basilic, pignons de pin, parmesan, huile d’olive' },
+          { name: 'Fruits de mer', price: 60, d: 'Crevettes, calamars, moules, sauce tomate ou crème, ail et persil' }
         ],
         'crepes-desserts': [
-          { name: 'Nature', price: 20, s: 'crepes_sucrees' },
-          { name: 'Confiture', price: 25, s: 'crepes_sucrees' },
-          { name: 'Nutella', price: 30, s: 'crepes_sucrees' },
-          { name: 'Nutella et Banane', price: 37, s: 'crepes_sucrees' },
-          { name: 'Miel & Noix', price: 35, s: 'crepes_sucrees' },
-          { name: 'Royal', price: 40, s: 'crepes_sucrees' },
-          { name: 'Exotique', price: 48, s: 'crepes_sucrees' },
-          { name: 'Brésilienne', price: 48, s: 'crepes_sucrees' },
-          { name: 'Cappuccino7 Special', price: 52, s: 'crepes_sucrees' },
-          { name: 'Fromage Mozerella', price: 42, s: 'crepes_salees' },
-          { name: 'Dinde fumée', price: 48, s: 'crepes_salees' },
-          { name: 'Poulet Champignon', price: 54, s: 'crepes_salees' }
+          { name: 'Nature', price: 20, s: 'crepes_sucrees', d: 'Recette artisanale servie nature' },
+          { name: 'Confiture', price: 25, s: 'crepes_sucrees', d: 'Confiture de fruits au choix' },
+          { name: 'Nutella', price: 30, s: 'crepes_sucrees', d: 'Véritable chocolat Nutella' },
+          { name: 'Nutella et Banane', price: 37, s: 'crepes_sucrees', d: 'Nutella, rondelles de banane fraîche' },
+          { name: 'Miel & Noix', price: 35, s: 'crepes_sucrees', d: 'Miel d’oranger pur, cerneaux de noix croquants' },
+          { name: 'Royal', price: 40, s: 'crepes_sucrees', d: 'Nutella, amandes grillées, boules de glace vanille' },
+          { name: 'Exotique', price: 48, s: 'crepes_sucrees', d: 'Coulis de fruits mangue passion, morceaux d\'ananas frais' },
+          { name: 'Brésilienne', price: 48, s: 'crepes_sucrees', d: 'Café, caramel au beurre salé, chantilly' },
+          { name: 'Cappuccino7 Special', price: 52, s: 'crepes_sucrees', d: 'Nutella, Oreo concassé, Kinder Bueno, sauce chocolat' },
+          { name: 'Fromage Mozerella', price: 42, s: 'crepes_salees', d: 'Mozzarella fondante, herbes de Provence' },
+          { name: 'Dinde fumée', price: 48, s: 'crepes_salees', d: 'Jambon de dinde, fromage cheese, crème fraîche' },
+          { name: 'Poulet Champignon', price: 54, s: 'crepes_salees', d: 'Émincé de poulet, sauce forestière, mozzarella' }
+        ],
+        'pancakes-gaufres': [
+          { name: 'Classique', price: 35, d: 'Beurre et miel pur ou sirop d’érable' },
+          { name: 'Choco-Noisette', price: 42, d: 'Nutella, noisettes concassées' },
+          { name: 'Fraîcheur', price: 48, d: 'Fruits de saison, coulis de fruits rouges, chantilly' }
+        ],
+        'ice-cream': [
+          { name: 'Sorbet Fruits Rouges', price: 35, d: 'Framboise, fraise, cerise' },
+          { name: 'Glace Royale', price: 45, d: 'Vanille Bourbon, éclats de caramel, amandes effilées' }
+        ],
+        'afternoon-tea': [
+          { name: 'Plateau de Pâtisseries Marocaines', price: 55, d: 'Assortiment de cornes de gazelle, ghriba, briouates au miel' },
+          { name: 'Scones & Cream', price: 45, d: 'Scones anglais tièdes, crème épaisse (clotted cream), confiture maison' },
+          { name: 'Macarons', price: 65, d: 'Coffret de 6 macarons artisanaux (parfums au choix)' }
         ],
         'healthy-food': [
-          { name: 'Salade de Quinoa', price: 45 },
-          { name: 'Bowl Poulet Grillé', price: 55 },
-          { name: 'Smoothie Vert Détox', price: 35 }
+          { name: 'Salade de Quinoa', price: 45, d: 'Quinoa, avocat, grenade, fêta, vinaigrette citronnée' },
+          { name: 'Bowl Poulet Grillé', price: 55, d: 'Poulet grillé, riz brun, légumes vapeur, sauce légère' },
+          { name: 'Smoothie Vert Détox', price: 35, d: 'Épinards, pomme verte, concombre, chia' }
         ],
         'extras': [
-          { name: 'Frite', price: 15 },
-          { name: 'Fromage', price: 5 },
-          { name: 'Oeuf', price: 5 },
-          { name: 'Dinde', price: 7 },
-          { name: 'Viande hachée', price: 10 },
-          { name: 'Poulet', price: 10 },
-          { name: 'Champignon', price: 7 }
+          { name: 'Frite', price: 15, d: 'Portion de frites croustillantes' },
+          { name: 'Fromage', price: 5, d: 'Supplément tranche de fromage' },
+          { name: 'Oeuf', price: 5, d: 'Supplément œuf au plat' },
+          { name: 'Dinde', price: 7, d: 'Supplément jambon de dinde' },
+          { name: 'Viande hachée', price: 10, d: 'Supplément viande hachée grillée' },
+          { name: 'Poulet', price: 10, d: 'Supplément émincé de poulet' },
+          { name: 'Champignon', price: 7, d: 'Supplément champignons frais' }
         ]
       };
 
@@ -690,11 +706,11 @@ export default function AdminDashboard() {
     const adminEmailCheck = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
     if (auth.currentUser?.email?.toLowerCase() === adminEmailCheck.toLowerCase()) {
       const autoSync = async () => {
-        const hasSync = localStorage.getItem('menu_auto_sync_v31');
+        const hasSync = localStorage.getItem('menu_auto_sync_v33');
         if (!hasSync) {
-          console.log("AI Studio: Automatically syncing your requested menu items...");
+          console.log("AI Studio: Automatically syncing your requested menu items with all categories...");
           await initializeDatabase(true);
-          localStorage.setItem('menu_auto_sync_v31', 'true');
+          localStorage.setItem('menu_auto_sync_v33', 'true');
         }
       };
       autoSync();

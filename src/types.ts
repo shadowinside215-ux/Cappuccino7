@@ -59,6 +59,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   image?: string;
+  description?: string;
   customization?: string;
   system?: 'kitchen' | 'barman' | 'both';
   categoryName?: string;

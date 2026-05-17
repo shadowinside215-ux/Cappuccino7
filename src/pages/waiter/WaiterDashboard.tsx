@@ -757,17 +757,22 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
       </div>
 
       <div className="bg-stone-50 rounded-[2rem] p-6 space-y-4 mb-6 flex-1 overflow-y-auto max-h-[200px] custom-scrollbar-hide">
-          {order.items.map((item, idx) => (
+          {order.items.map((item: any, idx: number) => (
             <div key={idx} className="flex justify-between items-start text-sm">
-              <div className="flex flex-col">
+              <div className="flex flex-col flex-1 mr-4">
                 <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
+                {item.description && (
+                  <span className="text-[9px] font-medium text-stone-400 italic leading-tight mt-0.5 line-clamp-2">
+                    {t(`descriptions.${item.name}`, item.description)}
+                  </span>
+                )}
                 {item.customization && (
-                  <span className="text-[10px] font-black uppercase text-amber-500 italic">
+                  <span className="text-[10px] font-black uppercase text-amber-500 italic mt-1">
                     {item.customization}
                   </span>
                 )}
               </div>
-              <span className="text-xs font-black text-stone-400">{item.price * item.quantity} MAD</span>
+              <span className="text-xs font-black text-stone-400 whitespace-nowrap">{item.price * item.quantity} MAD</span>
             </div>
           ))}
           <div className="pt-3 border-t border-stone-200 flex justify-between items-center sticky bottom-0 bg-stone-50">

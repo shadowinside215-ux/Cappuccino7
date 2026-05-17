@@ -266,6 +266,7 @@ export default function CashierDashboard() {
         price: product.price,
         quantity: 1,
         image: product.image,
+        description: product.description,
         categoryName: categories.find(c => c.id === product.categoryId)?.name || 'Menu'
       }];
     });
@@ -521,7 +522,12 @@ export default function CashierDashboard() {
                        </div>
                     </div>
                     <div className="p-2 sm:p-4 flex flex-col items-center justify-center text-center flex-1">
-                      <span className="text-[10px] sm:text-[11px] font-black uppercase leading-tight line-clamp-2 text-stone-900 dark:text-stone-100 tracking-tight">{product.name}</span>
+                      <span className="text-[10px] sm:text-[11px] font-black uppercase leading-tight line-clamp-2 text-stone-900 dark:text-stone-100 tracking-tight">{t(`products.${product.name}`, product.name)}</span>
+                      {product.description && (
+                        <p className="text-[7px] sm:text-[8px] text-stone-400 font-medium leading-tight mt-1 line-clamp-2 italic">
+                          {t(`descriptions.${product.name}`, product.description)}
+                        </p>
+                      )}
                     </div>
                   </motion.button>
                 ))}
