@@ -558,7 +558,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
           <Navbar userProfile={userProfile} />
           <ReviewPopup />
-          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl lg:max-w-7xl mx-auto px-6 pb-24 pt-24 lg:pt-10'}`}>
+          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto px-6 pb-24 pt-24 lg:pt-10'}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
@@ -598,7 +598,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             </AnimatePresence>
           </main>
 
-          {isLoginPage && !isStaffView && (
+          {location.pathname === '/login' && !user && !isStaffView && (
             <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
               <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-bento-card-border bg-bento-card-bg/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
                 {[

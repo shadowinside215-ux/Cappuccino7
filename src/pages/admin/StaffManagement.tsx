@@ -12,7 +12,7 @@ interface StaffConfig {
   username: string;
   password: string;
   displayName: string;
-  assignedZone?: 'A' | 'B';
+  assignedZone?: 'A' | 'B' | 'Both';
 }
 
 export default function StaffManagement() {
@@ -169,18 +169,24 @@ export default function StaffManagement() {
               {config.id.startsWith('waiter') && (
                 <div>
                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1.5 ml-1">Assigned Zone</label>
-                  <div className="flex bg-stone-50 p-1 rounded-2xl border border-stone-100">
+                  <div className="flex bg-stone-50 p-1 rounded-2xl border border-stone-100 overflow-x-auto custom-scrollbar-hide">
                     <button
                       onClick={() => handleUpdate(config.id, 'assignedZone', 'A')}
-                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'A' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+                      className={`flex-1 min-w-[60px] py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'A' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
                     >
-                      Zone A (Inside)
+                      A (In)
                     </button>
                     <button
                       onClick={() => handleUpdate(config.id, 'assignedZone', 'B')}
-                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'B' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+                      className={`flex-1 min-w-[60px] py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'B' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
                     >
-                      Zone B (Outside)
+                      B (Out)
+                    </button>
+                    <button
+                      onClick={() => handleUpdate(config.id, 'assignedZone', 'Both')}
+                      className={`flex-1 min-w-[60px] py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'Both' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      Both
                     </button>
                   </div>
                 </div>

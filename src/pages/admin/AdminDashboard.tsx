@@ -639,7 +639,7 @@ export default function AdminDashboard() {
           const safeId = item.name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
           const prodRef = doc(db, 'products', `${cat.id}-${safeId}`);
           
-          batch.set(prodRef, { 
+          const prodData: any = { 
             name: item.name,
             price: Number(item.price),
             description: item.description || item.d || '',
@@ -647,7 +647,13 @@ export default function AdminDashboard() {
             categoryId: catRef.id, 
             isAvailable: true,
             id: prodRef.id
-          }, { merge: true });
+          };
+
+          if (item.image || item.img) {
+            prodData.image = item.image || item.img;
+          }
+          
+          batch.set(prodRef, prodData, { merge: true });
         });
       }
 
@@ -684,11 +690,11 @@ export default function AdminDashboard() {
     const adminEmailCheck = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
     if (auth.currentUser?.email?.toLowerCase() === adminEmailCheck.toLowerCase()) {
       const autoSync = async () => {
-        const hasSync = localStorage.getItem('menu_auto_sync_v29');
+        const hasSync = localStorage.getItem('menu_auto_sync_v31');
         if (!hasSync) {
           console.log("AI Studio: Automatically syncing your requested menu items...");
           await initializeDatabase(true);
-          localStorage.setItem('menu_auto_sync_v29', 'true');
+          localStorage.setItem('menu_auto_sync_v31', 'true');
         }
       };
       autoSync();

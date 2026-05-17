@@ -167,6 +167,7 @@ export default function Login() {
         {brand.loginBgUrl && (
           <OptimizedImage 
             priority
+            size="hero"
             src={brand.loginBgUrl} 
             containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
@@ -192,6 +193,7 @@ export default function Login() {
               <div className="w-40 h-40 bg-bento-card-bg rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-bento-card-border group-hover/login:scale-110 transition-transform duration-700">
                 <OptimizedImage 
                   src={brand.logoUrl} 
+                  size="thumbnail"
                   alt="Logo" 
                   containerClassName="w-full h-full"
                   className="w-full h-full object-contain rounded-2xl"

@@ -15,7 +15,7 @@ export interface UserProfile {
   isDriver?: boolean;
   isCashier?: boolean;
   isAnonymous?: boolean;
-  assignedZone?: 'A' | 'B';
+  assignedZone?: 'A' | 'B' | 'Both';
   createdAt: string;
 }
 

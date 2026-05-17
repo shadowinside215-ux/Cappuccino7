@@ -35,10 +35,13 @@ import {
   Grape,
   Milk,
   Navigation,
-  Sandwich
+  Sandwich,
+  Wifi,
+  WifiOff,
+  Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, query, where, orderBy, onSnapshot, getDocs, doc, setDoc, updateDoc, serverTimestamp, increment, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs, doc, setDoc, updateDoc, serverTimestamp, increment, addDoc, Timestamp, onSnapshotsInSync } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import { Category, Product, Order, OrderItem } from '../../types';
@@ -49,7 +52,7 @@ import { format, startOfDay, endOfDay, isToday, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { OrderTimer } from '../../components/OrderTimer';
 import OptimizedImage from '../../components/ui/OptimizedImage';
-
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTranslation } from 'react-i18next';
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -81,7 +84,10 @@ export default function CashierDashboard() {
   const [view, setView] = useState<'pos' | 'pending'>('pos');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [cart, setCart] = useState<OrderItem[]>([]);
+  const [cart, setCart] = useState<OrderItem[]>(() => {
+    const saved = localStorage.getItem('pos_current_cart');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [deliveryType, setDeliveryType] = useState<'dine-in' | 'takeaway'>('dine-in');
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [unpaidOrders, setUnpaidOrders] = useState<Order[]>([]);
@@ -94,6 +100,22 @@ export default function CashierDashboard() {
   const navigate = useNavigate();
   const cartEndRef = useRef<HTMLDivElement>(null);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const isOnline = useNetworkStatus();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Auto-save cart to localStorage
+  useEffect(() => {
+    localStorage.setItem('pos_current_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  // Track Firestore sync status
+  useEffect(() => {
+    const unsubSync = onSnapshotsInSync(db, () => {
+      // This fires when all local changes have been synchronized with the server
+      setIsSyncing(false);
+    });
+    return () => unsubSync();
+  }, []);
 
   // New States for POS Functionality
   const [activeVendeur, setActiveVendeur] = useState<string>(localStorage.getItem('pos_vendeur_name') || 'CASHIER-01');
@@ -273,6 +295,7 @@ export default function CashierDashboard() {
     setIsProcessing(true);
 
     try {
+      setIsSyncing(true);
       const itemsWithMetadata = await processOrderItems(cart);
       const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen');
       const hasBarmanItems = itemsWithMetadata.some(item => item.system === 'barman');
@@ -291,6 +314,7 @@ export default function CashierDashboard() {
         isPOS: true,
         isPaid: false, // Will be marked paid below
         createdAt: serverTimestamp(),
+        localCreatedAt: new Date().toISOString(), // Preserve original intent timestamp
         pointsEarned: Math.floor(totalPrice / 10),
         prepTime: hasKitchenItems ? 30 : 10
       };
@@ -298,8 +322,16 @@ export default function CashierDashboard() {
       const docRef = await addDoc(collection(db, 'orders'), orderData);
       
       // Update Stats rigorously
+      // We don't await this if offline to keep POS fast
       const { addOrderToStats } = await import('../../lib/stats');
-      await addOrderToStats(docRef.id, totalPrice);
+      const statsPromise = addOrderToStats(docRef.id, totalPrice);
+      
+      if (isOnline) {
+        await statsPromise;
+      } else {
+        // If offline, persistence handles the update later
+        console.log('Order queued for stats sync');
+      }
 
       const receipt = generateThermalReceipt({
         restaurantName: "Cappuccino 7",
@@ -343,16 +375,24 @@ export default function CashierDashboard() {
   const handleMarkPaid = async (order: Order, method: 'cash' | 'card') => {
     setIsProcessing(true);
     try {
+      setIsSyncing(true);
       const { addOrderToStats } = await import('../../lib/stats');
       
       // Update order with payment method and set isPaid to true
-      await updateDoc(doc(db, 'orders', order.id), {
+      const updatePromise = updateDoc(doc(db, 'orders', order.id), {
         paymentMethod: method,
         isPaid: true,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        paidAtLocal: new Date().toISOString()
       });
 
-      await addOrderToStats(order.id, order.total);
+      if (isOnline) {
+        await updatePromise;
+        await addOrderToStats(order.id, order.total);
+      } else {
+        // If offline, don't await the network check but finish locally
+        console.log('Payment queued for sync');
+      }
       
       toast.success(t('pos_payment_confirmed'));
       setSelectedOrder(null); // Clear selected order after payment
@@ -388,7 +428,21 @@ export default function CashierDashboard() {
     <div className="h-screen bg-bento-bg text-bento-ink flex flex-col font-mono overflow-hidden select-none">
       {/* View Switcher Tabs - POS / PENDING / STAFF */}
       <div className="h-14 bg-bento-card-bg border-b border-bento-card-border flex items-center px-4 gap-2 md:gap-4 shrink-0 overflow-x-auto">
-         <div className="flex-1 flex gap-2 md:gap-4">
+         {/* Online/Offline Status */}
+         <div className="flex items-center gap-2 pr-4 border-r border-bento-card-border">
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${isOnline ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500 animate-pulse'}`}>
+               {isOnline ? <Wifi size={10} /> : <WifiOff size={10} />}
+               <span>{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+            </div>
+            {isSyncing && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 text-blue-500 rounded-full text-[8px] font-black uppercase tracking-widest">
+                 <RefreshCw size={10} className="animate-spin" />
+                 <span>SYNCING</span>
+              </div>
+            )}
+         </div>
+
+         <div className="flex-1 flex gap-2 md:gap-4 ml-2">
            <button 
              onClick={() => setView('pos')}
              className={`px-4 md:px-6 h-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 whitespace-nowrap ${view === 'pos' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
@@ -456,6 +510,7 @@ export default function CashierDashboard() {
                        <OptimizedImage 
                          src={product.image} 
                          alt={product.name}
+                         size="thumbnail"
                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                          containerClassName="w-full h-full"
                          showOverlay={false}
@@ -798,6 +853,7 @@ export default function CashierDashboard() {
                           <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-stone-100 ring-1 ring-black/5 shadow-sm">
                             <OptimizedImage 
                               src={item.image} 
+                              size="thumbnail"
                               className="w-full h-full object-cover" 
                               showOverlay={false}
                             />

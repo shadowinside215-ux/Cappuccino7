@@ -251,6 +251,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               <div className="aspect-[4/3] overflow-hidden">
                 <OptimizedImage 
                   priority
+                  size="large"
                   src={selectedProduct.image || (selectedProduct.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')} 
                   containerClassName="w-full h-full"
                   className="w-full h-full object-cover"
@@ -436,6 +437,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
           {brandSettings.heroImageUrl && (
             <OptimizedImage 
               priority
+              size="hero"
               src={brandSettings.heroImageUrl} 
               containerClassName="w-full h-full"
               className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover/hero:scale-105"
@@ -801,7 +803,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                     <div className="flex flex-col md:flex-row h-full">
                       <div className="md:w-2/5 aspect-square relative overflow-hidden">
                         <OptimizedImage
-                          priority
+                          size="thumbnail"
                           src={product.image || (product.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')}
                           alt={product.name}
                           containerClassName="w-full h-full"

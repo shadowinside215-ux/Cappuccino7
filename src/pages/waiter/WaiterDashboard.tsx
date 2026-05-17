@@ -36,10 +36,28 @@ export default function WaiterDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'ready'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'ready'>('requests'); // Default to requests as per high priority
   const [waiterProfile, setWaiterProfile] = useState<UserProfile | null>(null);
   const profileRef = React.useRef<UserProfile | null>(null);
   const prevOrdersRef = React.useRef<Order[]>([]);
+
+  const isMyZone = (tableZone?: 'A' | 'B') => {
+    const currentZone = waiterProfile?.assignedZone || 'Both';
+    if (currentZone === 'Both') return true;
+    return tableZone === currentZone;
+  };
+
+  const updateAssignedZone = async (zone: 'A' | 'B' | 'Both') => {
+    if (!auth.currentUser) return;
+    try {
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        assignedZone: zone
+      });
+      toast.success(`${t('zone_updated', 'Zone updated')}: ${zone === 'Both' ? 'Both A & B' : `Zone ${zone}`}`);
+    } catch (err) {
+      console.error("Error updating zone:", err);
+    }
+  };
 
   useEffect(() => {
     profileRef.current = waiterProfile;
@@ -99,9 +117,10 @@ export default function WaiterDashboard() {
             
             // Check if order belongs to waiter's zone
             const currentProfile = profileRef.current;
-            const isMyZone = currentProfile?.assignedZone ? newData.tableZone === currentProfile.assignedZone : true;
+            const myZone = currentProfile?.assignedZone || 'Both';
+            const isMyZoneMatch = myZone === 'Both' || newData.tableZone === myZone;
 
-            if (oldOrder && isMyZone) {
+            if (oldOrder && isMyZoneMatch) {
               // Client Modified Order Notification
               if (newData.isModified && !oldOrder.isModified) {
                 toast.error(`${t('order_modified_alert', 'Order Modified by Client!')} - ${newData.fullTableLabel || newData.customerName}`, {
@@ -176,10 +195,11 @@ export default function WaiterDashboard() {
             
             // Filter by zone
             const currentProfile = profileRef.current;
-            const isMyZone = currentProfile?.assignedZone ? req.tableZone === currentProfile.assignedZone : true;
+            const myZone = currentProfile?.assignedZone || 'Both';
+            const isMyZoneMatch = myZone === 'Both' || req.tableZone === myZone;
 
             // Only notify if it's assigned to this waiter or unassigned AND in my zone
-            if (isMyZone && (!req.waiterId || req.waiterId === auth.currentUser?.uid)) {
+            if (isMyZoneMatch && (!req.waiterId || req.waiterId === auth.currentUser?.uid)) {
               toast.error(
                 `${t('waiter_called_toast', 'Customer Calling!')} - ${req.fullTableLabel || req.clientName}`,
                 {
@@ -368,18 +388,18 @@ export default function WaiterDashboard() {
   const filteredOrders = orders.filter(o => 
     o.status !== 'delivered' && 
     o.status !== 'cancelled' && 
-    (!waiterProfile?.assignedZone || o.tableZone === waiterProfile.assignedZone)
+    isMyZone(o.tableZone)
   );
 
   const filteredRequests = requests.filter(r => 
-    !waiterProfile?.assignedZone || r.tableZone === waiterProfile.assignedZone
+    isMyZone(r.tableZone)
   );
 
   const readyToServeOrders = orders.filter(o => 
     (o.kitchenStatus === 'ready' || o.barmanStatus === 'ready') && 
     o.status !== 'delivered' && 
     o.status !== 'cancelled' &&
-    (!waiterProfile?.assignedZone || o.tableZone === waiterProfile.assignedZone)
+    isMyZone(o.tableZone)
   );
 
   if (loading) {
@@ -403,9 +423,31 @@ export default function WaiterDashboard() {
               {t('waiter_console') as string}
             </h1>
             <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em]">
-              Palace Taha • {waiterProfile?.assignedZone ? `Zone ${waiterProfile.assignedZone} (${waiterProfile.assignedZone === 'A' ? 'Inside' : 'Outside'})` : t('active_terminal') as string}
+              Palace Taha • {waiterProfile?.assignedZone === 'Both' ? 'Inside & Outside' : waiterProfile?.assignedZone === 'A' ? 'Inside (Zone A)' : waiterProfile?.assignedZone === 'B' ? 'Outside (Zone B)' : 'Select Zone'}
             </p>
           </div>
+        </div>
+
+        {/* Zone Selector */}
+        <div className="flex bg-stone-100 p-1 rounded-2xl border border-stone-200">
+           <button 
+             onClick={() => updateAssignedZone('A')}
+             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${waiterProfile?.assignedZone === 'A' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+           >
+             Inside (A)
+           </button>
+           <button 
+             onClick={() => updateAssignedZone('B')}
+             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${waiterProfile?.assignedZone === 'B' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+           >
+             Outside (B)
+           </button>
+           <button 
+             onClick={() => updateAssignedZone('Both')}
+             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${waiterProfile?.assignedZone === 'Both' || !waiterProfile?.assignedZone ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+           >
+             Both
+           </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
@@ -459,7 +501,7 @@ export default function WaiterDashboard() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="space-y-8"
+            className="space-y-12"
           >
               {filteredOrders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
@@ -467,163 +509,46 @@ export default function WaiterDashboard() {
                   {t('no_active_orders')}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
-                  {filteredOrders.map((order) => (
-                    <motion.div
-                      layout
-                      key={order.id}
-                      className={`bg-white rounded-[3rem] p-8 shadow-xl border relative overflow-hidden ${
-                        order.status === 'ready' ? 'ring-4 ring-green-400 border-green-400' : 'border-stone-100'
-                      }`}
-                    >
-                      <div className="mb-6">
-                        <div className="flex justify-between items-start mb-1">
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer') as string}</p>
-                              {order.isModified && (
-                                <span className="bg-red-500 text-white text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter animate-pulse">
-                                  Modified
-                                </span>
-                              )}
-                            </div>
-                            <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          {order.deliveryType === 'dine-in' ? (
-                            <div className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-2xl shadow-lg border-2 border-amber-400/50">
-                              <Navigation size={14} className="text-amber-400" />
-                              <span className="text-sm font-black italic uppercase tracking-tighter">
-                                {order.fullTableLabel} ({order.tableArea})
-                              </span>
-                            </div>
-                          ) : (
-                            <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 ${
-                              order.deliveryType === 'pickup' ? 'bg-amber-100/50 text-amber-700 border-amber-200' : 'bg-stone-100 text-stone-700 border-stone-200'
-                            }`}>
-                              {order.deliveryType === 'pickup' ? t('takeaway') : order.deliveryType}
-                            </span>
-                          )}
-                          <p className="text-[10px] font-bold text-stone-400 ml-auto whitespace-nowrap">
-                            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}
-                          </p>
-                        </div>
-
-                        {order.waiterId ? (
-                          <div className={`mt-4 flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all ${
-                            order.waiterId === auth.currentUser?.uid 
-                              ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                              : 'bg-stone-50 text-stone-500 border-stone-100'
-                          }`}>
-                            <UserCheck size={14} className={order.waiterId === auth.currentUser?.uid ? 'text-amber-500' : ''} />
-                            <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-                              {order.waiterId === auth.currentUser?.uid 
-                                ? t('you_are_handling_this', 'You are handling this order')
-                                : `${t('assigned_to', 'Assigned to')}: ${order.waiterName || 'Staff'}`
-                              }
-                            </span>
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={() => acceptOrder(order)}
-                            className="mt-4 w-full py-4 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-xl shadow-amber-400/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
-                          >
-                            <Navigation size={16} className="rotate-45" />
-                            {t('take_order', 'Take Order') as string}
-                          </button>
+                <div className="space-y-12">
+                   {/* Inside Orders */}
+                   {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'A' || !waiterProfile?.assignedZone) && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 px-2 border-l-4 border-amber-400">
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-amber-400 decoration-4 underline-offset-4">Inside Tables (Zone A)</h3>
+                        <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
+                          {filteredOrders.filter(o => o.tableZone === 'A' || (o.tableArea === 'Inside' && !o.tableZone)).length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
+                        {filteredOrders.filter(o => o.tableZone === 'A' || (o.tableArea === 'Inside' && !o.tableZone)).map((order) => (
+                           <OrderCard key={order.id} order={order} t={t} auth={auth} acceptOrder={acceptOrder} completeOrder={completeOrder} />
+                        ))}
+                        {filteredOrders.filter(o => o.tableZone === 'A' || (o.tableArea === 'Inside' && !o.tableZone)).length === 0 && (
+                          <p className="text-stone-300 text-[10px] font-black uppercase italic pl-4">No active orders in this zone</p>
                         )}
                       </div>
+                    </div>
+                  )}
 
-                      <div className="bg-stone-50 rounded-[2rem] p-6 space-y-4 mb-6">
-                          {order.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-start text-sm">
-                              <div className="flex flex-col">
-                                <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
-                                {item.customization && (
-                                  <span className="text-[10px] font-black uppercase text-amber-500 italic">
-                                    {item.customization.includes('|') ? (
-                                      <>
-                                        {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim()) as string}
-                                        {' • '}
-                                        {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_')) as string}
-                                      </>
-                                    ) : (
-                                      item.customization
-                                    )}
-                                  </span>
-                                )}
-                                {(item as any).categoryName && (
-                                  <span className="text-[8px] font-black uppercase tracking-widest text-amber-600">
-                                    {t(`categories.${(item as any).categoryName}`, (item as any).categoryName) as string} {(item as any).subSection ? `• ${(item as any).subSection.replace('_', ' ')}` : ''}
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-xs font-black text-stone-400">{item.price * item.quantity} MAD</span>
-                            </div>
-                          ))}
-                          <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
-                            <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">{t('total', 'Total') as string}</span>
-                            <span className="text-lg font-black text-stone-900">{order.total} MAD</span>
-                         </div>
+                  {/* Outside Orders */}
+                  {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'B' || !waiterProfile?.assignedZone) && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 px-2 border-l-4 border-blue-400">
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-blue-400 decoration-4 underline-offset-4">Outside Tables (Zone B)</h3>
+                        <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
+                          {filteredOrders.filter(o => o.tableZone === 'B' || (o.tableArea === 'Outside' && !o.tableZone)).length}
+                        </span>
                       </div>
-
-                      {order.deliveryNotes && (
-                        <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 italic">
-                          <MessageSquare size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                          <p className="text-xs font-bold text-stone-700 leading-relaxed">
-                            {order.deliveryNotes}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="mb-6 px-2">
-                        <OrderTimer 
-                          createdAt={order.createdAt} 
-                          prepTime={order.prepTime} 
-                          status={order.status} 
-                          expectedReadyAt={order.expectedReadyAt}
-                        />
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mb-6">
-                        {order.kitchenStatus && (
-                          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
-                            order.kitchenStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
-                            order.kitchenStatus === 'ready' ? 'bg-blue-50 border-blue-100 text-blue-600' :
-                            order.kitchenStatus === 'preparing' ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                            'bg-stone-50 border-stone-100 text-stone-400'
-                          }`}>
-                            <ChefHat size={12} />
-                            <span className="text-[8px] font-black uppercase tracking-widest">K: {order.kitchenStatus}</span>
-                          </div>
-                        )}
-                        {order.barmanStatus && (
-                          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
-                            order.barmanStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
-                            order.barmanStatus === 'ready' ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                            order.barmanStatus === 'preparing' ? 'bg-orange-50 border-orange-100 text-orange-600' :
-                            'bg-stone-50 border-stone-100 text-stone-400'
-                          }`}>
-                            <Coffee size={12} />
-                            <span className="text-[8px] font-black uppercase tracking-widest">B: {order.barmanStatus}</span>
-                          </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
+                        {filteredOrders.filter(o => o.tableZone === 'B' || (o.tableArea === 'Outside' && !o.tableZone)).map((order) => (
+                           <OrderCard key={order.id} order={order} t={t} auth={auth} acceptOrder={acceptOrder} completeOrder={completeOrder} />
+                        ))}
+                        {filteredOrders.filter(o => o.tableZone === 'B' || (o.tableArea === 'Outside' && !o.tableZone)).length === 0 && (
+                          <p className="text-stone-300 text-[10px] font-black uppercase italic pl-4">No active orders in this zone</p>
                         )}
                       </div>
-
-                      <div className="mt-6 pt-6 border-t border-stone-100">
-                         <button 
-                           onClick={() => completeOrder(order)} 
-                           className="w-full flex flex-col items-center gap-2 py-5 rounded-3xl bg-stone-950 text-white hover:bg-black shadow-xl shadow-stone-900/20 active:scale-95 transition-all"
-                         >
-                           <CheckCheck size={20} className="text-amber-400" />
-                           <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('complete')}</span>
-                           <span className="text-[8px] font-bold text-stone-500 uppercase tracking-tighter">{t('mark_as_served_for_cashier', 'Mark as Served & Send to Cashier')}</span>
-                         </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                    </div>
+                  )}
                 </div>
               )}
           </motion.div>
@@ -706,7 +631,7 @@ export default function WaiterDashboard() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
+            className="space-y-12"
           >
              {filteredRequests.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 text-center text-stone-300 uppercase font-black italic">
@@ -714,53 +639,246 @@ export default function WaiterDashboard() {
                   {t('no_active_requests')}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredRequests.map((req) => (
-                   <div key={req.id} className={`bg-white rounded-[2.5rem] p-6 border-2 transition-all ${req.status === 'new' ? 'border-amber-400 shadow-xl shadow-amber-400/5' : 'border-stone-100 opacity-60'}`}>
-                     <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-4">
-                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${req.status === 'new' ? 'bg-amber-400 text-stone-900 animate-pulse' : 'bg-stone-100 text-stone-400'}`}>
-                              <Bell size={24} />
-                           </div>
-                           <div>
-                              <h4 className="text-xl font-black text-stone-900 uppercase italic tracking-tight">{req.fullTableLabel || req.clientName}</h4>
-                              <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-0.5">{t('calling_waiter', 'Calling Waiter')}</p>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div className="flex flex-col gap-3">
-                        {req.status === 'new' ? (
-                          <button 
-                            onClick={() => acceptRequest(req)}
-                            className="w-full py-4 bg-stone-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg"
-                          >
-                            {t('accept_call', 'Accept Call')}
-                          </button>
-                        ) : (
-                          <div className="space-y-3">
-                             <div className="flex items-center gap-2 px-4 py-2 bg-stone-50 border border-stone-100 rounded-xl">
-                                <UserCheck size={14} className="text-green-500" />
-                                <span className="text-[9px] font-black uppercase text-stone-500">{t('handled_by', 'Handled by')}: {req.waiterName}</span>
-                             </div>
-                             {req.waiterId === auth.currentUser?.uid && (
-                               <button 
-                                 onClick={() => completeRequest(req)}
-                                 className="w-full py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-green-700 transition-all shadow-lg"
-                               >
-                                 {t('mark_resolved', 'Mark Resolved')}
-                               </button>
-                             )}
-                          </div>
+                <div className="space-y-12">
+                  {/* Inside Requests */}
+                  {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'A' || !waiterProfile?.assignedZone) && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 px-2 border-l-4 border-amber-400">
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-amber-400 decoration-4 underline-offset-4">Inside Requests (Zone A)</h3>
+                        <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
+                          {filteredRequests.filter(r => r.tableZone === 'A').length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredRequests.filter(r => r.tableZone === 'A').map((req) => (
+                           <RequestCard key={req.id} req={req} t={t} auth={auth} acceptRequest={acceptRequest} completeRequest={completeRequest} />
+                        ))}
+                        {filteredRequests.filter(r => r.tableZone === 'A').length === 0 && (
+                          <p className="text-stone-300 text-[10px] font-black uppercase italic pl-4">No active requests in this zone</p>
                         )}
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Outside Requests */}
+                  {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'B' || !waiterProfile?.assignedZone) && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 px-2 border-l-4 border-blue-400">
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-blue-400 decoration-4 underline-offset-4">Outside Requests (Zone B)</h3>
+                        <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
+                          {filteredRequests.filter(r => r.tableZone === 'B').length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredRequests.filter(r => r.tableZone === 'B').map((req) => (
+                           <RequestCard key={req.id} req={req} t={t} auth={auth} acceptRequest={acceptRequest} completeRequest={completeRequest} />
+                        ))}
+                        {filteredRequests.filter(r => r.tableZone === 'B').length === 0 && (
+                          <p className="text-stone-300 text-[10px] font-black uppercase italic pl-4">No active requests in this zone</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
+  return (
+    <motion.div
+      layout
+      className={`bg-white rounded-[3rem] p-8 shadow-xl border relative overflow-hidden h-full flex flex-col ${
+        order.status === 'ready' ? 'ring-4 ring-green-400 border-green-400' : 'border-stone-100'
+      }`}
+    >
+      <div className="mb-6">
+        <div className="flex justify-between items-start mb-1">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{t('client_name', 'Customer') as string}</p>
+              {order.isModified && (
+                <span className="bg-red-500 text-white text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter animate-pulse">
+                  Modified
+                </span>
+              )}
+            </div>
+            <h3 className="text-2xl font-black text-stone-900 uppercase italic">{order.customerName}</h3>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {order.deliveryType === 'dine-in' ? (
+            <div className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-2xl shadow-lg border-2 border-amber-400/50">
+              <Navigation size={14} className="text-amber-400" />
+              <span className="text-sm font-black italic uppercase tracking-tighter">
+                {order.fullTableLabel} ({order.tableArea})
+              </span>
+            </div>
+          ) : (
+            <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 ${
+              order.deliveryType === 'pickup' ? 'bg-amber-100/50 text-amber-700 border-amber-200' : 'bg-stone-100 text-stone-700 border-stone-200'
+            }`}>
+              {order.deliveryType === 'pickup' ? t('takeaway') : order.deliveryType}
+            </span>
+          )}
+          <p className="text-[10px] font-bold text-stone-400 ml-auto whitespace-nowrap">
+            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}
+          </p>
+        </div>
+
+        {order.waiterId ? (
+          <div className={`mt-4 flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all ${
+            order.waiterId === auth.currentUser?.uid 
+              ? 'bg-amber-50 text-amber-700 border-amber-200' 
+              : 'bg-stone-50 text-stone-500 border-stone-100'
+          }`}>
+            <UserCheck size={14} className={order.waiterId === auth.currentUser?.uid ? 'text-amber-500' : ''} />
+            <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+              {order.waiterId === auth.currentUser?.uid 
+                ? t('you_are_handling_this', 'You are handling this order')
+                : `${t('assigned_to', 'Assigned to')}: ${order.waiterName || 'Staff'}`
+              }
+            </span>
+          </div>
+        ) : (
+          <button 
+            onClick={() => acceptOrder(order)}
+            className="mt-4 w-full py-4 bg-amber-400 text-stone-900 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-xl shadow-amber-400/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+          >
+            <Navigation size={16} className="rotate-45" />
+            {t('take_order', 'Take Order') as string}
+          </button>
+        )}
+      </div>
+
+      <div className="bg-stone-50 rounded-[2rem] p-6 space-y-4 mb-6 flex-1 overflow-y-auto max-h-[200px] custom-scrollbar-hide">
+          {order.items.map((item, idx) => (
+            <div key={idx} className="flex justify-between items-start text-sm">
+              <div className="flex flex-col">
+                <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
+                {item.customization && (
+                  <span className="text-[10px] font-black uppercase text-amber-500 italic">
+                    {item.customization}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-black text-stone-400">{item.price * item.quantity} MAD</span>
+            </div>
+          ))}
+          <div className="pt-3 border-t border-stone-200 flex justify-between items-center sticky bottom-0 bg-stone-50">
+            <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest">{t('total', 'Total') as string}</span>
+            <span className="text-lg font-black text-stone-900">{order.total} MAD</span>
+         </div>
+      </div>
+
+      {order.deliveryNotes && (
+        <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 italic">
+          <MessageSquare size={16} className="text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-xs font-bold text-stone-700 leading-relaxed text-[10px] uppercase tracking-tight">
+            {order.deliveryNotes}
+          </p>
+        </div>
+      )}
+
+      <div className="mb-6 px-2">
+        <OrderTimer 
+          createdAt={order.createdAt} 
+          prepTime={order.prepTime} 
+          status={order.status} 
+          expectedReadyAt={order.expectedReadyAt}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        {order.kitchenStatus && (
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
+            order.kitchenStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
+            order.kitchenStatus === 'ready' ? 'bg-blue-50 border-blue-100 text-blue-600' :
+            order.kitchenStatus === 'preparing' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+            'bg-stone-50 border-stone-100 text-stone-400'
+          }`}>
+            <ChefHat size={12} />
+            <span className="text-[8px] font-black uppercase tracking-widest">K: {order.kitchenStatus}</span>
+          </div>
+        )}
+        {order.barmanStatus && (
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
+            order.barmanStatus === 'completed' ? 'bg-green-50 border-green-100 text-green-600' :
+            order.barmanStatus === 'ready' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+            order.barmanStatus === 'preparing' ? 'bg-orange-50 border-orange-100 text-orange-600' :
+            'bg-stone-50 border-stone-100 text-stone-400'
+          }`}>
+            <Coffee size={12} />
+            <span className="text-[8px] font-black uppercase tracking-widest">B: {order.barmanStatus}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-auto pt-6 border-t border-stone-100">
+         <button 
+           onClick={() => completeOrder(order)} 
+           className="w-full flex flex-col items-center gap-1 py-4 rounded-3xl bg-stone-950 text-white hover:bg-black shadow-xl shadow-stone-900/20 active:scale-95 transition-all text-center"
+         >
+           <CheckCheck size={18} className="text-amber-400" />
+           <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('complete')}</span>
+           <span className="text-[7px] font-bold text-stone-500 uppercase tracking-tighter">{t('mark_as_served_for_cashier', 'Mark as Served & Send to Cashier')}</span>
+         </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function RequestCard({ req, t, auth, acceptRequest, completeRequest }: any) {
+  return (
+    <div className={`bg-white rounded-[2.5rem] p-6 border-2 transition-all h-full flex flex-col ${req.status === 'new' ? 'border-amber-400 shadow-xl shadow-amber-400/5' : 'border-stone-100 opacity-60'}`}>
+      <div className="flex justify-between items-start mb-6">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${req.status === 'new' ? 'bg-amber-400 text-stone-900 animate-pulse' : 'bg-stone-100 text-stone-400'}`}>
+                <Bell size={24} />
+            </div>
+            <div>
+                <h4 className="text-xl font-black text-stone-900 uppercase italic tracking-tight">{req.fullTableLabel || req.clientName}</h4>
+                <div className="flex items-center gap-2 mt-0.5">
+                   <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{t('calling_waiter', 'Calling Waiter')}</p>
+                   <span className="text-[8px] font-bold text-stone-300 whitespace-nowrap">
+                     {req.timestamp?.toDate ? req.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
+                   </span>
+                </div>
+                {req.orderId && <p className="text-[8px] font-black text-amber-600 uppercase tracking-tighter mt-1">Order: #{req.orderId.slice(-6)}</p>}
+            </div>
+          </div>
+      </div>
+
+      <div className="flex flex-col gap-3 mt-auto">
+          {req.status === 'new' ? (
+            <button 
+              onClick={() => acceptRequest(req)}
+              className="w-full py-4 bg-stone-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg"
+            >
+              {t('accept_call', 'Accept Call')}
+            </button>
+          ) : (
+            <div className="space-y-3">
+                <div className="flex items-center gap-2 px-4 py-2 bg-stone-50 border border-stone-100 rounded-xl">
+                  <UserCheck size={14} className="text-green-500" />
+                  <span className="text-[9px] font-black uppercase text-stone-500">{t('handled_by', 'Handled by')}: {req.waiterName}</span>
+                </div>
+                {req.waiterId === auth.currentUser?.uid && (
+                  <button 
+                    onClick={() => completeRequest(req)}
+                    className="w-full py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-green-700 transition-all shadow-lg"
+                  >
+                    {t('mark_resolved', 'Mark Resolved')}
+                  </button>
+                )}
+            </div>
+          )}
+      </div>
     </div>
   );
 }

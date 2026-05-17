@@ -91,6 +91,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
           <div className="fixed inset-0 z-0 h-screen w-screen">
             <OptimizedImage 
               priority
+              size="hero"
               src={brand.profileBgUrl} 
               containerClassName="w-full h-full"
               className="w-full h-full object-cover" 
@@ -141,6 +142,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
         <div className="fixed inset-0 z-0 h-screen w-screen">
           <OptimizedImage 
             priority
+            size="hero"
             src={brand.profileBgUrl} 
             containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
@@ -382,6 +384,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                         <div className={`w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 ring-4 ${isGoldState ? 'ring-stone-900/10' : 'ring-bento-card-border'} shadow-2xl`}>
                           <OptimizedImage 
                             src={product.image} 
+                            size="thumbnail"
                             alt="" 
                             containerClassName="w-full h-full"
                             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 

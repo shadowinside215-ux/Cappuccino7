@@ -242,6 +242,7 @@ export default function Orders() {
           <div className="fixed inset-0 z-0 h-screen w-screen">
             <OptimizedImage 
               priority
+              size="hero"
               src={brand.ordersBgUrl} 
               containerClassName="w-full h-full"
               className="w-full h-full object-cover" 
@@ -277,6 +278,7 @@ export default function Orders() {
         <div className="fixed inset-0 z-0 h-screen w-screen">
           <OptimizedImage 
             priority
+            size="hero"
             src={brand.ordersBgUrl} 
             containerClassName="w-full h-full"
             className="w-full h-full object-cover" 
