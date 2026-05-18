@@ -9,21 +9,23 @@ import { format, startOfWeek, startOfMonth } from 'date-fns';
  * Tracks daily, weekly, and monthly stats.
  */
 
-export const addOrderToStats = async (orderId: string, orderTotal: number) => {
+export const addOrderToStats = async (orderId: string, orderTotal: number, options: { skipCheck?: boolean } = {}) => {
   try {
     const orderRef = doc(db, 'orders', orderId);
-    const orderSnap = await getDoc(orderRef);
+    
+    if (!options.skipCheck) {
+      const orderSnap = await getDoc(orderRef);
+      if (!orderSnap.exists()) {
+        throw new Error('Order not found');
+      }
 
-    if (!orderSnap.exists()) {
-      throw new Error('Order not found');
-    }
+      const orderData = orderSnap.data() as Order;
 
-    const orderData = orderSnap.data() as Order;
-
-    // 1. Prevent double counting
-    if (orderData.isPaid) {
-      console.warn('Order already counted in stats');
-      return;
+      // 1. Prevent double counting
+      if (orderData.isPaid) {
+        console.warn('Order already counted in stats');
+        return;
+      }
     }
 
     const batch = writeBatch(db);

@@ -314,9 +314,9 @@ export default function CashierDashboard() {
         deliveryType: deliveryType,
         paymentMethod,
         isPOS: true,
-        isPaid: false, // Will be marked paid below
+        isPaid: false, // addOrderToStats will set this to true
         createdAt: serverTimestamp(),
-        localCreatedAt: new Date().toISOString(), // Preserve original intent timestamp
+        localCreatedAt: new Date().toISOString(), 
         pointsEarned: Math.floor(totalPrice / 10),
         prepTime: hasKitchenItems ? 30 : 10
       };
@@ -324,15 +324,12 @@ export default function CashierDashboard() {
       const docRef = await addDoc(collection(db, 'orders'), orderData);
       
       // Update Stats rigorously
-      // We don't await this if offline to keep POS fast
       const { addOrderToStats } = await import('../../lib/stats');
-      const statsPromise = addOrderToStats(docRef.id, totalPrice);
+      // For new POS, we know it hasn't been paid/counted yet
+      const statsPromise = addOrderToStats(docRef.id, totalPrice, { skipCheck: true });
       
       if (isOnline) {
         await statsPromise;
-      } else {
-        // If offline, persistence handles the update later
-        console.log('Order queued for stats sync');
       }
 
       const receipt = generateThermalReceipt({
@@ -380,10 +377,10 @@ export default function CashierDashboard() {
       setIsSyncing(true);
       const { addOrderToStats } = await import('../../lib/stats');
       
-      // Update order with payment method and set isPaid to true
+      // Update order with payment method
+      // We don't set isPaid: true here because addOrderToStats will handle it in a batch
       const updatePromise = updateDoc(doc(db, 'orders', order.id), {
         paymentMethod: method,
-        isPaid: true,
         updatedAt: serverTimestamp(),
         paidAtLocal: new Date().toISOString()
       });
@@ -391,9 +388,6 @@ export default function CashierDashboard() {
       if (isOnline) {
         await updatePromise;
         await addOrderToStats(order.id, order.total);
-      } else {
-        // If offline, don't await the network check but finish locally
-        console.log('Payment queued for sync');
       }
       
       toast.success(t('pos_payment_confirmed'));

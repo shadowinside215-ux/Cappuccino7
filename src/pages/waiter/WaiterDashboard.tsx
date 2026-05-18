@@ -148,14 +148,36 @@ export default function WaiterDashboard() {
               // Kitchen/Bar Notification: Order Ready
               const kitchenJustReady = newData.kitchenStatus === 'ready' && oldOrder.kitchenStatus !== 'ready';
               const barmanJustReady = newData.barmanStatus === 'ready' && oldOrder.barmanStatus !== 'ready';
+              const orderJustFullyReady = newData.status === 'ready' && oldOrder.status !== 'ready';
 
-              if (kitchenJustReady || barmanJustReady) {
+              if (orderJustFullyReady) {
+                toast.success(`${t('order_fully_ready', 'FULL ORDER READY!')} - ${newData.fullTableLabel || newData.customerName}`, {
+                  icon: '🔥',
+                  duration: 12000,
+                  position: 'top-center',
+                  style: { 
+                    background: '#059669', 
+                    color: '#fff', 
+                    fontWeight: '900',
+                    fontSize: '18px',
+                    padding: '20px',
+                    borderRadius: '24px',
+                    border: '4px solid #34d399'
+                  }
+                });
+                const audio = new Audio(NOTIFICATION_SOUND);
+                audio.play().catch(() => {});
+              } else if (kitchenJustReady || barmanJustReady) {
                 const targetSystem = kitchenJustReady ? (t('kitchen') as string) : (t('barman') as string);
-                toast.success(`${targetSystem} ${t('is_ready_alert', 'is Ready!') as string} - ${newData.fullTableLabel || newData.customerName}`, {
+                toast.success(`${targetSystem} ${t('is_ready_alert', 'is Ready!')} - ${newData.fullTableLabel || newData.customerName}`, {
                   icon: '✨',
                   duration: 8000,
-                  position: 'top-right',
-                  style: { background: '#10b981', color: '#fff', fontWeight: 'bold' }
+                  position: 'top-center',
+                  style: { 
+                    background: kitchenJustReady ? '#2563eb' : '#d97706', 
+                    color: '#fff', 
+                    fontWeight: 'bold' 
+                  }
                 });
                 const audio = new Audio(NOTIFICATION_SOUND);
                 audio.play().catch(() => {});
