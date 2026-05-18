@@ -372,7 +372,7 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
              >
                <QRCodeSVG 
                   value={order.verificationToken 
-                    ? `${PUBLIC_APP_URL}/verify-ticket?token=${order.verificationToken}`
+                    ? `${PUBLIC_APP_URL}/verify-ticket?token=${order.verificationToken}&id=${order.id}`
                     : `${PUBLIC_APP_URL}/track/${order.id}`
                   }
                   size={100}

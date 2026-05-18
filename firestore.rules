@@ -151,17 +151,20 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      // Allow public get for ticket verification via direct URL (+ id param)
+      allow get: if true;
+      
+      // Allow list for ticket verification queries or logged in users
+      allow list: if isSignedIn() || (request.query.limit <= 5);
       
       allow create: if isSignedIn();
       
       allow update: if (isOwner(existing().userId) && existing().status == 'pending' && 
         (!('createdAt' in existing()) || existing().createdAt == null || (request.time.toMillis() - existing().createdAt.toMillis() < 300000)) &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'items', 'total', 'isModified', 'kitchenStatus', 'barmanStatus', 'deliveryType', 'tableZone', 'tableArea', 'tableNumber', 'fullTableLabel', 'prepTime', 'expectedReadyAt', 'address', 'deliveryNotes', 'customerName', 'customerPhone'])) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'items', 'total', 'isModified', 'kitchenStatus', 'barmanStatus', 'deliveryType', 'tableZone', 'tableArea', 'tableNumber', 'fullTableLabel', 'prepTime', 'expectedReadyAt', 'address', 'deliveryNotes', 'customerName', 'customerPhone', 'verificationToken'])) ||
         (isStaff() && (
           // Action: Staff self-assignment (Take Order) - Relaxed hasAny for flexibility
-          (existing().get('waiterId', null) == null && incoming().diff(existing()).affectedKeys().hasAny(['waiterId', 'waiterName', 'waiterStatus', 'status', 'updatedAt'])) ||
+          (existing().get('waiterId', null) == null && incoming().diff(existing()).affectedKeys().hasAny(['waiterId', 'waiterName', 'waiterStatus', 'status', 'updatedAt', 'verificationToken'])) ||
           
           // Action: Assigned staff updating status and timing metrics
           (existing().get('waiterId', null) == request.auth.uid && incoming().diff(existing()).affectedKeys().hasAny(['status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'updatedAt', 'waiterStatus', 'deliveredAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt'])) ||
