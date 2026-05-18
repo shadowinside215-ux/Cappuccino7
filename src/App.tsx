@@ -35,6 +35,7 @@ import BrandSettings from './pages/admin/BrandSettings';
 import StaffManagement from './pages/admin/StaffManagement';
 import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
+import VerifyTicket from './pages/VerifyTicket';
 import Settings from './pages/Settings';
 import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
@@ -575,6 +576,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
                   <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
                   <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
+                  <Route path="/verify-ticket" element={<VerifyTicket userProfile={userProfile} />} />
                   <Route path="/track/:id" element={<OrderConfirmation />} />
                   <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} userProfile={userProfile} />} />
                   

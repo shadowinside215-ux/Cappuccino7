@@ -106,6 +106,7 @@ export interface Order {
     lng: number;
   };
   pointsEarned: number;
+  verificationToken?: string;
   isModified?: boolean;
   createdAt: any; // Firestore Timestamp
 }

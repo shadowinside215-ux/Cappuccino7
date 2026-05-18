@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Order } from '../types';
 import DigitalTicket from '../components/DigitalTicket';
@@ -25,7 +25,25 @@ export default function OrderConfirmation() {
       try {
         const docSnap = await getDoc(doc(db, 'orders', id));
         if (docSnap.exists()) {
-          setOrder({ id: docSnap.id, ...docSnap.data() } as Order);
+          const data = docSnap.data();
+          const orderData = { id: docSnap.id, ...data } as Order;
+          
+          setOrder(orderData);
+
+          // Fallback: If verification token is missing for some reason, generate it now
+          if (!orderData.verificationToken) {
+            console.log('Generating missing verification token for order:', id);
+            const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            try {
+              await updateDoc(doc(db, 'orders', id), {
+                verificationToken: newToken,
+                updatedAt: serverTimestamp()
+              });
+              setOrder({ ...orderData, verificationToken: newToken });
+            } catch (err) {
+              console.error('Failed to update missing token:', err);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching order:', error);

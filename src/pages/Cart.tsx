@@ -154,16 +154,15 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
 
       const tableZone = tableArea === 'Inside' ? 'A' : 'B';
       const fullTableLabel = `${tableZone}${tableNumber}`;
-      
-      const pointsEarned = totalItems;
+      const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
       const isGuest = auth.currentUser.isAnonymous;
 
-      // Category detection
+      // Category detection keywords
       const foodKeywords = ['food', 'dishes', 'breakfast', 'pizza', 'burger', 'sandwich', 'salad', 'crepe', 'waffle', 'pancake', 'pasta', 'meal', 'petit déjeuner', 'omelette', 'omlette', 'tacos', 'panini', 'oeuf', 'egg', 'dish', 'viande', 'plat', 'steak', 'chicken', 'poulet', 'fish', 'poisson', 'rice', 'riz', 'soup', 'soupe', 'taco', 'burrito', 'noodle', 'wrap', 'bento', 'box'];
       const drinkKeywords = ['drink', 'juice', 'coffee', 'smoothie', 'mojito', 'milkshake', 'ice tea', 'frappuccino', 'jus', 'café', 'boisson', 'thé', 'iced', 'frappé', 'espresso', 'latte', 'cappuccino', 'soda', 'coke', 'fanta', 'sprite', 'water', 'eau', 'shake', 'tea', 'lemonade', 'limonade', 'beverage', 'cocktail', 'mocktail', 'fizz', 'brew'];
 
-      const itemsWithMetadata = [];
-      for (const item of items) {
+      // Fetch metadata for all items in parallel to speed up
+      const itemsWithMetadata = await Promise.all(items.map(async (item) => {
         try {
           const productDoc = await getDoc(doc(db, 'products', item.productId));
           if (productDoc.exists()) {
@@ -186,24 +185,27 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               itemPrepTime = 10;
             }
 
-            itemsWithMetadata.push({
+            return {
               ...item,
               categoryName,
               subSection: productData.subSection || '',
               system,
               prepTime: itemPrepTime
-            });
-          } else {
-            itemsWithMetadata.push({ ...item, categoryName: 'Menu', system: 'barman', prepTime: 10 });
+            };
           }
+          return { ...item, categoryName: 'Menu', system: 'barman', prepTime: 10 };
         } catch (e) {
-          itemsWithMetadata.push({ ...item, categoryName: 'Menu', system: 'barman', prepTime: 10 });
+          console.warn('Error fetching item metadata:', e);
+          return { ...item, categoryName: 'Menu', system: 'barman', prepTime: 10 };
         }
-      }
+      }));
 
       const hasKitchenItems = itemsWithMetadata.some(item => item.system === 'kitchen');
       const prepTimeMinutes = hasKitchenItems ? 30 : 10;
       const expectedReadyAt = new Date(Date.now() + prepTimeMinutes * 60000);
+
+      // Generate a unique verification token
+      const verificationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
       const orderData: any = {
         userId: auth.currentUser.uid,
@@ -220,23 +222,27 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         fullTableLabel: deliveryType === 'dine-in' ? fullTableLabel : null,
         prepTime: prepTimeMinutes,
         expectedReadyAt: expectedReadyAt,
-        pointsEarned: pointsEarned,
+        pointsEarned: totalItemsCount,
         address: address || (deliveryType === 'dine-in' ? `Table ${fullTableLabel}` : (deliveryType === 'pickup' ? 'Store Pickup' : '')),
         deliveryNotes,
+        verificationToken: verificationToken,
         updatedAt: serverTimestamp()
       };
 
+      let finalOrderId = editingOrderId;
+
       if (editingOrderId) {
         orderData.isModified = true;
-        // Check if items actually changed
         const originalItemsStr = localStorage.getItem('editingOrderOriginalItems');
         const currentItemsStr = JSON.stringify(items);
-        if (originalItemsStr === currentItemsStr) {
-          toast.success(t('no_changes_detected', 'No changes detected. Order remains the same.'));
-        } else {
+        
+        if (originalItemsStr !== currentItemsStr) {
           await updateDoc(doc(db, 'orders', editingOrderId), orderData);
           toast.success(t('order_updated', 'Order updated successfully! Waiter notified.'));
+        } else {
+          toast.success(t('no_changes_detected', 'No changes detected. Order remains the same.'));
         }
+        
         localStorage.removeItem('editingOrderId');
         localStorage.removeItem('editingOrderOriginalItems');
       } else {
@@ -244,25 +250,28 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         orderData.createdAt = serverTimestamp();
         orderData.isPaid = false;
         orderData.waiterStatus = deliveryType === 'dine-in' ? 'New' : undefined;
+        
         const docRef = await addDoc(collection(db, 'orders'), orderData);
+        finalOrderId = docRef.id;
+        
         toast.success(isGuest ? 'Order placed! Create an account to save your points ☕' : 'Order placed successfully!');
-        
-        localStorage.removeItem('cart');
-        window.dispatchEvent(new Event('cartUpdated'));
-        setItems([]);
-        
-        setTimeout(() => navigate(`/order-confirmation/${docRef.id}`), 500);
-        return;
       }
-      
+
+      // Cleanup cart state
       localStorage.removeItem('cart');
       window.dispatchEvent(new Event('cartUpdated'));
       setItems([]);
       
-      setTimeout(() => navigate(editingOrderId ? `/order-confirmation/${editingOrderId}` : '/orders'), 500);
+      // Navigate to confirmation
+      if (finalOrderId) {
+        setTimeout(() => navigate(`/order-confirmation/${finalOrderId}`), 300);
+      } else {
+        navigate('/orders');
+      }
+
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to process order');
+      console.error('Checkout error:', error);
+      toast.error('An error occurred while confirming your order. Please try again.');
     } finally {
       setLoading(false);
     }

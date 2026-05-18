@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,6 +22,7 @@ import {
 import { Order } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useBrandSettings } from '../lib/brand';
+import { PUBLIC_APP_URL } from '../config';
 import toast from 'react-hot-toast';
 
 // Custom Pancake Icon
@@ -156,14 +158,14 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
   };
 
   const shareTicket = async () => {
-    const text = `Check out my order at Cappuccino7! Total: ${order.total} DH. View my digital ticket here: ${window.location.host}/order-confirmation/${order.id}`;
+    const text = `Check out my order at Cappuccino7! Total: ${order.total} DH. View my digital ticket here: ${PUBLIC_APP_URL}/order-confirmation/${order.id}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Cappuccino7 Order #${order.id.slice(-6).toUpperCase()}`,
           text: text,
-          url: `https://${window.location.host}/order-confirmation/${order.id}`
+          url: `${PUBLIC_APP_URL}/order-confirmation/${order.id}`
         });
       } catch (error: any) {
         if (error.name !== 'AbortError') {
@@ -361,7 +363,37 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
               </p>
             </div>
           </div>
-
+          
+          {/* QR Code Section */}
+          <div className="flex flex-col items-center mb-8 relative z-10 animate-in fade-in zoom-in duration-700">
+             <div 
+               style={{ boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)' }}
+               className="bg-white p-4 rounded-3xl border border-[rgba(44,24,16,0.05)] mb-3"
+             >
+               <QRCodeSVG 
+                  value={order.verificationToken 
+                    ? `${PUBLIC_APP_URL}/verify-ticket?token=${order.verificationToken}`
+                    : `${PUBLIC_APP_URL}/track/${order.id}`
+                  }
+                  size={100}
+                  bgColor="#ffffff"
+                  fgColor="#2c1810"
+                  level="H"
+                  includeMargin={false}
+               />
+             </div>
+             <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40 text-center">
+               {order.verificationToken ? 'Scan to verify order owner' : 'Scan to track order'}
+             </p>
+             <div className="mt-2 flex items-center gap-1.5 opacity-20">
+               <div className="w-1 h-1 bg-[#2c1810] rounded-full" />
+               <p className="text-[7px] font-bold uppercase tracking-widest">
+                 {order.verificationToken ? 'Encrypted Auth Token' : 'Order Tracking Link'}
+               </p>
+               <div className="w-1 h-1 bg-[#2c1810] rounded-full" />
+             </div>
+          </div>
+          
           {/* Decorative Bottom */}
           <div className="flex flex-col items-center gap-4 relative z-10 mt-4 border-t pt-6" style={{ borderColor: 'rgba(44,24,16,0.05)' }}>
             <div className="flex gap-4">
