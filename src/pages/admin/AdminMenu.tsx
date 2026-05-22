@@ -2,11 +2,12 @@ import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { Product, Category } from '../../types';
-import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import OptimizedImage from '../../components/ui/OptimizedImage';
+import { validateMenu, MenuValidationError } from '../../data/menuData';
 
 enum OperationType {
   CREATE = 'create',
@@ -59,6 +60,7 @@ export default function AdminMenu() {
   const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -84,6 +86,8 @@ export default function AdminMenu() {
   const [editItem, setEditItem] = useState<Partial<Product>>({});
   const [editCategory, setEditCategory] = useState<Partial<Category>>({});
   const navigate = useNavigate();
+
+  const validationErrors = validateMenu(products, categories);
 
   useEffect(() => {
     // Check if user is authenticated in Firebase
@@ -333,7 +337,21 @@ export default function AdminMenu() {
             <h1 className="text-4xl font-bold text-bento-primary tracking-tight">Designer</h1>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => setIsVerifying(!isVerifying)}
+            className={`p-4 rounded-2xl flex items-center gap-2 transition-all border shadow-sm active:scale-95 ${
+              isVerifying 
+                ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600' 
+                : 'bg-stone-50 dark:bg-stone-900 text-stone-500 hover:text-amber-500 border-stone-100 dark:border-white/5'
+            }`}
+            title="Toggle Menu Verification Mode"
+          >
+            <ShieldCheck size={20} /> 
+            <span className="font-bold uppercase tracking-widest text-[10px]">
+              {isVerifying ? 'Verifying...' : 'Verify Menu'}
+            </span>
+          </button>
           <button 
             onClick={() => {
               sessionStorage.removeItem('admin_mode');
@@ -370,6 +388,53 @@ export default function AdminMenu() {
           </button>
         </div>
       </div>
+
+      {isVerifying && (
+        <div className="bg-amber-50/70 dark:bg-amber-900/15 border-2 border-amber-200 dark:border-amber-900/40 rounded-3xl p-6 text-left space-y-4 animate-in fade-in slide-in-from-top-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-100 dark:bg-amber-900/50 rounded-xl text-amber-700 dark:text-amber-300">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-stone-900 dark:text-amber-100">Menu Integrity Auditor</h3>
+                <p className="text-xs text-stone-500 dark:text-amber-200/60">Comparing active Firestore database with official menu screenshots (Single Source of Truth).</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                {validationErrors.filter(e => e.severity === 'error').length} Errors
+              </span>
+              <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                {validationErrors.filter(e => e.severity === 'warning').length} Warnings
+              </span>
+            </div>
+          </div>
+
+          {validationErrors.length === 0 ? (
+            <div className="p-4 bg-green-500/10 text-green-700 dark:text-green-300 border border-green-500/20 rounded-2xl flex items-center gap-2">
+              <Check size={18} className="text-green-600 dark:text-green-400 animate-pulse" />
+              <span className="text-xs font-bold">Excellent! All menu items, prices, names, and descriptions are 100% correct and matching!</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
+              {validationErrors.map((err, i) => (
+                <div key={i} className={`p-3 rounded-2xl border text-xs flex gap-2.5 items-start ${
+                  err.severity === 'error' 
+                    ? 'bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900/30 text-red-800 dark:text-red-300' 
+                    : 'bg-amber-50/30 dark:bg-amber-950/10 border-amber-100 dark:border-amber-900/20 text-amber-800 dark:text-amber-300'
+                }`}>
+                  <AlertTriangle className="flex-shrink-0 mt-0.5" size={14} />
+                  <div>
+                    <p className="font-black capitalize">{err.type.replace('_', ' ')}</p>
+                    <p className="mt-0.5 opacity-90">{err.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {isAddingCategory && (
         <form onSubmit={handleAddCategory} className="card !p-8 animate-in fade-in slide-in-from-top-4 space-y-6 !bg-white border-2 border-bento-primary/10 shadow-2xl">
@@ -616,36 +681,57 @@ export default function AdminMenu() {
                         </div>
                       </div>
                     )}
-                    {subProducts.map((product: Product) => (
-                      <div key={product.id} className="flex flex-col gap-4">
-                        <div className="card group !p-4 flex items-center gap-5 hover:border-bento-accent/20 !bg-[#FDF8F3]">
-                          <div className="relative w-20 h-20 flex-shrink-0">
-                            <OptimizedImage 
-                              src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
-                              className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
-                              referrerPolicy="no-referrer"
-                              alt={product.name}
-                              showOverlay={false}
-                              containerClassName="w-full h-full"
-                            />
-                            {!product.isAvailable && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="bg-stone-800 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Hidden</div>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0 text-left">
-                            <div className="flex items-center gap-2 mb-1">
-                              {product.subSection && (
-                                <span className="text-[8px] font-black text-bento-accent bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-tighter">
-                                  {product.subSection.replace('crepes_', '')}
-                                </span>
+                    {subProducts.map((product: Product) => {
+                      const itemErrors = isVerifying 
+                        ? validationErrors.filter(e => e.item?.id === product.id || (e.item?.name?.toLowerCase() === product.name?.toLowerCase() && e.item?.categoryId === product.categoryId))
+                        : [];
+                      const hasErrors = itemErrors.length > 0;
+
+                      return (
+                        <div key={product.id} className="flex flex-col gap-4 animate-in fade-in transition-all">
+                          <div className={`card group !p-4 flex items-center gap-5 hover:border-bento-accent/20 ${
+                            isVerifying && hasErrors 
+                              ? 'border-2 border-amber-400 bg-amber-[50px]/15 shadow-amber-100 dark:shadow-none shadow-md' 
+                              : '!bg-[#FDF8F3]'
+                          }`}>
+                            <div className="relative w-20 h-20 flex-shrink-0">
+                              <OptimizedImage 
+                                src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
+                                className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
+                                referrerPolicy="no-referrer"
+                                alt={product.name}
+                                showOverlay={false}
+                                containerClassName="w-full h-full"
+                              />
+                              {!product.isAvailable && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="bg-stone-800 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Hidden</div>
+                                </div>
                               )}
-                              <h3 className="font-bold text-bento-ink truncate leading-tight">{t(`products.${product.name}`, product.name)}</h3>
                             </div>
-                            <p className="text-xs font-black text-bento-accent mt-1">{product.price} DH</p>
-                            <p className="text-[10px] text-stone-400 truncate mt-1">{t(`descriptions.${product.name}`, product.description || 'No description provided')}</p>
-                          </div>
+                            <div className="flex-1 min-w-0 text-left">
+                              <div className="flex items-center gap-2 mb-1">
+                                {product.subSection && (
+                                  <span className="text-[8px] font-black text-bento-accent bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                                    {product.subSection.replace('crepes_', '')}
+                                  </span>
+                                )}
+                                <h3 className="font-bold text-bento-ink truncate leading-tight">{t(`products.${product.name}`, product.name)}</h3>
+                              </div>
+                              <p className="text-xs font-black text-bento-accent mt-1">{product.price} DH</p>
+                              <p className="text-[10px] text-stone-400 truncate mt-1">{t(`descriptions.${product.name}`, product.description || 'No description provided')}</p>
+                              
+                              {isVerifying && hasErrors && (
+                                <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 space-y-1">
+                                  {itemErrors.map((err, idx) => (
+                                    <div key={idx} className="flex gap-1.5 items-start text-[9px] text-amber-800 leading-tight">
+                                      <AlertTriangle size={10} className="mt-0.5 text-amber-600 flex-shrink-0" />
+                                      <span>{err.message}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                             <div className="flex flex-col gap-2 relative">
                               <button 
                                 onClick={() => {
@@ -781,7 +867,7 @@ export default function AdminMenu() {
                           </form>
                         )}
                       </div>
-                    ))}
+                    ); })}
                   </React.Fragment>
                 ))}
               </div>
