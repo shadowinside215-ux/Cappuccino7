@@ -192,6 +192,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
 
   const getTranslatedCategory = (catName: string) => {
     const name = catName.toLowerCase();
+    if (name.includes('frappuccino')) return t('categories.frappuccino');
     if (name.includes('breakfast')) return t('categories.breakfast');
     if (name.includes('brunch')) return t('categories.brunch');
     if (name.includes('coffee')) return t('categories.coffee');
@@ -201,7 +202,6 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
     if (name.includes('hot beverages')) return t('categories.hot_beverages');
     if (name.includes('iced latte') || name.includes('iced latté')) return t('categories.iced_latte');
     if (name.includes('ice tea')) return t('categories.ice_tea');
-    if (name.includes('frappuccino')) return t('categories.frappuccino');
     if (name.includes('crepes_desserts') || name.includes('crêpes')) return t('categories.crepes_desserts');
     if (name.includes('fast food')) return t('categories.fast_food');
     if (name.includes('healthy')) return t('categories.healthy');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FormEvent, useRef } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch, setDoc } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { Product, Category } from '../../types';
 import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut, ShieldCheck, AlertTriangle } from 'lucide-react';
@@ -111,7 +111,34 @@ export default function AdminMenu() {
       console.error("Admin menu categories listener error:", error);
     });
     const unsubProd = onSnapshot(collection(db, 'products'), (snap) => {
-      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+      const activeProducts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+      setProducts(activeProducts);
+
+      // Silently back up any item images to both localStorage and Firestore backup settings document
+      const imgMap: Record<string, string> = {};
+      activeProducts.forEach(p => {
+        if (p.name && p.image) {
+          imgMap[p.name.toLowerCase().trim()] = p.image;
+        }
+      });
+
+      if (Object.keys(imgMap).length > 0) {
+        localStorage.setItem('cappuccino7_product_images_backup', JSON.stringify(imgMap));
+        const authUser = auth.currentUser;
+        if (authUser) {
+          try {
+            const backupRef = doc(db, 'settings', 'product_images_backup');
+            setDoc(backupRef, {
+              images: imgMap,
+              updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(err => {
+              console.warn("Silent failure to update firebase images backup:", err);
+            });
+          } catch (e) {
+            console.warn("Silent error backing up images to Firestore:", e);
+          }
+        }
+      }
     }, (error) => {
       console.error("Admin menu products listener error:", error);
     });

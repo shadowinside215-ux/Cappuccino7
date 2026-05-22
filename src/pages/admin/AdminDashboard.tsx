@@ -427,6 +427,44 @@ export default function AdminDashboard() {
     const toastId = toast.loading('Initializing database components...');
     
     try {
+      // Safeguard ALL uploaded/configured product images
+      const imageMap: Record<string, string> = {};
+
+      // A. Restore from localStorage backup cache
+      try {
+        const localBackup = localStorage.getItem('cappuccino7_product_images_backup');
+        if (localBackup) {
+          const parsed = JSON.parse(localBackup);
+          Object.assign(imageMap, parsed);
+        }
+      } catch (e) {
+        console.warn("Failed to parse local backup:", e);
+      }
+
+      // B. Restore from Firebase settings backup document
+      try {
+        const docSnap = await getDoc(doc(db, 'settings', 'product_images_backup'));
+        if (docSnap.exists()) {
+          const fbBackups = docSnap.data()?.images || {};
+          Object.assign(imageMap, fbBackups);
+        }
+      } catch (e) {
+        console.warn("Failed to fetch Firebase backup doc:", e);
+      }
+
+      // C. Restore from existing active products in Firestore to prevent overwrite of recently edited images
+      try {
+        const productsSnap = await getDocs(collection(db, 'products'));
+        productsSnap.forEach(docSnap => {
+          const d = docSnap.data();
+          if (d && d.name && d.image) {
+            imageMap[d.name.toLowerCase().trim()] = d.image;
+          }
+        });
+      } catch (e) {
+        console.warn("Failed to fetch existing products for image mapping:", e);
+      }
+
       // 1. Define Structure from single source of truth database
       const categories = CATEGORIES;
       const productsData = PRODUCTS_DATA as Record<string, any[]>;
@@ -443,6 +481,8 @@ export default function AdminDashboard() {
           const safeId = item.name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
           const prodRef = doc(db, 'products', `${cat.id}-${safeId}`);
           
+          const existingImage = imageMap[item.name.toLowerCase().trim()];
+          
           const prodData: any = { 
             name: item.name,
             price: Number(item.price),
@@ -453,7 +493,9 @@ export default function AdminDashboard() {
             id: prodRef.id
           };
 
-          if (item.image || item.img) {
+          if (existingImage) {
+            prodData.image = existingImage;
+          } else if (item.image || item.img) {
             prodData.image = item.image || item.img;
           }
           
