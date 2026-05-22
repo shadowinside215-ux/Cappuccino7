@@ -64,108 +64,85 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
     setExporting(true);
     const toastId = toast.loading('Generating premium PDF...');
     
-    // Create hidden export container to isolate the ticket for a clean capture
-    const exportContainer = document.createElement('div');
-    exportContainer.style.position = 'fixed';
-    exportContainer.style.left = '-9999px';
-    exportContainer.style.top = '0';
-    exportContainer.style.width = '420px';
-    exportContainer.style.zIndex = '-1';
-    document.body.appendChild(exportContainer);
-
     try {
-      // Clone the ticket element
-      const clone = ticketRef.current.cloneNode(true) as HTMLDivElement;
-      
-      // Sanitize the clone for PDF generation
-      clone.style.width = '420px';
-      clone.style.height = 'auto';
-      clone.style.margin = '0';
-      clone.style.display = 'block';
-      clone.style.visibility = 'visible';
-      clone.style.boxShadow = 'none';
-      clone.style.backgroundColor = '#fdfbf7';
-      clone.style.border = 'none';
-      clone.id = 'digital-ticket-export';
-
-      // Find and fix logo in the clone
-      const logo = clone.querySelector('img');
-      if (logo) {
-        logo.style.width = 'auto';
-        logo.style.height = '40px'; // Corresponds to h-10 for consistency
-        logo.style.maxHeight = '40px';
-        logo.style.objectFit = 'contain';
-        logo.style.display = 'block';
-        logo.style.margin = '0 auto';
+      // Find and fix logo in the live node temporarily for CORS if needed
+      const logo = ticketRef.current.querySelector('img');
+      if (logo && !logo.getAttribute('crossOrigin')) {
+        logo.setAttribute('crossOrigin', 'anonymous');
       }
 
-      // Hide all icons that might be part of parent layout but were accidentally cloned
-      // (Though cloneNode(true) only clones children, so we're good)
-
-      exportContainer.appendChild(clone);
-
-      const canvas = await html2canvas(clone, {
-        scale: 3, // High resolution for clear text
+      const canvas = await html2canvas(ticketRef.current, {
+        scale: 2, // High resolution for clear text
         backgroundColor: '#fdfbf7',
         logging: false,
         useCORS: true,
         allowTaint: true,
         onclone: (clonedDoc) => {
-          const exportEl = clonedDoc.getElementById('digital-ticket-export');
+          const exportEl = clonedDoc.getElementById('digital-ticket-card');
           if (exportEl) {
+            // Remove animations from all child nodes
+            const allNodes = exportEl.querySelectorAll('*');
+            allNodes.forEach(node => {
+              const el = node as HTMLElement;
+              el.style.animation = 'none';
+              el.style.transition = 'none';
+              el.style.transform = 'none';
+              el.style.boxShadow = 'none';
+            });
+            
+            // Fix text overlapping by removing some relative/absolute weirdness if any, 
+            // but just keeping it faithful to DOM is best.
+            
             const elements = exportEl.getElementsByTagName('*');
             for (let i = 0; i < elements.length; i++) {
               const el = elements[i] as HTMLElement;
               const style = window.getComputedStyle(el);
               
-              // Force standard hex/rgb colors to avoid oklab parser issues
-              if (style.color.includes('okl')) el.style.color = '#2c1810';
-              if (style.backgroundColor.includes('okl')) el.style.backgroundColor = 'transparent';
-              if (style.borderColor.includes('okl')) el.style.borderColor = 'rgba(44, 24, 16, 0.1)';
+              if (style.color && style.color.includes('okl')) el.style.color = '#2c1810';
+              if (style.backgroundColor && style.backgroundColor.includes('okl')) el.style.backgroundColor = 'transparent';
               
-              // Remove shadows and filters that might crash html2canvas or jsPDF
               el.style.boxShadow = 'none';
-              el.style.filter = 'none';
-              el.style.textShadow = 'none';
             }
           }
         }
       });
       
-      // Cleanup temporary container
-      document.body.removeChild(exportContainer);
-
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      
+      // Calculate aspect ratio correctly to fit standard ticket size
+      const pdfWidth = 400;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
-        format: [420, (canvas.height * 420) / canvas.width]
+        format: [pdfWidth, pdfHeight]
       });
       
-      pdf.addImage(imgData, 'JPEG', 0, 0, 420, (canvas.height * 420) / canvas.width);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Cappuccino7_Ticket_${order.id.slice(-6).toUpperCase()}.pdf`);
       toast.success('Ticket downloaded successfully!', { id: toastId });
     } catch (error) {
       console.error('PDF export failed:', error);
       toast.error('Failed to generate PDF', { id: toastId });
-      // Cleanup on error
-      if (document.body.contains(exportContainer)) {
-        document.body.removeChild(exportContainer);
-      }
     } finally {
       setExporting(false);
     }
   };
 
   const shareTicket = async () => {
-    const text = `Check out my order at Cappuccino7! Total: ${order.total} DH. View my digital ticket here: ${PUBLIC_APP_URL}/order-confirmation/${order.id}`;
+    const ticketUrl = order.verificationToken 
+      ? `${PUBLIC_APP_URL}/verify-ticket?token=${order.verificationToken}&id=${order.id}`
+      : `${PUBLIC_APP_URL}/track/${order.id}`;
+
+    const text = `Check out my order at Cappuccino7! Total: ${order.total} DH. View my digital ticket here: ${ticketUrl}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Cappuccino7 Order #${order.id.slice(-6).toUpperCase()}`,
           text: text,
-          url: `${PUBLIC_APP_URL}/order-confirmation/${order.id}`
+          url: ticketUrl
         });
       } catch (error: any) {
         if (error.name !== 'AbortError') {
@@ -365,10 +342,17 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
           </div>
           
           {/* QR Code Section */}
-          <div className="flex flex-col items-center mb-8 relative z-10 animate-in fade-in zoom-in duration-700">
+          <div className="qr-container-wrapper flex flex-col items-center mb-8 relative z-10 animate-in fade-in zoom-in duration-700">
              <div 
-               style={{ boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)' }}
-               className="bg-white p-4 rounded-3xl border border-[rgba(44,24,16,0.05)] mb-3"
+               className="qr-container"
+               style={{ 
+                 boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+                 backgroundColor: '#ffffff', // Explicit hex for html2canvas
+                 padding: '16px',
+                 borderRadius: '24px',
+                 border: '1px solid rgba(44,24,16,0.05)',
+                 marginBottom: '12px'
+               }}
              >
                <QRCodeSVG 
                   value={order.verificationToken 

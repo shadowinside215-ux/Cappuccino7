@@ -455,16 +455,16 @@ export default function AdminDashboard() {
 
       const productsData: Record<string, any[]> = {
         'breakfast': [
-          { name: 'Occidental', price: 38, d: 'Deux viennoiseries, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
-          { name: 'Amazigh', price: 45, d: 'Beghrir, Harcha, Mlaoui, Amlou, Fromage, Miel, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
-          { name: 'Gourmand', price: 48, d: 'Oeufs au plat brouillés avec fromage, panier de pain, jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
-          { name: 'Ftour Fassi', price: 45, d: 'Oeufs au khlii, Huile d’olive, olives, miel, Amlou, Fromage, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
-          { name: 'Ftour Chamali', price: 58, d: 'Beghrir, Harcha, Mlaoui, Huile d’olive, olives, miel, Amlou, Fromage, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale' },
-          { name: 'Omelette Spéciale', price: 48, d: 'Trois œufs, jambon de bœuf, fromage, champignons, poivrons rouges' },
-          { name: 'Cappuccino7 Breakfast', price: 68, d: 'Saumon fumé, œufs brouillés, avocat, fromage frais, pain de campagne, jus detox' },
-          { name: 'Healthy Breakfast', price: 60, d: 'Muesli aux fruits secs, yaourt nature, fruits de saison, miel, jus vert' },
-          { name: 'Turkie', price: 68, d: 'Sucuk (saucisson turc), olives, tomates, concombres, feta, miel, pain turc' },
-          { name: 'Anglais', price: 85, d: 'Oeufs, bacon de bœuf, saucisses, haricots blancs à la tomate, champignons, tomates grillées, toast' },
+          { name: 'Occidental', price: 38, d: 'Deux viennoiseries, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Amazigh', price: 45, d: 'Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Gourmand', price: 48, d: 'Oeufs au plat brouillés avec ou sans fromage, panier de pain, jus d’orange, Belboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Ftour Fassi', price: 45, d: 'Oeufs au khlii, Huile d’olive, Olives noires, Panier de pain, Jus d’orange, Belboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Ftour Chamali', price: 58, d: 'Oeufs brouillés avec charcuterie et fromage blanc, Panier de pain, Jus d’orange, Belboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Omelette Spéciale', price: 48, d: 'Oeufs brouillés avec tomate cerise, Oignons, Dinde fumée, panier de pain, jus d’orange, Belboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Cappuccino7 Breakfast', price: 68, d: 'Croque Monsieur, Hotdog, Fromage blanc, salade verte, tomate et maïs, Crêpes Nutella, salade fruits, jus d’orange, Belboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Healthy Breakfast', price: 60, d: 'Toast a la puree d’avocat et oeufs, Bol d’avoine à la banane, chia et fruits secs, Assortiment de fruits de saison, yaourt, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Turkie', price: 68, d: 'Oeufs au plat, Fromage Rouge, Fromage Blanc, Fromage Cheddar, Concombre, Salade Tomate, olives, huile d’olives, jambon, beurre, confiture, pain, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale.' },
+          { name: 'Anglais', price: 85, d: 'Oeufs au plat brouillés, Hash brownes, Tomate grillé, Boul des haricots, Fromage, dinde fumée, champignon sauté, pain grillé, saucice, salade fruits, salade variée, jus d’orange, yaourt, eau minérale, Boisson chaude au choix.' },
           { name: 'Brunch (1 personne)', price: 87, s: 'brunch', d: 'Omelette, jambon, fromage, pancakes, jus detox, salade de fruits' },
           { name: 'Brunch (2 personnes)', price: 150, s: 'brunch', d: 'Grand assortiment complet pour deux personnes avec boissons chaudes et froides' }
         ],
