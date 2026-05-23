@@ -3,7 +3,7 @@ import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Product } from '../types';
 import { collection, query, where, getDocs, updateDoc, doc, setDoc } from 'firebase/firestore';
-import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon, Phone, ListOrdered } from 'lucide-react';
+import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon, Phone, ListOrdered, Smartphone, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -347,6 +347,31 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                 <div className="flex items-center gap-4 bg-stone-900 text-white px-8 py-5 rounded-[1.5rem] font-black uppercase text-xs tracking-widest group-hover:px-10 transition-all">
                   {t('rate_us_now')}
                   <ChevronRight size={18} />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Install App Section (Only visible when browser is not standalone) */}
+            {!(window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true) && (
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                onClick={() => window.dispatchEvent(new CustomEvent('trigger-pwa-install'))}
+                className="lg:col-span-3 bg-stone-900/60 backdrop-blur-3xl rounded-[3rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer border border-amber-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-2xl group"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 bg-amber-500/10 text-amber-500 rounded-[2rem] flex items-center justify-center shadow-xl group-hover:rotate-6 transition-transform">
+                    <Smartphone size={36} />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-2xl font-black uppercase tracking-tight italic text-amber-400 group-hover:text-amber-300 transition-colors leading-tight">Install Cappuccino7</h3>
+                    <p className="text-stone-300 text-xs mt-1 leading-relaxed max-w-md">Add to your Home Screen for faster beverage pick-ups, instant reward tracking, and smooth offline performance.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 bg-amber-500 text-stone-900 px-8 py-5 rounded-[1.5rem] font-black uppercase text-xs tracking-widest group-hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/15 cursor-pointer">
+                  <Download size={16} strokeWidth={2.5} />
+                  Get Mobile App
                 </div>
               </motion.div>
             )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Share, X, Coffee, WifiOff, RefreshCw, Smartphone, Plus, ArrowUpRight } from 'lucide-react';
+import { Download, Share, X, Coffee, WifiOff, RefreshCw, Smartphone, Plus, ArrowUpRight, Menu as MenuIcon, HelpCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -12,8 +12,9 @@ export default function PWAInstallPrompt() {
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
-  // Custom iPhone dialog modal state
+  // Custom dialog modals
   const [showIOSModal, setShowIOSModal] = useState(false);
+  const [showAndroidFallbackModal, setShowAndroidFallbackModal] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
@@ -74,20 +75,57 @@ export default function PWAInstallPrompt() {
       setShowIOSPrompt(true);
     }
 
+    // 7. Manual trigger listeners for navigation menu & pages
+    const handleTrigger = () => {
+      const isStandaloneMode = 
+        window.matchMedia('(display-mode: standalone)').matches || 
+        (window.navigator as any).standalone === true;
+      
+      if (isStandaloneMode) {
+        return; // Already installed, do nothing
+      }
+
+      const currentUA = window.navigator.userAgent;
+      const currentIOS = /iPad|iPhone|iPod/.test(currentUA) && !(window as any).MSStream;
+
+      if (currentIOS) {
+        setShowIOSModal(true);
+      } else {
+        // Double check if we have the native deferred prompt available
+        // If yes, trigger it. Otherwise, show fallback helper instructions.
+        if (deferredPrompt) {
+          handleAndroidInstallClick();
+        } else {
+          setShowAndroidFallbackModal(true);
+        }
+      }
+    };
+
+    window.addEventListener('trigger-pwa-install', handleTrigger);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('trigger-pwa-install', handleTrigger);
     };
-  }, [isStandalone]);
+  }, [isStandalone, deferredPrompt]);
 
   const handleAndroidInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the PWA install prompt');
-      setShowAndroidPrompt(false);
+    if (!deferredPrompt) {
+      setShowAndroidFallbackModal(true);
+      return;
+    }
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the PWA install prompt');
+        setShowAndroidPrompt(false);
+      }
+    } catch (err) {
+      console.error('Error with native install prompt:', err);
+      setShowAndroidFallbackModal(true);
     }
     setDeferredPrompt(null);
   };
@@ -99,6 +137,7 @@ export default function PWAInstallPrompt() {
     setShowAndroidPrompt(false);
     setShowIOSPrompt(false);
     setShowIOSModal(false);
+    setShowAndroidFallbackModal(false);
   };
 
   const handleForceReload = () => {
@@ -108,6 +147,9 @@ export default function PWAInstallPrompt() {
   const openIosGuideModal = () => {
     setShowIOSModal(true);
   };
+
+  // Do not show anything inside standalone installed app
+  if (isStandalone) return null;
 
   return (
     <>
@@ -141,7 +183,7 @@ export default function PWAInstallPrompt() {
           )}
 
           {/* Android Native Install Prompt Banner */}
-          {showAndroidPrompt && !isDismissed && !isStandalone && (
+          {showAndroidPrompt && !isDismissed && (
             <motion.div 
               initial={{ opacity: 0, y: 50, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -184,7 +226,7 @@ export default function PWAInstallPrompt() {
           )}
 
           {/* iOS / iPhone Install App Button Banner */}
-          {showIOSPrompt && !isDismissed && !isStandalone && !showIOSModal && (
+          {showIOSPrompt && !isDismissed && !showIOSModal && (
             <motion.div 
               initial={{ opacity: 0, y: 50, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -310,6 +352,82 @@ export default function PWAInstallPrompt() {
                   className="w-full py-3.5 text-[9px] font-black uppercase tracking-widest text-stone-500 hover:text-stone-300 rounded-2xl transition-all"
                 >
                   Maybe later (Dismiss for 7 days)
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Android/Chrome/Desktop Core Fallback Modal */}
+      <AnimatePresence>
+        {showAndroidFallbackModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="bg-stone-900 border border-bento-card-border p-6 rounded-[2.5rem] w-full max-w-sm shadow-[0_45px_100px_rgba(0,0,0,0.8)] relative text-center"
+            >
+              <button 
+                onClick={() => setShowAndroidFallbackModal(false)}
+                className="absolute top-5 right-5 p-2 hover:bg-white/5 text-stone-400 hover:text-white rounded-full transition-colors"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="w-16 h-16 bg-white/10 text-amber-400 rounded-[2rem] flex items-center justify-center mx-auto mb-5 border border-white/5">
+                <Coffee size={32} strokeWidth={1.5} />
+              </div>
+
+              <h3 className="text-lg font-black text-white tracking-tight uppercase">How to Install</h3>
+              <p className="text-xs text-stone-400 mt-2 px-1 leading-relaxed">
+                Add Cappuccino7 to your home screen or desktop to order and pick up coffee in seconds.
+              </p>
+
+              {/* Steps grid */}
+              <div className="mt-6 space-y-4 text-left">
+                {/* Step 1 */}
+                <div className="flex gap-4 items-center bg-stone-850 p-3.5 rounded-2xl border border-white/5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                    <MenuIcon size={20} strokeWidth={2} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest block leading-none mb-1">Step 1</span>
+                    <span className="text-xs text-stone-300 leading-tight">
+                      Tap the <span className="font-bold text-white">Menu</span> (⋮ or three lines) in your mobile browser, or look at the address bar on desktop.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex gap-4 items-center bg-stone-850 p-3.5 rounded-2xl border border-white/5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                    <Download size={20} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest block leading-none mb-1">Step 2</span>
+                    <span className="text-xs text-stone-300 leading-tight">
+                      Select <span className="font-bold text-white">"Install App"</span> or <span className="font-bold text-white">"Add to Home screen"</span>.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex flex-col gap-2">
+                <button
+                  onClick={() => setShowAndroidFallbackModal(false)}
+                  className="w-full py-4 text-[10px] font-black uppercase tracking-widest bg-amber-500 hover:bg-amber-600 text-stone-900 rounded-2xl active:scale-95 transition-all"
+                >
+                  Got It
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="w-full py-3.5 text-[9px] font-black uppercase tracking-widest text-stone-500 hover:text-stone-300 rounded-2xl transition-all"
+                >
+                  Dismiss
                 </button>
               </div>
             </motion.div>

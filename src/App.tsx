@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
-import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon } from 'lucide-react';
+import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon, Smartphone } from 'lucide-react';
 import { useBrandSettings } from './lib/brand';
 import { UserProfile } from './types';
 
@@ -537,6 +537,17 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Link onClick={() => setIsMenuOpen(false)} to="/settings" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                     <SettingsIcon /> <span>{t('settings')}</span>
                   </Link>
+                  {!(window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true) && (
+                    <button 
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        window.dispatchEvent(new CustomEvent('trigger-pwa-install'));
+                      }} 
+                      className="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-amber-500 font-bold text-lg text-left"
+                    >
+                      <Smartphone /> <span>Install Cappuccino7</span>
+                    </button>
+                  )}
                   {isAdmin && (
                     <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                       <LayoutDashboard /> <span>{t('admin')}</span>
