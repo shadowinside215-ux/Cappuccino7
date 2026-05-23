@@ -509,6 +509,14 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             >
               {t('explore')} <Coffee size={18} className="text-amber-400" />
             </button>
+            {/Android/i.test(navigator.userAgent) && (
+              <a 
+                href="/Cappuccino7.apk" download
+                className="flex-1 md:flex-none justify-center bg-amber-500 text-stone-900 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black shadow-[0_20px_50px_rgba(251,191,36,0.3)] flex items-center gap-3 hover:scale-[1.03] transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest"
+              >
+                Download Android App
+              </a>
+            )}
           </motion.div>
         </div>
       </header>

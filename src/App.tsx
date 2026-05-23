@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import './i18n';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
-import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon, Smartphone } from 'lucide-react';
+import { Coffee, ShoppingCart, User as UserIcon, ListOrdered, LayoutDashboard, Award, Languages, MoreVertical, X, Home as HomeIcon, Settings as SettingsIcon } from 'lucide-react';
 import { useBrandSettings } from './lib/brand';
 import { UserProfile } from './types';
 
@@ -40,7 +40,6 @@ import Settings from './pages/Settings';
 import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
   const { t } = useTranslation();
@@ -221,7 +220,7 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   if (isLoginPage || isStaffRoute) return null;
 
   return (
-    <nav className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 right-6 z-[60] lg:hidden">
+    <nav className="fixed bottom-6 left-6 right-6 z-[60] lg:hidden">
       <div className="max-w-md mx-auto bg-bento-card-bg/80 backdrop-blur-3xl border border-bento-card-border px-4 py-3 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] flex justify-around items-center relative">
         <Link to="/" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/' ? 'text-amber-500 scale-110' : 'text-amber-500/40'}`}>
           <Coffee size={22} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
@@ -279,14 +278,6 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
-    const isStandaloneMode = 
-      window.matchMedia('(display-mode: standalone)').matches || 
-      (window.navigator as any).standalone === true;
-    if (isStandaloneMode) {
-      document.documentElement.classList.add('pwa-standalone');
-    } else {
-      document.documentElement.classList.remove('pwa-standalone');
-    }
   }, [i18n.language]);
 
   const isWaiterInStorage = localStorage.getItem('waiter_session_active') === 'true';
@@ -386,7 +377,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
      (!userProfile.name || userProfile.name === 'Guest User' || userProfile.name === '');
 
   return (
-    <div className={`min-h-screen bg-bento-bg font-sans text-bento-ink ${!isStaffView ? 'pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-0 sm:pt-[calc(5rem+env(safe-area-inset-top))]' : ''}`}>
+    <div className={`min-h-screen bg-bento-bg font-sans text-bento-ink ${!isStaffView ? 'pb-24 sm:pb-0 sm:pt-20' : ''}`}>
       <Toaster position="top-center" />
       
       {loading ? (
@@ -406,7 +397,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           )}
           
           {!isStaffView && !isLoginPage && (
-            <header className="fixed top-0 left-0 right-0 z-[60] pt-[calc(1rem+env(safe-area-inset-top))] pb-6 px-6">
+            <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
               <div className="max-w-7xl mx-auto flex justify-between items-center bg-bento-card-bg/40 backdrop-blur-3xl border border-bento-card-border px-6 py-4 rounded-[2rem] shadow-2xl">
                 <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
                   <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
@@ -499,7 +490,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="fixed inset-0 z-[70] bg-stone-950 flex flex-col px-8 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(5rem+env(safe-area-inset-top))] lg:hidden overflow-y-auto"
+                className="fixed inset-0 z-[70] bg-stone-950 flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
               >
                 <div className="flex justify-between items-center mb-12">
                   <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
@@ -537,21 +528,16 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Link onClick={() => setIsMenuOpen(false)} to="/settings" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                     <SettingsIcon /> <span>{t('settings')}</span>
                   </Link>
-                  {!(window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true) && (
-                    <button 
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        window.dispatchEvent(new CustomEvent('trigger-pwa-install'));
-                      }} 
-                      className="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-amber-500 font-bold text-lg text-left"
-                    >
-                      <Smartphone /> <span>Install Cappuccino7</span>
-                    </button>
-                  )}
                   {isAdmin && (
                     <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
                       <LayoutDashboard /> <span>{t('admin')}</span>
                     </Link>
+                  )}
+                  {/Android/i.test(navigator.userAgent) && (
+                    <a href="/Cappuccino7.apk" download className="flex items-center gap-4 p-5 rounded-2xl bg-amber-500/20 text-amber-500 font-bold text-lg">
+                      <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
+                      <span>Download Android App</span>
+                    </a>
                   )}
                 </div>
 
@@ -580,8 +566,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
           <Navbar userProfile={userProfile} />
           <ReviewPopup />
-          <PWAInstallPrompt />
-          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto px-6 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-[calc(5rem+env(safe-area-inset-top))] lg:pt-10'}`}>
+          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto px-6 pb-24 pt-24 lg:pt-10'}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

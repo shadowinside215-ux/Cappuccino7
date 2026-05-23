@@ -15,41 +15,25 @@ export default defineConfig(({mode}) => {
         includeAssets: [],
         manifest: {
           name: 'Cappuccino7',
-          short_name: 'Cappuccino7',
+          short_name: 'Cap7',
           description: 'Premium Coffee & Breakfast in Salé',
           theme_color: '#9c661c',
-          background_color: '#120e0c',
-          display: 'standalone',
-          start_url: '/',
-          scope: '/',
           icons: [
             {
               src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png?v=2',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any'
+              sizes: '1024x1024',
+              type: 'image/png'
             },
             {
               src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png?v=2',
-              sizes: '512x512',
+              sizes: '1024x1024',
               type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png?v=2',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'maskable'
-            },
-            {
-              src: 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png?v=2',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable'
+              purpose: 'any maskable'
             }
           ]
         },
         workbox: {
+          maximumFileSizeToCacheInBytes: 5000000,
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           runtimeCaching: [
             {

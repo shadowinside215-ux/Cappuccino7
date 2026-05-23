@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { Moon, Sun, Languages, ArrowLeft, LogOut, Shield, Bell, ChevronRight, Smartphone, Download } from 'lucide-react';
+import { Moon, Sun, Languages, ArrowLeft, LogOut, Shield, Bell, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 import toast from 'react-hot-toast';
@@ -135,36 +135,6 @@ export default function Settings({ theme, setTheme, userProfile }: SettingsProps
             ))}
           </div>
         </motion.div>
-
-        {/* App Installation Section */}
-        {!(window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true) && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-gradient-to-br from-amber-500/10 via-transparent to-transparent border border-amber-500/25 rounded-[32px] p-6 shadow-sm relative overflow-hidden group"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center">
-                <Smartphone size={20} />
-              </div>
-              <h2 className="text-lg font-bold text-amber-500 uppercase tracking-tight">
-                Install Cappuccino7 App
-              </h2>
-            </div>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mb-6 max-w-md leading-relaxed">
-              Install Cappuccino7 directly on your device. Enjoy high-speed barista service, instant drink orders, faster performance, and cached menu access even when offline.
-            </p>
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('trigger-pwa-install'))}
-              className="px-6 py-4 bg-amber-500 hover:bg-amber-600 text-stone-900 rounded-2xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-amber-500/10"
-            >
-              <Download size={14} strokeWidth={2.5} />
-              Install App on device
-            </button>
-          </motion.div>
-        )}
 
         {/* Account Controls */}
         <motion.div 

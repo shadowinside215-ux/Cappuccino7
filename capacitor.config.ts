@@ -1,0 +1,21 @@
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.cappuccino7.app',
+  appName: 'Cappuccino7',
+  webDir: 'dist',
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 3000,
+      launchAutoHide: true,
+      backgroundColor: "#1c1917",
+      showSpinner: true,
+      androidSpinnerStyle: "large",
+      spinnerColor: "#f59e0b",
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+  },
+};
+
+export default config;
