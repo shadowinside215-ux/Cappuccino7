@@ -40,6 +40,7 @@ import Settings from './pages/Settings';
 import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
   const { t } = useTranslation();
@@ -220,7 +221,7 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   if (isLoginPage || isStaffRoute) return null;
 
   return (
-    <nav className="fixed bottom-6 left-6 right-6 z-[60] lg:hidden">
+    <nav className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 right-6 z-[60] lg:hidden">
       <div className="max-w-md mx-auto bg-bento-card-bg/80 backdrop-blur-3xl border border-bento-card-border px-4 py-3 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] flex justify-around items-center relative">
         <Link to="/" className={`relative z-10 flex flex-col items-center p-2 transition-all duration-300 ${location.pathname === '/' ? 'text-amber-500 scale-110' : 'text-amber-500/40'}`}>
           <Coffee size={22} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
@@ -278,6 +279,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    const isStandaloneMode = 
+      window.matchMedia('(display-mode: standalone)').matches || 
+      (window.navigator as any).standalone === true;
+    if (isStandaloneMode) {
+      document.documentElement.classList.add('pwa-standalone');
+    } else {
+      document.documentElement.classList.remove('pwa-standalone');
+    }
   }, [i18n.language]);
 
   const isWaiterInStorage = localStorage.getItem('waiter_session_active') === 'true';
@@ -377,7 +386,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
      (!userProfile.name || userProfile.name === 'Guest User' || userProfile.name === '');
 
   return (
-    <div className={`min-h-screen bg-bento-bg font-sans text-bento-ink ${!isStaffView ? 'pb-24 sm:pb-0 sm:pt-20' : ''}`}>
+    <div className={`min-h-screen bg-bento-bg font-sans text-bento-ink ${!isStaffView ? 'pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-0 sm:pt-[calc(5rem+env(safe-area-inset-top))]' : ''}`}>
       <Toaster position="top-center" />
       
       {loading ? (
@@ -397,7 +406,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           )}
           
           {!isStaffView && !isLoginPage && (
-            <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
+            <header className="fixed top-0 left-0 right-0 z-[60] pt-[calc(1rem+env(safe-area-inset-top))] pb-6 px-6">
               <div className="max-w-7xl mx-auto flex justify-between items-center bg-bento-card-bg/40 backdrop-blur-3xl border border-bento-card-border px-6 py-4 rounded-[2rem] shadow-2xl">
                 <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
                   <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
@@ -490,7 +499,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="fixed inset-0 z-[70] bg-stone-950 flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
+                className="fixed inset-0 z-[70] bg-stone-950 flex flex-col px-8 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(5rem+env(safe-area-inset-top))] lg:hidden overflow-y-auto"
               >
                 <div className="flex justify-between items-center mb-12">
                   <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
@@ -560,7 +569,8 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
           <Navbar userProfile={userProfile} />
           <ReviewPopup />
-          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto px-6 pb-24 pt-24 lg:pt-10'}`}>
+          <PWAInstallPrompt />
+          <main className={`transition-all duration-500 min-h-screen ${isStaffView || isLoginPage ? 'w-full max-w-none' : 'max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto px-6 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-[calc(5rem+env(safe-area-inset-top))] lg:pt-10'}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

@@ -61,8 +61,16 @@
   }
   
   html, body {
-    @apply overflow-x-hidden w-full transition-colors duration-500;
+    @apply transition-colors duration-500;
     -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
+  }
+
+  html.pwa-standalone, html.pwa-standalone body {
+    overscroll-behavior-y: contain; /* Prevents raw web browser swipe-to-refresh pull behaviors inside app mode */
   }
   
   body {
