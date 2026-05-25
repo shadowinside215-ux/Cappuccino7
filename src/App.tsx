@@ -534,10 +534,10 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                     </Link>
                   )}
                   {/Android/i.test(navigator.userAgent) && (
-                    <a href="https://github.com/cazugwl/capacitor-webview-app/releases/download/v1.0.0/app-release.apk" className="flex items-center gap-4 p-5 rounded-2xl bg-amber-500/20 text-amber-500 font-bold text-lg">
+                    <div className="flex items-center gap-4 p-5 rounded-2xl bg-stone-500/10 text-stone-500 font-bold text-lg opacity-60">
                       <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
-                      <span>Download Android App</span>
-                    </a>
+                      <span>Android app coming soon.</span>
+                    </div>
                   )}
                 </div>
 
