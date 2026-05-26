@@ -269,6 +269,29 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { settings: brand } = useBrandSettings();
+  const [apkExists, setApkExists] = useState<boolean>(false);
+  const [apkPath, setApkPath] = useState<string>('/Cappuccino7.apk');
+
+  useEffect(() => {
+    const checkApk = async () => {
+      try {
+        const res = await fetch('/Cappuccino7.apk', { method: 'HEAD' });
+        if (res.ok) {
+          setApkExists(true);
+          setApkPath('/Cappuccino7.apk');
+          return;
+        }
+        const res2 = await fetch('/downloads/Cappuccino7.apk', { method: 'HEAD' });
+        if (res2.ok) {
+          setApkExists(true);
+          setApkPath('/downloads/Cappuccino7.apk');
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    checkApk();
+  }, []);
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
@@ -534,10 +557,22 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                     </Link>
                   )}
                   {/Android/i.test(navigator.userAgent) && (
-                    <div className="flex items-center gap-4 p-5 rounded-2xl bg-stone-500/10 text-stone-500 font-bold text-lg opacity-60">
-                      <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
-                      <span>Android app coming soon.</span>
-                    </div>
+                    apkExists ? (
+                      <a 
+                        href={apkPath}
+                        download="Cappuccino7.apk"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-4 p-5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-bold text-lg border border-amber-500/20 active:scale-98 transition-all"
+                      >
+                        <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
+                        <span>Download Android App</span>
+                      </a>
+                    ) : (
+                      <div className="flex items-center gap-4 p-5 rounded-2xl bg-stone-500/10 text-stone-500 font-bold text-lg opacity-60">
+                        <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
+                        <span>Android app coming soon.</span>
+                      </div>
+                    )
                   )}
                 </div>
 

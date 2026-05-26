@@ -41,6 +41,29 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const [showGeoPrompt, setShowGeoPrompt] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const navigate = useNavigate();
+  const [apkExists, setApkExists] = useState<boolean>(false);
+  const [apkPath, setApkPath] = useState<string>('/Cappuccino7.apk');
+
+  useEffect(() => {
+    const checkApk = async () => {
+      try {
+        const res = await fetch('/Cappuccino7.apk', { method: 'HEAD' });
+        if (res.ok) {
+          setApkExists(true);
+          setApkPath('/Cappuccino7.apk');
+          return;
+        }
+        const res2 = await fetch('/downloads/Cappuccino7.apk', { method: 'HEAD' });
+        if (res2.ok) {
+          setApkExists(true);
+          setApkPath('/downloads/Cappuccino7.apk');
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    checkApk();
+  }, []);
 
   useEffect(() => {
     // Geolocation prompt disabled for now
@@ -510,12 +533,22 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               {t('explore')} <Coffee size={18} className="text-amber-400" />
             </button>
             {/Android/i.test(navigator.userAgent) && (
-              <button 
-                disabled
-                className="flex-1 md:flex-none justify-center bg-stone-500/20 text-stone-400 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black flex items-center gap-3 text-[10px] md:text-xs uppercase tracking-widest cursor-not-allowed border border-stone-500/30"
-              >
-                Android app coming soon.
-              </button>
+              apkExists ? (
+                <a 
+                  href={apkPath}
+                  download="Cappuccino7.apk"
+                  className="flex-1 md:flex-none justify-center bg-amber-500 text-stone-900 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black shadow-[0_20px_50px_rgba(251,191,36,0.3)] flex items-center gap-3 hover:scale-[1.03] transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest text-center"
+                >
+                  Download Android App
+                </a>
+              ) : (
+                <button 
+                  disabled
+                  className="flex-1 md:flex-none justify-center bg-stone-500/20 text-stone-400 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black flex items-center gap-3 text-[10px] md:text-xs uppercase tracking-widest cursor-not-allowed border border-stone-500/30"
+                >
+                  Android app coming soon.
+                </button>
+              )
             )}
           </motion.div>
         </div>
