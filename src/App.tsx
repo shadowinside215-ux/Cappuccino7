@@ -273,6 +273,28 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const [apkPath, setApkPath] = useState<string>('/Cappuccino7.apk');
 
   useEffect(() => {
+    if (brand?.logoUrl) {
+      const updateFavicon = (rel: string) => {
+        let link = document.querySelector(`link[rel='${rel}']`) as HTMLLinkElement;
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = rel;
+          document.head.appendChild(link);
+        }
+        link.href = brand.logoUrl;
+      };
+      
+      updateFavicon('icon');
+      updateFavicon('shortcut icon');
+      updateFavicon('apple-touch-icon');
+      
+      if (brand?.name) {
+        document.title = brand.name;
+      }
+    }
+  }, [brand?.logoUrl, brand?.name]);
+
+  useEffect(() => {
     const checkApk = async () => {
       try {
         const res = await fetch('/Cappuccino7.apk', { method: 'HEAD' });
