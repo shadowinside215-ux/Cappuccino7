@@ -535,7 +535,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="fixed inset-0 z-[70] bg-stone-950 flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
+                className="fixed inset-0 z-[70] bg-bento-bg flex flex-col p-8 lg:hidden overflow-y-auto pt-24"
               >
                 <div className="flex justify-between items-center mb-12">
                   <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
@@ -548,9 +548,9 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    <span className="text-2xl font-black italic text-white uppercase tracking-tighter">{t('app_name')}</span>
+                    <span className="text-2xl font-black italic text-bento-ink uppercase tracking-tighter">{t('app_name')}</span>
                   </Link>
-                  <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-stone-900 rounded-2xl text-white">
+                  <button onClick={() => setIsMenuOpen(false)} className="p-3 bg-bento-card-bg rounded-2xl text-bento-ink hover:bg-stone-500/10 transition-colors">
                     <X size={24} />
                   </button>
                 </div>
@@ -578,28 +578,26 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                       <LayoutDashboard /> <span>{t('admin')}</span>
                     </Link>
                   )}
-                  {/Android/i.test(navigator.userAgent) && (
-                    apkExists ? (
-                      <a 
-                        href={apkPath}
-                        download="Cappuccino7.apk"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="flex items-center gap-4 p-5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-bold text-lg border border-amber-500/20 active:scale-98 transition-all"
-                      >
-                        <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
-                        <span>Download Android App</span>
-                      </a>
-                    ) : (
-                      <div className="flex items-center gap-4 p-5 rounded-2xl bg-stone-500/10 text-stone-500 font-bold text-lg opacity-60">
-                        <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
-                        <span>Android app coming soon.</span>
-                      </div>
-                    )
+                  {apkExists ? (
+                    <a 
+                      href={apkPath}
+                      download="Cappuccino7.apk"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-4 p-5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-bold text-lg border border-amber-500/20 active:scale-98 transition-all"
+                    >
+                      <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
+                      <span>Download App</span>
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-4 p-5 rounded-2xl bg-stone-500/10 text-stone-500 font-bold text-lg opacity-60">
+                      <span className="w-6 h-6 border-2 border-current rounded-[4px] flex items-center justify-center text-xs">apk</span> 
+                      <span>App Coming Soon</span>
+                    </div>
                   )}
                 </div>
 
-                <div className="mt-8 pt-8 border-t border-white/5">
-                  <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-4">Choose Language</p>
+                <div className="mt-8 pt-8 border-t border-bento-card-border">
+                  <p className="text-[10px] font-black text-bento-ink/50 uppercase tracking-widest mb-4">Choose Language</p>
                   <div className="grid grid-cols-2 gap-3">
                 {['en', 'fr', 'ar', 'es'].map((lang) => (
                   <button

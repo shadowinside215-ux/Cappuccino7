@@ -258,6 +258,14 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               onClick={() => setSelectedProduct(null)}
               className="absolute inset-0 bg-stone-950/60 backdrop-blur-md"
             />
+            
+            <button 
+              onClick={() => setSelectedProduct(null)}
+              className="absolute top-6 right-6 lg:top-8 lg:right-8 z-[110] w-12 h-12 md:w-14 md:h-14 bg-stone-900/80 backdrop-blur-xl rounded-full flex items-center justify-center text-white hover:bg-stone-950 transition-all active:scale-90 border border-white/20 shadow-2xl cursor-pointer"
+            >
+              <X size={24} />
+            </button>
+
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 40 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -265,13 +273,6 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
               transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
               className="relative w-full max-w-lg bg-bento-card-bg rounded-[3rem] overflow-y-auto max-h-[90vh] custom-scrollbar shadow-2xl border border-bento-card-border"
             >
-              <button 
-                onClick={() => setSelectedProduct(null)}
-                className="absolute top-6 right-6 z-10 w-10 h-10 bg-bento-bg/40 backdrop-blur-xl rounded-full flex items-center justify-center text-bento-ink hover:bg-bento-ink hover:text-bento-bg transition-all active:scale-90 border border-bento-card-border"
-              >
-                <X size={20} />
-              </button>
-              
               <div className="aspect-[4/3] overflow-hidden">
                 <OptimizedImage 
                   priority
@@ -532,23 +533,21 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
             >
               {t('explore')} <Coffee size={18} className="text-amber-400" />
             </button>
-            {/Android/i.test(navigator.userAgent) && (
-              apkExists ? (
-                <a 
-                  href={apkPath}
-                  download="Cappuccino7.apk"
-                  className="flex-1 md:flex-none justify-center bg-amber-500 text-stone-900 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black shadow-[0_20px_50px_rgba(251,191,36,0.3)] flex items-center gap-3 hover:scale-[1.03] transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest text-center"
-                >
-                  Download Android App
-                </a>
-              ) : (
-                <button 
-                  disabled
-                  className="flex-1 md:flex-none justify-center bg-stone-500/20 text-stone-400 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black flex items-center gap-3 text-[10px] md:text-xs uppercase tracking-widest cursor-not-allowed border border-stone-500/30"
-                >
-                  Android app coming soon.
-                </button>
-              )
+            {apkExists ? (
+              <a 
+                href={apkPath}
+                download="Cappuccino7.apk"
+                className="flex-1 md:flex-none justify-center bg-amber-500 text-stone-900 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black shadow-[0_20px_50px_rgba(251,191,36,0.3)] flex items-center gap-3 hover:scale-[1.03] transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest text-center"
+              >
+                Download App
+              </a>
+            ) : (
+              <button 
+                disabled
+                className="flex-1 md:flex-none justify-center bg-stone-500/20 text-stone-400 px-8 md:px-10 py-4 md:py-5 rounded-[1.8rem] md:rounded-[2rem] font-black flex items-center gap-3 text-[10px] md:text-xs uppercase tracking-widest cursor-not-allowed border border-stone-500/30"
+              >
+                App Coming Soon
+              </button>
             )}
           </motion.div>
         </div>
