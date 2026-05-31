@@ -70,6 +70,10 @@ export function handleAuthError(error: any) {
     return 'Invalid email or password. If you are a staff member, please use your station ID and security key.';
   }
   
+  if (error.code === 'auth/operation-not-allowed') {
+    return 'Email/Password login is not enabled in Firebase. Please enable it in the Firebase Console under Authentication > Sign-in method.';
+  }
+  
   if (import.meta.env.PROD) {
     return 'Authentication failed. Please check your credentials and try again.';
   }
