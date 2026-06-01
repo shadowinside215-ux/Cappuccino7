@@ -1,0 +1,1 @@
+if (!process.env.ANDROID_HOME) console.log('No ANDROID_HOME'); else console.log(process.env.ANDROID_HOME); if (!process.env.JAVA_HOME) console.log('No JAVA_HOME'); else console.log(process.env.JAVA_HOME);
