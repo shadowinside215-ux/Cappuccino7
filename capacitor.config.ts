@@ -4,6 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.cappuccino7.app',
   appName: 'Cappuccino7',
   webDir: 'dist',
+  server: {
+    url: 'https://ais-pre-drrfdy3z666ibkpuuaut6t-614804442213.europe-west2.run.app',
+    cleartext: true
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
