@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, handleAuthError, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
 import OptimizedImage from '../../components/ui/OptimizedImage';
-import { signInWithPopup, GoogleAuthProvider, signInAnonymously, updateProfile } from 'firebase/auth';
+import { signInWithGoogleAndroidAndWeb } from '../../lib/googleAuth';
+import { signInAnonymously, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
@@ -38,8 +39,7 @@ export default function AdminLogin() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithGoogleAndroidAndWeb();
       if (result.user) {
         setIsFirebaseAuthed(true);
         toast.success(`Authenticated as ${result.user.email}`);

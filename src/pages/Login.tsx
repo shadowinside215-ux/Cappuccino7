@@ -7,6 +7,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { signInWithGoogleAndroidAndWeb } from '../lib/googleAuth';
 import { auth, googleProvider, db, handleAuthError, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useBrandSettings } from '../lib/brand';
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +36,7 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const result = await signInWithGoogleAndroidAndWeb();
       const user = result.user;
 
       const userRef = doc(db, 'users', user.uid);
