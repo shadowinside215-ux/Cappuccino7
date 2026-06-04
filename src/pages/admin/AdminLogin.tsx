@@ -6,7 +6,7 @@ import { auth, db, handleAuthError, handleFirestoreError, OperationType } from '
 import { useBrandSettings } from '../../lib/brand';
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import { signInWithGoogleAndroidAndWeb } from '../../lib/googleAuth';
-import { signInAnonymously, updateProfile } from 'firebase/auth';
+import { signInAnonymously, updateProfile, getRedirectResult } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
@@ -31,6 +31,19 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          setIsFirebaseAuthed(true);
+          toast.success(`Authenticated as ${result.user.email}`);
+        }
+      } catch (err: any) {
+        toast.error(handleAuthError(err));
+      }
+    };
+    checkRedirect();
+
     if (auth.currentUser?.email?.toLowerCase() === 'dragonballsam86@gmail.com' && !auth.currentUser.isAnonymous) {
       navigate('/admin');
     }
@@ -40,6 +53,7 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       const result = await signInWithGoogleAndroidAndWeb();
+      if (!result) return; // redirect happens
       if (result.user) {
         setIsFirebaseAuthed(true);
         toast.success(`Authenticated as ${result.user.email}`);

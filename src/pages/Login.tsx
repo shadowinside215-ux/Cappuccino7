@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   signInWithPopup, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signInAnonymously,
-  updateProfile
+  updateProfile,
+  getRedirectResult
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { signInWithGoogleAndroidAndWeb } from '../lib/googleAuth';
@@ -33,10 +34,60 @@ export default function Login() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
 
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          setLoading(true);
+          const user = result.user;
+          const userRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(userRef);
+
+          if (!docSnap.exists()) {
+            const userPath = `users/${user.uid}`;
+            try {
+              await setDoc(userRef, {
+                uid: user.uid,
+                name: user.displayName || 'Guest User',
+                email: user.email,
+                points: 0,
+                coffeeCount: 0,
+                itemLoyalty: {},
+                isAdmin: false,
+                isAnonymous: false,
+                createdAt: serverTimestamp()
+              });
+            } catch (err) {
+              handleFirestoreError(err, OperationType.CREATE, userPath);
+            }
+          }
+          toast.success(t('welcome_back_msg', 'Welcome back!'));
+          navigate('/');
+        }
+      } catch (error: any) {
+        setLoading(false);
+        const message = handleAuthError(error);
+        
+        if (error.code === 'auth/unauthorized-domain') {
+          const domain = window.location.hostname;
+          toast.error(`Domain not authorized: ${domain}`);
+        } else if (error.code === 'auth/popup-closed-by-user') {
+          // ignore
+        } else {
+          toast.error(message);
+        }
+      }
+    };
+    
+    checkRedirectResult();
+  }, [navigate]);
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
       const result = await signInWithGoogleAndroidAndWeb();
+      if (!result) return; // Happens when signInWithRedirect is triggered
       const user = result.user;
 
       const userRef = doc(db, 'users', user.uid);

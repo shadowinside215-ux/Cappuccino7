@@ -4,7 +4,7 @@ import { Coffee, ShieldCheck, Lock, User as UserIcon, Mail, ChefHat, ArrowRight,
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, handleAuthError } from '../../lib/firebase';
 import { useBrandSettings } from '../../lib/brand';
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signInAnonymously, updateProfile } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInAnonymously, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
