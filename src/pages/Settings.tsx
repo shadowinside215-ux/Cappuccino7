@@ -32,18 +32,25 @@ export default function Settings({ theme, setTheme, userProfile }: SettingsProps
 
   const handleLogout = async () => {
     try {
-      await auth.signOut();
+      if (auth.currentUser) {
+        await auth.signOut();
+      }
       // Clear staff markers
       localStorage.removeItem('waiter_session_active');
+      localStorage.removeItem('waiter_id');
+      localStorage.removeItem('waiter_name');
+      localStorage.removeItem('waiter_zone');
       localStorage.removeItem('kitchen_session_active');
       localStorage.removeItem('barman_session_active');
       localStorage.removeItem('cashier_session_active');
+      localStorage.removeItem('driver_session_active');
+      localStorage.removeItem('admin_session_active');
       sessionStorage.removeItem('admin_mode');
       
-      navigate('/login');
-      toast.success('Logged out successfully');
+      toast.success(t('Logged out successfully'));
+      window.location.href = '/login';
     } catch (error) {
-      toast.error('Failed to log out');
+      toast.error(t('Failed to log out'));
     }
   };
 

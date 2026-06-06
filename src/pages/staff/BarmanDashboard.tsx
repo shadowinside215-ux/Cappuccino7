@@ -184,7 +184,7 @@ export default function BarmanDashboard() {
   const logout = () => {
     localStorage.removeItem('barman_session_active');
     auth.signOut();
-    navigate('/barman/login');
+    window.location.href = '/login';
   };
 
   if (loading) {

@@ -161,7 +161,10 @@ export default function DriverDashboard() {
             <button 
               onClick={() => {
                 localStorage.removeItem('driver_auth');
-                navigate('/driver/login');
+                localStorage.removeItem('driver_session_active');
+                localStorage.removeItem('device_staff_role');
+                auth.signOut();
+                window.location.href = '/login';
               }}
               className="p-3 bg-white/5 rounded-xl border border-white/10 text-white/40 hover:text-white transition-colors"
             >

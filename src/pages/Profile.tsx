@@ -72,16 +72,27 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   }, [userProfile?.itemLoyalty]);
 
   const handleLogout = async () => {
-    await auth.signOut();
-    // Clear staff markers
-    localStorage.removeItem('waiter_session_active');
-    localStorage.removeItem('kitchen_session_active');
-    localStorage.removeItem('barman_session_active');
-    localStorage.removeItem('cashier_session_active');
-    sessionStorage.removeItem('admin_mode');
-    
-    toast.success('Session ended');
-    navigate('/login');
+    try {
+      if (auth.currentUser) {
+        await auth.signOut();
+      }
+      // Clear staff markers
+      localStorage.removeItem('waiter_session_active');
+      localStorage.removeItem('waiter_id');
+      localStorage.removeItem('waiter_name');
+      localStorage.removeItem('waiter_zone');
+      localStorage.removeItem('kitchen_session_active');
+      localStorage.removeItem('barman_session_active');
+      localStorage.removeItem('cashier_session_active');
+      localStorage.removeItem('driver_session_active');
+      localStorage.removeItem('admin_session_active');
+      sessionStorage.removeItem('admin_mode');
+      
+      toast.success(t('Session ended'));
+      window.location.href = '/login';
+    } catch (error) {
+      toast.error(t('Failed to log out'));
+    }
   };
 
   if (isGuest) {
