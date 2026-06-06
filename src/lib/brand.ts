@@ -3,6 +3,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface BrandSettings {
+  name?: string;
   logoUrl: string;
   heroImageUrl?: string;
   cartBgUrl?: string;

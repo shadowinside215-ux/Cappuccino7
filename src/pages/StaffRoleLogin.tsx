@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { collection, onSnapshot, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { collection, onSnapshot, getDocs, setDoc, doc } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
 import { Lock, User, ArrowRight, Shield, ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import OptimizedImage from '../components/ui/OptimizedImage';
@@ -25,12 +26,48 @@ export default function StaffRoleLogin({ role }: StaffRoleLoginProps) {
     setLoading(true);
 
     try {
+      const proceedWithLogin = async (matchedRole: string, staticPath: string) => {
+        try {
+          const userCredential = await signInAnonymously(auth);
+          const uid = userCredential.user.uid;
+          
+          await setDoc(doc(db, 'users', uid), { 
+            uid,
+            isWaiter: matchedRole === 'waiter',
+            isKitchen: matchedRole === 'kitchen',
+            isBarman: matchedRole === 'barman',
+            isCashier: matchedRole === 'cashier',
+            isDriver: matchedRole === 'driver',
+            isAdmin: matchedRole === 'admin',
+            role: matchedRole 
+          }, { merge: true });
+
+          try {
+            await setDoc(doc(db, `${matchedRole}s`, uid), { active: true }, { merge: true });
+          } catch (e) {
+            // Some collections might be named exactly like the role (kitchen vs kitchens)
+          }
+          if (matchedRole === 'admin') {
+            await setDoc(doc(db, 'admins', uid), { active: true }, { merge: true }).catch(()=>{});
+          } else if (matchedRole === 'kitchen') {
+            await setDoc(doc(db, 'kitchen', uid), { active: true }, { merge: true }).catch(()=>{});
+          } else if (matchedRole === 'barman') {
+            await setDoc(doc(db, 'barman', uid), { active: true }, { merge: true }).catch(()=>{});
+          }
+
+          toast.success(t('login_successful', 'Login successful'));
+          navigate(staticPath);
+        } catch (e) {
+          console.error("Auth failed: ", e);
+          toast.error("Could not complete authentication");
+        }
+      };
+
       if (role === 'admin') {
         const adminPw = import.meta.env.VITE_ADMIN_PIN || '7000';
         if (password === adminPw || password === 'admin7000') {
           sessionStorage.setItem('admin_mode', 'true');
-          toast.success(t('admin_mode_activated', 'Admin Mode Activated'));
-          navigate('/admin');
+          await proceedWithLogin('admin', '/admin');
           return;
         }
         toast.error('Invalid admin credentials');
@@ -39,44 +76,54 @@ export default function StaffRoleLogin({ role }: StaffRoleLoginProps) {
       }
 
       // Check against staff configs
-      const querySnapshot = await getDocs(collection(db, 'staffConfigs'));
       let found = false;
+      let querySnapshot = null;
+      try {
+        querySnapshot = await getDocs(collection(db, 'staffConfigs'));
+      } catch (err) {
+        console.warn("Could not load staffConfigs, falling back to static accounts:", err);
+      }
 
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.username === username.toLowerCase().trim() && data.password === password) {
-          found = true;
-          if (doc.id.includes(role)) {
-            localStorage.setItem(`${role}_session_active`, 'true');
-            if (role === 'waiter') {
-              localStorage.setItem('waiter_id', doc.id);
-              localStorage.setItem('waiter_name', data.displayName || username);
-              localStorage.setItem('waiter_zone', data.assignedZone || 'A');
+      if (querySnapshot) {
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.username === username.toLowerCase().trim() && data.password === password) {
+            found = true;
+            if (doc.id.includes(role)) {
+              localStorage.setItem(`${role}_session_active`, 'true');
+              if (role === 'waiter') {
+                localStorage.setItem('waiter_id', doc.id);
+                localStorage.setItem('waiter_name', data.displayName || username);
+                localStorage.setItem('waiter_zone', data.assignedZone || 'A');
+              }
+            } else {
+               // they matched a password but they are in the wrong role page? Fix by just letting it match
+               localStorage.setItem(`${role}_session_active`, 'true');
             }
-          } else {
-             // they matched a password but they are in the wrong role page? Fix by just letting it match
-             localStorage.setItem(`${role}_session_active`, 'true');
           }
-        }
-      });
+        });
+      }
 
       if (found) {
-        toast.success('Login successful');
-        navigate(`/${role}/dashboard`);
+        await proceedWithLogin(role, `/${role}/dashboard`);
       } else {
-        // Fallbacks if db doesn't have it yet
-        if (role === 'waiter' && password === 'waiter123') {
+        // Strict Fallbacks exactly matching role name and password
+        const lowerName = username.toLowerCase().trim();
+        if (role === 'waiter' && lowerName === 'waiter' && password === 'waiter123') {
            localStorage.setItem('waiter_session_active', 'true');
-           navigate('/waiter/dashboard');
-        } else if (role === 'kitchen' && password === 'kitchen7000') {
+           await proceedWithLogin('waiter', '/waiter/dashboard');
+        } else if (role === 'kitchen' && lowerName === 'kitchen' && password === 'kitchen7000') {
            localStorage.setItem('kitchen_session_active', 'true');
-           navigate('/kitchen/dashboard');
-        } else if (role === 'barman' && password === 'barman5000') {
+           await proceedWithLogin('kitchen', '/kitchen/dashboard');
+        } else if (role === 'barman' && lowerName === 'barman' && password === 'barman5000') {
            localStorage.setItem('barman_session_active', 'true');
-           navigate('/barman/dashboard');
-        } else if (role === 'cashier' && password === 'cashier9000') {
+           await proceedWithLogin('barman', '/barman/dashboard');
+        } else if (role === 'cashier' && lowerName === 'cashier' && password === 'cashier9000') {
            localStorage.setItem('cashier_session_active', 'true');
-           navigate('/cashier/dashboard');
+           await proceedWithLogin('cashier', '/cashier/dashboard');
+        } else if (role === 'driver' && lowerName === 'driver' && password === 'driver123') {
+           localStorage.setItem('driver_session_active', 'true');
+           await proceedWithLogin('driver', '/driver/dashboard');
         } else {
            toast.error(t('invalid_credentials', 'Invalid credentials'));
         }

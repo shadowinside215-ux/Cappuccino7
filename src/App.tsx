@@ -21,19 +21,13 @@ import AdminMenu from './pages/admin/AdminMenu';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminStats from './pages/admin/AdminStats';
 import Login from './pages/Login';
-import AdminLogin from './pages/admin/AdminLogin';
 import OrderConfirmation from './pages/OrderConfirmation';
-import WaiterLogin from './pages/waiter/WaiterLogin';
 import WaiterDashboard from './pages/waiter/WaiterDashboard';
-import KitchenLogin from './pages/staff/KitchenLogin';
 import KitchenDashboard from './pages/staff/KitchenDashboard';
-import BarmanLogin from './pages/staff/BarmanLogin';
 import BarmanDashboard from './pages/staff/BarmanDashboard';
-import CashierLogin from './pages/cashier/CashierLogin';
 import CashierDashboard from './pages/cashier/CashierDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import StaffManagement from './pages/admin/StaffManagement';
-import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import VerifyTicket from './pages/VerifyTicket';
 import Settings from './pages/Settings';
@@ -54,36 +48,42 @@ const getStaffDashboard = (up: UserProfile | null) => {
 };
 
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  if (sessionStorage.getItem('admin_mode') === 'true') return <>{children}</>;
   if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
   if (userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
   return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const WaiterGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  if (localStorage.getItem('waiter_session_active') === 'true') return <>{children}</>;
   if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
   if (userProfile.isWaiter || userProfile.role === 'waiter' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
   return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const KitchenGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  if (localStorage.getItem('kitchen_session_active') === 'true') return <>{children}</>;
   if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
   if (userProfile.isKitchen || userProfile.role === 'kitchen' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
   return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const BarmanGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  if (localStorage.getItem('barman_session_active') === 'true') return <>{children}</>;
   if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
   if (userProfile.isBarman || userProfile.role === 'barman' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
   return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  if (localStorage.getItem('cashier_session_active') === 'true') return <>{children}</>;
   if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
   if (userProfile.isCashier || userProfile.role === 'cashier' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
   return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const DriverGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  if (localStorage.getItem('driver_session_active') === 'true') return <>{children}</>;
   if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
   if (userProfile.isDriver || userProfile.role === 'driver' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
   return <Navigate to={getStaffDashboard(userProfile)} replace />;

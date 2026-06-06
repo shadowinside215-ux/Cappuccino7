@@ -183,6 +183,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // --- Staff Configs ---
+    match /staffConfigs/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // --- Daily Revenue & Stats ---
     match /dailyRevenue/{date} {
       allow read: if isStaff();
