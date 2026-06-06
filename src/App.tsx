@@ -41,163 +41,52 @@ import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
 
+import StaffLogin from './pages/StaffLogin';
+
+const getStaffDashboard = (up: UserProfile | null) => {
+  if (up?.isAdmin || up?.role === 'admin') return '/admin';
+  if (up?.isWaiter || up?.role === 'waiter') return '/waiter/dashboard';
+  if (up?.isCashier || up?.role === 'cashier') return '/cashier/dashboard';
+  if (up?.isKitchen || up?.role === 'kitchen') return '/kitchen/dashboard';
+  if (up?.isBarman || up?.role === 'barman') return '/barman/dashboard';
+  if (up?.isDriver || up?.role === 'driver') return '/driver/dashboard';
+  return '/'; // normal client
+};
+
 const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
-  const { t } = useTranslation();
-  const [isAdminDocument, setIsAdminDocument] = useState<boolean | null>(null);
-  
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const isAdminMode = sessionStorage.getItem('admin_mode') === 'true';
-      const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
-      const isCreator = auth.currentUser?.email?.toLowerCase() === adminEmail.toLowerCase();
-      
-      if (isAdminMode || isCreator) {
-        setIsAdminDocument(true);
-        return;
-      }
-      
-      if (userProfile?.uid) {
-        const adminDoc = await getDoc(doc(db, 'admins', userProfile.uid));
-        setIsAdminDocument(adminDoc.exists());
-      } else {
-        setIsAdminDocument(false);
-      }
-    };
-    checkAdmin();
-  }, [userProfile]);
-
-  if (isAdminDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">{t('checking_permissions')}</div>;
-
-  if (isAdminDocument || userProfile?.isAdmin) {
-    return <>{children}</>;
-  }
-
-  return <Navigate to="/admin/login" />;
+  if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
+  if (userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
+  return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const WaiterGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
-  const { t } = useTranslation();
-  const [isWaiterDocument, setIsWaiterDocument] = useState<boolean | null>(null);
-  
-  useEffect(() => {
-    const checkWaiter = async () => {
-      if (localStorage.getItem('waiter_session_active') === 'true') {
-        setIsWaiterDocument(true);
-        return;
-      }
-
-      if (userProfile?.isWaiter || userProfile?.isAdmin) {
-        setIsWaiterDocument(true);
-        return;
-      }
-      
-      if (userProfile?.uid) {
-        const waiterDoc = await getDoc(doc(db, 'waiters', userProfile.uid));
-        setIsWaiterDocument(waiterDoc.exists());
-      } else {
-        setIsWaiterDocument(false);
-      }
-    };
-    checkWaiter();
-  }, [userProfile]);
-
-  if (isWaiterDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">{t('checking_permissions')}</div>;
-
-  if (isWaiterDocument || userProfile?.isWaiter) {
-    return <>{children}</>;
-  }
-
-  return <Navigate to="/waiter/login" />;
+  if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
+  if (userProfile.isWaiter || userProfile.role === 'waiter' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
+  return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const KitchenGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
-  const [isKitchenDocument, setIsKitchenDocument] = useState<boolean | null>(null);
-  
-  useEffect(() => {
-    const checkKitchen = async () => {
-      if (localStorage.getItem('kitchen_session_active') === 'true') {
-        setIsKitchenDocument(true);
-        return;
-      }
-      if (userProfile?.isKitchen || userProfile?.isAdmin) {
-        setIsKitchenDocument(true);
-        return;
-      }
-      if (userProfile?.uid) {
-        const kitchenDoc = await getDoc(doc(db, 'kitchen', userProfile.uid));
-        setIsKitchenDocument(kitchenDoc.exists());
-      } else {
-        setIsKitchenDocument(false);
-      }
-    };
-    checkKitchen();
-  }, [userProfile]);
-
-  if (isKitchenDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg text-bento-ink">Authenticating Kitchen...</div>;
-  if (isKitchenDocument || userProfile?.isKitchen) return <>{children}</>;
-  return <Navigate to="/kitchen/login" />;
+  if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
+  if (userProfile.isKitchen || userProfile.role === 'kitchen' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
+  return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const BarmanGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
-  const [isBarmanDocument, setIsBarmanDocument] = useState<boolean | null>(null);
-  
-  useEffect(() => {
-    const checkBarman = async () => {
-      if (localStorage.getItem('barman_session_active') === 'true') {
-        setIsBarmanDocument(true);
-        return;
-      }
-      if (userProfile?.isBarman || userProfile?.isAdmin) {
-        setIsBarmanDocument(true);
-        return;
-      }
-      if (userProfile?.uid) {
-        const barmanDoc = await getDoc(doc(db, 'barman', userProfile.uid));
-        setIsBarmanDocument(barmanDoc.exists());
-      } else {
-        setIsBarmanDocument(false);
-      }
-    };
-    checkBarman();
-  }, [userProfile]);
-
-  if (isBarmanDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg text-bento-ink">Authenticating Barman...</div>;
-  if (isBarmanDocument || userProfile?.isBarman) return <>{children}</>;
-  return <Navigate to="/barman/login" />;
+  if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
+  if (userProfile.isBarman || userProfile.role === 'barman' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
+  return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
-  const [isCashierDocument, setIsCashierDocument] = useState<boolean | null>(null);
-  
-  useEffect(() => {
-    const checkCashier = async () => {
-      if (localStorage.getItem('cashier_session_active') === 'true') {
-        setIsCashierDocument(true);
-        return;
-      }
-      if (userProfile?.isCashier || userProfile?.isAdmin) {
-        setIsCashierDocument(true);
-        return;
-      }
-      if (userProfile?.uid) {
-        const cashierDoc = await getDoc(doc(db, 'cashiers', userProfile.uid));
-        setIsCashierDocument(cashierDoc.exists());
-      } else {
-        setIsCashierDocument(false);
-      }
-    };
-    checkCashier();
-  }, [userProfile]);
-
-  if (isCashierDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg text-bento-ink">Authenticating Cashier...</div>;
-  if (isCashierDocument || userProfile?.isCashier) return <>{children}</>;
-  return <Navigate to="/cashier/login" />;
+  if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
+  if (userProfile.isCashier || userProfile.role === 'cashier' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
+  return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
-const DriverGuard = ({ children }: { children: React.ReactNode }) => {
-  const isDriverAuth = localStorage.getItem('driver_auth') === 'true';
-  if (isDriverAuth) return <>{children}</>;
-  return <Navigate to="/driver/login" />;
+const DriverGuard = ({ userProfile, children }: { userProfile: UserProfile | null, children: React.ReactNode }) => {
+  if (userProfile === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">Loading Permissions...</div>;
+  if (userProfile.isDriver || userProfile.role === 'driver' || userProfile.isAdmin || userProfile.role === 'admin') return <>{children}</>;
+  return <Navigate to={getStaffDashboard(userProfile)} replace />;
 };
 
 function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
@@ -208,14 +97,10 @@ function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
                        location.pathname.startsWith('/kitchen') || 
                        location.pathname.startsWith('/barman') || 
                        location.pathname.startsWith('/cashier') ||
-                       location.pathname.startsWith('/admin');
+                       location.pathname.startsWith('/admin') ||
+                       location.pathname === '/staff-login';
   
-  const isLoginPage = location.pathname === '/login' || 
-                      location.pathname === '/admin/login' || 
-                      location.pathname === '/waiter/login' || 
-                      location.pathname === '/kitchen/login' || 
-                      location.pathname === '/barman/login' || 
-                      location.pathname === '/cashier/login';
+  const isLoginPage = location.pathname === '/login';
 
   if (isLoginPage || isStaffRoute) return null;
 
@@ -602,7 +487,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/track/:id" element={<OrderConfirmation />} />
                   <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} userProfile={userProfile} />} />
                   
-                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/staff-login" element={<StaffLogin />} />
                   <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
                   <Route path="/admin/staff" element={<AdminGuard userProfile={userProfile}><StaffManagement /></AdminGuard>} />
                   <Route path="/admin/stats" element={<AdminGuard userProfile={userProfile}><AdminStats /></AdminGuard>} />
@@ -610,44 +495,15 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
                   <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />
 
-                  <Route path="/waiter/login" element={<WaiterLogin />} />
                   <Route path="/waiter/dashboard" element={<WaiterGuard userProfile={userProfile}><WaiterDashboard /></WaiterGuard>} />
-                  <Route path="/kitchen/login" element={<KitchenLogin />} />
                   <Route path="/kitchen/dashboard" element={<KitchenGuard userProfile={userProfile}><KitchenDashboard /></KitchenGuard>} />
-                  <Route path="/barman/login" element={<BarmanLogin />} />
                   <Route path="/barman/dashboard" element={<BarmanGuard userProfile={userProfile}><BarmanDashboard /></BarmanGuard>} />
-                  <Route path="/cashier/login" element={<CashierLogin />} />
                   <Route path="/cashier/dashboard" element={<CashierGuard userProfile={userProfile}><CashierDashboard /></CashierGuard>} />
-                  <Route path="/driver/login" element={<DriverLogin />} />
-                  <Route path="/driver/dashboard" element={<DriverGuard><DriverDashboard /></DriverGuard>} />
+                  <Route path="/driver/dashboard" element={<DriverGuard userProfile={userProfile}><DriverDashboard /></DriverGuard>} />
                 </Routes>
               </motion.div>
             </AnimatePresence>
           </main>
-
-          {location.pathname === '/login' && !user && !isStaffView && (
-            <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
-              <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-bento-card-border bg-bento-card-bg/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
-                {[
-                  { to: "/admin/login", label: t('admin_access') },
-                  { to: "/waiter/login", label: t('waiter_access') },
-                  { to: "/cashier/login", label: t('cashier_access', 'POS Cashier') },
-                  { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen') },
-                  { to: "/barman/login", label: t('barman_access', 'Barman') },
-                  { to: "/driver/login", label: t('driver_access', 'Driver') },
-                ].map((link) => (
-                  <Link 
-                    key={link.to}
-                    to={link.to} 
-                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-amber-500 hover:text-amber-600 transition-all flex items-center gap-2 group"
-                  >
-                    <span className="w-1 h-1 bg-amber-500 rounded-full transition-colors" />
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-            </footer>
-          )}
         </>
       )}
     </div>

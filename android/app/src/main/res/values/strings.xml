@@ -4,4 +4,5 @@
     <string name="title_activity_main">Cappuccino7</string>
     <string name="package_name">com.cappuccino7.app</string>
     <string name="custom_url_scheme">com.cappuccino7.app</string>
+    <string name="server_client_id">YOUR_FIREBASE_WEB_CLIENT_ID</string>
 </resources>
