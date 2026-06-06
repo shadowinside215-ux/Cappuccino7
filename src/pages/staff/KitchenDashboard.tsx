@@ -184,7 +184,7 @@ export default function KitchenDashboard() {
   const logout = () => {
     localStorage.removeItem('kitchen_session_active');
     auth.signOut();
-    window.location.href = '/login';
+    navigate('/kitchen/login');
   };
 
   if (loading) {

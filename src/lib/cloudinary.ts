@@ -26,19 +26,19 @@ export function getOptimizedImageUrl(url: string | undefined | null, size: Image
   // size-specific adjustments
   switch (size) {
     case 'thumbnail':
-      params += ',w_600,c_fill,g_auto';
+      params += ',w_500,c_fill,g_auto';
       break;
     case 'medium':
-      params += ',w_1000,c_fill,g_auto';
+      params += ',w_800,c_fill,g_auto';
       break;
     case 'large':
-      params += ',w_1600,c_limit';
+      params += ',w_1200,c_limit';
       break;
     case 'hero':
-      params += ',w_2000,c_limit';
+      params += ',w_1600,c_limit';
       break;
     case 'avatar':
-      params += ',w_200,h_200,c_fill,g_face,r_max';
+      params += ',w_100,h_100,c_fill,g_face,r_max';
       break;
   }
 

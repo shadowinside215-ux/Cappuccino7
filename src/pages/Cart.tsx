@@ -423,7 +423,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                       <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                         <OptimizedImage 
                           src={item.image} 
-                          size="thumbnail"
+                          size="medium"
                           fallbackSrc="https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=200"
                           className="w-full h-full object-cover rounded-2xl border border-bento-card-border group-hover:scale-105 transition-transform"
                           alt={item.name}

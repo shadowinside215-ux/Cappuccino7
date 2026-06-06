@@ -507,12 +507,7 @@ export default function WaiterDashboard() {
            <button 
              onClick={() => {
                localStorage.removeItem('waiter_session_active');
-               localStorage.removeItem('waiter_id');
-               localStorage.removeItem('waiter_name');
-               localStorage.removeItem('waiter_zone');
-               localStorage.removeItem('device_staff_role');
                auth.signOut();
-               window.location.href = '/login';
              }}
              className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100"
            >

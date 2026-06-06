@@ -63,7 +63,6 @@
   html, body {
     @apply overflow-x-hidden w-full transition-colors duration-500;
     -webkit-tap-highlight-color: transparent;
-    touch-action: pan-x pan-y;
   }
   
   body {

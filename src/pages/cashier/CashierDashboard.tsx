@@ -506,7 +506,7 @@ export default function CashierDashboard() {
                        <OptimizedImage 
                          src={product.image} 
                          alt={product.name}
-                         size="thumbnail"
+                         size="medium"
                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                          containerClassName="w-full h-full"
                          showOverlay={false}
@@ -854,7 +854,7 @@ export default function CashierDashboard() {
                           <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-stone-100 ring-1 ring-black/5 shadow-sm">
                             <OptimizedImage 
                               src={item.image} 
-                              size="thumbnail"
+                              size="medium"
                               className="w-full h-full object-cover" 
                               showOverlay={false}
                             />
@@ -981,10 +981,8 @@ export default function CashierDashboard() {
                      <button onClick={() => setShowClosureModal(false)} className="flex-1 py-4 rounded-xl bg-stone-500/10 text-stone-500 font-black uppercase text-[11px] hover:bg-stone-500/20 transition-colors">{t('cancel')}</button>
                      <button 
                        onClick={() => {
-                         localStorage.removeItem('cashier_session_active');
-                         localStorage.removeItem('device_staff_role');
                          toast.success('Clôture validée - Session terminée');
-                         window.location.href = '/login';
+                         navigate('/login');
                        }}
                        className="flex-1 py-4 rounded-xl bg-red-600 text-white font-black uppercase text-[11px] hover:bg-red-500 transition-colors shadow-lg"
                      >

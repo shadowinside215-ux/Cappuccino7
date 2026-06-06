@@ -805,7 +805,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                     <div className="flex flex-col md:flex-row h-full">
                       <div className="md:w-2/5 aspect-square relative overflow-hidden">
                         <OptimizedImage
-                          size="thumbnail"
+                          size="medium"
                           src={product.image || (product.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')}
                           alt={product.name}
                           containerClassName="w-full h-full"

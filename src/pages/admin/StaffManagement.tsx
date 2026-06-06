@@ -1,54 +1,90 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, onSnapshot, doc, updateDoc, query, where } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { Shield, Save, User, Loader2, ChevronLeft, Check, X } from 'lucide-react';
+import { collection, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { Shield, Save, User, Lock, Loader2, ChevronLeft, ChefHat, Coffee } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'motion/react';
-import { UserProfile } from '../../types';
+import { motion } from 'motion/react';
+
+interface StaffConfig {
+  id: string;
+  username: string;
+  password: string;
+  displayName: string;
+  assignedZone?: 'A' | 'B' | 'Both';
+}
 
 export default function StaffManagement() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [staffUsers, setStaffUsers] = useState<UserProfile[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [configs, setConfigs] = useState<StaffConfig[]>([]);
 
   useEffect(() => {
-    // Only loading users that are not normal clients (having some role assigned or pending)
-    const q = query(collection(db, 'users'));
-    const unsub = onSnapshot(q, (snap) => {
-      const usersList = snap.docs.map(doc => doc.data() as UserProfile)
-                               .filter(u => u.role && u.role !== 'client');
-      setStaffUsers(usersList);
+    const unsub = onSnapshot(collection(db, 'staffConfigs'), (snap) => {
+      if (snap.empty) {
+        // Initialize defaults if empty
+        const defaults: StaffConfig[] = [
+          { id: 'waiter1', username: 'waiter', password: 'waiter1', displayName: 'Waiter 1', assignedZone: 'A' },
+          { id: 'waiter2', username: 'waiter', password: 'waiter2', displayName: 'Waiter 2', assignedZone: 'B' },
+          { id: 'waiter3', username: 'waiter', password: 'waiter3', displayName: 'Waiter 3', assignedZone: 'A' },
+          { id: 'waiter4', username: 'waiter', password: 'waiter4', displayName: 'Waiter 4', assignedZone: 'B' },
+          { id: 'kitchen', username: 'kitchen', password: 'kitchen7000', displayName: 'Kitchen' },
+          { id: 'barman', username: 'barman', password: 'barman5000', displayName: 'Barman' },
+          { id: 'cashier', username: 'cashier', password: 'cashier9000', displayName: 'Cashier' },
+        ];
+        setConfigs(defaults);
+      } else {
+        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StaffConfig));
+        // Ensure all required IDs exist in state even if not in DB yet
+        const requiredIds = ['waiter1', 'waiter2', 'waiter3', 'waiter4', 'kitchen', 'barman', 'cashier' ];
+        const merged = requiredIds.map(id => {
+          const found = data.find(d => d.id === id);
+          if (found) return found;
+          // Fallback defaults
+          if (id === 'kitchen') return { id, username: 'kitchen', password: 'kitchen7000', displayName: 'Kitchen' };
+          if (id === 'barman') return { id, username: 'barman', password: 'barman5000', displayName: 'Barman' };
+          if (id === 'cashier') return { id, username: 'cashier', password: 'cashier9000', displayName: 'Cashier' };
+          
+          const isZoneA = id === 'waiter1' || id === 'waiter3';
+          return { 
+            id, 
+            username: 'waiter', 
+            password: id, 
+            displayName: `Waiter ${id.slice(-1)}`,
+            assignedZone: (isZoneA ? 'A' : 'B') as 'A' | 'B'
+          };
+        });
+        merged.sort((a, b) => a.id.localeCompare(b.id));
+        setConfigs(merged);
+      }
       setLoading(false);
     });
+
     return () => unsub();
   }, []);
 
-  const handleRoleUpdate = async (userId: string) => {
-    if (!selectedRole) return;
-    const toastId = toast.loading('Updating role...');
-    try {
-      await updateDoc(doc(db, 'users', userId), {
-        role: selectedRole,
-        isAdmin: selectedRole === 'admin',
-        isWaiter: selectedRole === 'waiter',
-        isCashier: selectedRole === 'cashier',
-        isKitchen: selectedRole === 'kitchen',
-        isBarman: selectedRole === 'barman',
-        isDriver: selectedRole === 'driver'
-      });
-      toast.success('Role updated successfully', { id: toastId });
-      setEditingId(null);
-    } catch (err: any) {
-      toast.error('Failed to update role', { id: toastId });
-    }
+  const handleUpdate = (id: string, field: keyof StaffConfig, value: string) => {
+    setConfigs(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
-  const roles = ['admin', 'waiter', 'cashier', 'kitchen', 'barman', 'driver', 'client'];
+  const saveConfigs = async () => {
+    setSaving(true);
+    const toastId = toast.loading('Saving staff configurations...');
+    try {
+      for (const config of configs) {
+        await setDoc(doc(db, 'staffConfigs', config.id), config);
+      }
+      toast.success('Staff accounts updated successfully!', { id: toastId });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'staffConfigs');
+      toast.error('Failed to update staff accounts', { id: toastId });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,85 +106,102 @@ export default function StaffManagement() {
           </button>
           <div>
             <h1 className="text-3xl font-black text-stone-900 uppercase italic tracking-tighter">
-              Staff Role Assignments
+              Staff Accounts
             </h1>
             <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-1">
-              Securely map Auth permissions
+              Manage credentials for system accounts
             </p>
           </div>
         </div>
+
+        <button 
+          onClick={saveConfigs}
+          disabled={saving}
+          className="flex items-center gap-2 bg-stone-900 text-white px-8 py-4 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl disabled:opacity-50"
+        >
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          Save Changes
+        </button>
       </div>
 
-      <div className="bg-white p-6 rounded-[2.5rem] border border-stone-100 shadow-xl overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-stone-100">
-              <th className="p-4 text-[10px] font-black text-stone-400 uppercase tracking-widest">Name / Email</th>
-              <th className="p-4 text-[10px] font-black text-stone-400 uppercase tracking-widest">Current Role</th>
-              <th className="p-4 text-[10px] font-black text-stone-400 uppercase tracking-widest text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staffUsers.map((user) => (
-              <tr key={user.uid} className="border-b border-stone-50 last:border-0 hover:bg-stone-50/50 transition-colors">
-                <td className="p-4">
-                  <div className="font-bold text-stone-900">{user.name}</div>
-                  <div className="text-xs text-stone-500">{user.email}</div>
-                </td>
-                <td className="p-4">
-                  {editingId === user.uid ? (
-                    <select
-                      value={selectedRole}
-                      onChange={(e) => setSelectedRole(e.target.value)}
-                      className="bg-stone-100 border-none rounded-xl py-2 px-4 text-sm font-bold focus:ring-2 ring-amber-400/20 outline-none"
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {configs.map((config) => (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            key={config.id}
+            className={`bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-xl space-y-6 ${config.id.startsWith('waiter') ? '' : 'border-t-4 border-t-stone-900'}`}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`p-3 rounded-2xl ${config.id.startsWith('waiter') ? 'bg-amber-400 text-stone-900' : 'bg-stone-900 text-white'}`}>
+                {config.id === 'kitchen' ? <ChefHat size={20} /> : config.id === 'barman' ? <Coffee size={20} /> : config.id === 'cashier' ? <Shield size={20} /> : <User size={20} />}
+              </div>
+              <h3 className="font-black text-stone-900 uppercase italic">{config.displayName}</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1.5 ml-1">Username (Station ID)</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={14} />
+                  <input 
+                    type="text" 
+                    value={config.username}
+                    onChange={(e) => handleUpdate(config.id, 'username', e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-100 rounded-2xl py-3 pl-10 pr-4 text-sm font-bold focus:ring-2 ring-amber-400/20 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1.5 ml-1">Password (Security Key)</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300" size={14} />
+                  <input 
+                    type="text" 
+                    value={config.password}
+                    onChange={(e) => handleUpdate(config.id, 'password', e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-100 rounded-2xl py-3 pl-10 pr-4 text-sm font-bold focus:ring-2 ring-amber-400/20 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              {config.id.startsWith('waiter') && (
+                <div>
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1.5 ml-1">Assigned Zone</label>
+                  <div className="flex bg-stone-50 p-1 rounded-2xl border border-stone-100 overflow-x-auto custom-scrollbar-hide">
+                    <button
+                      onClick={() => handleUpdate(config.id, 'assignedZone', 'A')}
+                      className={`flex-1 min-w-[60px] py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'A' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
                     >
-                      <option value="" disabled>Select a role...</option>
-                      {roles.map(r => (
-                        <option key={r} value={r}>{r.toUpperCase()}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                      user.role === 'pending' ? 'bg-red-100 text-red-600' : 
-                      user.role === 'admin' ? 'bg-stone-900 text-white' : 
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {user.role}
-                    </span>
-                  )}
-                </td>
-                <td className="p-4 text-right">
-                  {editingId === user.uid ? (
-                    <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => { setEditingId(null); setSelectedRole(''); }} className="p-2 text-stone-400 hover:text-stone-900 bg-stone-100 rounded-xl transition-colors"><X size={16} /></button>
-                      <button onClick={() => handleRoleUpdate(user.uid)} className="p-2 text-green-600 hover:text-white hover:bg-green-600 bg-green-50 rounded-xl flex items-center transition-colors"><Check size={16} /></button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => { setEditingId(user.uid); setSelectedRole(user.role || ''); }}
-                      className="text-[10px] font-black text-amber-500 uppercase tracking-widest px-4 py-2 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors"
-                    >
-                      Edit Role
+                      A (In)
                     </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {staffUsers.length === 0 && (
-              <tr>
-                <td colSpan={3} className="p-8 text-center text-stone-400 font-bold">No staff found. Ask staff to sign in via /staff-login first.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                    <button
+                      onClick={() => handleUpdate(config.id, 'assignedZone', 'B')}
+                      className={`flex-1 min-w-[60px] py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'B' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      B (Out)
+                    </button>
+                    <button
+                      onClick={() => handleUpdate(config.id, 'assignedZone', 'Both')}
+                      className={`flex-1 min-w-[60px] py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${config.assignedZone === 'Both' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      Both
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        ))}
       </div>
 
       <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex gap-4">
         <Shield className="text-amber-500 shrink-0" size={24} />
         <div className="space-y-1">
-          <h4 className="text-sm font-black text-amber-900 uppercase tracking-tight italic">Security Info</h4>
+          <h4 className="text-sm font-black text-amber-900 uppercase tracking-tight italic">Security Tip</h4>
           <p className="text-xs text-amber-800/80 leading-relaxed">
-            Staff users must first create their own account at <strong>/staff-login</strong>. Once they appear here as "pending", approve them by assigning the correct system role. Passwords are fully secured via Firebase Auth.
+            Changing these credentials will affect how staff members log in. Make sure to communicate new credentials to your team immediately after saving.
           </p>
         </div>
       </div>

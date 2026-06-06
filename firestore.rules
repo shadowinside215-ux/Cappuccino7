@@ -106,8 +106,7 @@ service cloud.firestore {
       allow list: if isSignedIn(); 
       
       // Fully relaxed for dev owners
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId);
       
       allow update: if isStaff() && 
                     incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty']);
@@ -129,7 +128,7 @@ service cloud.firestore {
     // --- Settings (Brand, Global, etc.) ---
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if isAdmin() || (settingId == 'systemVisibility' && isStaff());
+      allow write: if isAdmin();
     }
 
     // --- Menu ---
@@ -183,12 +182,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // --- Staff Configs ---
-    match /staffConfigs/{id} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
     // --- Daily Revenue & Stats ---
     match /dailyRevenue/{date} {
       allow read: if isStaff();
@@ -233,6 +226,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // --- End ---
+    // --- Staff Configs ---
+    match /staffConfigs/{id} {
+      // Allow list and get so staff can verify credentials before full auth
+      allow read: if true; 
+      allow write: if isAdmin();
+    }
   }
 }
