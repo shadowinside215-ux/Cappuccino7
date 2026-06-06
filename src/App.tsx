@@ -41,7 +41,7 @@ import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
 
-import StaffLogin from './pages/StaffLogin';
+import StaffRoleLogin from './pages/StaffRoleLogin';
 
 const getStaffDashboard = (up: UserProfile | null) => {
   if (up?.isAdmin || up?.role === 'admin') return '/admin';
@@ -197,7 +197,8 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                        location.pathname.startsWith('/kitchen') || 
                        location.pathname.startsWith('/barman') || 
                        location.pathname.startsWith('/cashier') ||
-                       location.pathname.startsWith('/admin');
+                       location.pathname.startsWith('/admin') ||
+                       location.pathname.startsWith('/driver');
 
   const isStaffUser = userProfile?.isWaiter || 
                       userProfile?.isKitchen || 
@@ -304,7 +305,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
           )}
           
           {!isStaffView && !isLoginPage && (
-            <header className="fixed top-0 left-0 right-0 z-[60] py-6 px-6">
+            <header className="absolute top-0 left-0 right-0 z-[60] py-6 px-6">
               <div className="max-w-7xl mx-auto flex justify-between items-center bg-bento-card-bg/40 backdrop-blur-3xl border border-bento-card-border px-6 py-4 rounded-[2rem] shadow-2xl">
                 <Link to="/" className="flex items-center gap-4" onClick={() => setIsMenuOpen(false)}>
                   <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-2xl bg-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
@@ -429,18 +430,18 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                       <ListOrdered /> <span>{t('orders')}</span>
                     </Link>
                   )}
-                  <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
-                    <UserIcon /> <span>{t('profile')}</span>
-                  </Link>
-                  <Link onClick={() => setIsMenuOpen(false)} to="/settings" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
-                    <SettingsIcon /> <span>{t('settings')}</span>
-                  </Link>
-                  {isAdmin && (
-                    <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
-                      <LayoutDashboard /> <span>{t('admin')}</span>
+                    <Link onClick={() => setIsMenuOpen(false)} to="/profile" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
+                      <UserIcon /> <span>{t('profile')}</span>
                     </Link>
-                  )}
-                </div>
+                    <Link onClick={() => setIsMenuOpen(false)} to="/settings" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
+                      <SettingsIcon /> <span>{t('settings')}</span>
+                    </Link>
+                    {isAdmin && (
+                      <Link onClick={() => setIsMenuOpen(false)} to="/admin" className="flex items-center gap-4 p-5 rounded-2xl hover:bg-bento-card-bg text-bento-ink/70 font-bold text-lg">
+                        <LayoutDashboard /> <span>{t('admin')}</span>
+                      </Link>
+                    )}
+                  </div>
 
                 <div className="mt-8 pt-8 border-t border-bento-card-border">
                   <p className="text-[10px] font-black text-bento-ink/50 uppercase tracking-widest mb-4">Choose Language</p>
@@ -487,7 +488,13 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/track/:id" element={<OrderConfirmation />} />
                   <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} userProfile={userProfile} />} />
                   
-                  <Route path="/staff-login" element={<StaffLogin />} />
+                  <Route path="/admin/login" element={<StaffRoleLogin role="admin" />} />
+                  <Route path="/waiter/login" element={<StaffRoleLogin role="waiter" />} />
+                  <Route path="/kitchen/login" element={<StaffRoleLogin role="kitchen" />} />
+                  <Route path="/barman/login" element={<StaffRoleLogin role="barman" />} />
+                  <Route path="/cashier/login" element={<StaffRoleLogin role="cashier" />} />
+                  <Route path="/driver/login" element={<StaffRoleLogin role="driver" />} />
+
                   <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
                   <Route path="/admin/staff" element={<AdminGuard userProfile={userProfile}><StaffManagement /></AdminGuard>} />
                   <Route path="/admin/stats" element={<AdminGuard userProfile={userProfile}><AdminStats /></AdminGuard>} />
@@ -504,6 +511,30 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
               </motion.div>
             </AnimatePresence>
           </main>
+
+          {location.pathname === '/login' && !user && !isStaffView && (
+            <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
+              <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-bento-card-border bg-bento-card-bg/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
+                {[
+                  { to: "/admin/login", label: t('admin_access') },
+                  { to: "/waiter/login", label: t('waiter_access') },
+                  { to: "/cashier/login", label: t('cashier_access', 'POS Cashier') },
+                  { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen') },
+                  { to: "/barman/login", label: t('barman_access', 'Barman') },
+                  { to: "/driver/login", label: t('driver_access', 'Driver') },
+                ].map((link) => (
+                  <Link 
+                    key={link.to}
+                    to={link.to} 
+                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-amber-500 hover:text-amber-600 transition-all flex items-center gap-2 group"
+                  >
+                    <span className="w-1 h-1 bg-amber-500 rounded-full transition-colors" />
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </footer>
+          )}
         </>
       )}
     </div>

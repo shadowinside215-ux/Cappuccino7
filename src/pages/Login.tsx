@@ -27,7 +27,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { settings: brand } = useBrandSettings();
   const [deviceRole, setDeviceRole] = useState<string | null>(localStorage.getItem('device_staff_role'));
-  const [globalVisibility, setGlobalVisibility] = useState<Record<string, boolean>>({});
   
   // Form states
   const [email, setEmail] = useState('');
@@ -77,16 +76,6 @@ export default function Login() {
     };
     checkRedirectResult();
 
-    // Listen to global system visibility
-    const unsub = onSnapshot(doc(db, 'settings', 'systemVisibility'), (docSnap) => {
-      if (docSnap.exists()) {
-        setGlobalVisibility(docSnap.data() as Record<string, boolean>);
-      }
-    }, (err) => {
-      console.log('Visibility read ignored until config created');
-    });
-
-    return () => unsub();
   }, [navigate]);
 
   const handleGoogleLogin = async () => {
@@ -197,23 +186,9 @@ export default function Login() {
     }
   };
 
-  const staffLinks = [
-    { to: "/staff-login?role=waiter", label: t('waiter_access'), role: "waiter" },
-    { to: "/staff-login?role=cashier", label: t('cashier_access', 'POS Cashier'), role: "cashier" },
-    { to: "/staff-login?role=kitchen", label: t('kitchen_access', 'Kitchen'), role: "kitchen" },
-    { to: "/staff-login?role=barman", label: t('barman_access', 'Barman'), role: "barman" },
-  ];
-
-  const visibleStaffLinks = staffLinks.filter(link => {
-    if (deviceRole === link.role) return true; // Device claimed it, show it here
-    if (deviceRole) return false; // Device claimed *another* role, hide the rest
-    if (globalVisibility[link.role] === true) return false; // Someone else claimed it globally
-    return true; // Still public
-  });
-
   return (
-    <div className="min-h-screen flex flex-col pt-6 bg-bento-bg overflow-x-hidden">
-      <div className="flex-1 group/login relative flex items-center justify-center p-6 bg-bento-bg">
+    <div className="min-h-screen group/login relative flex flex-col items-center p-6 bg-bento-bg overflow-x-hidden">
+      <div className="flex-1 group/login relative flex items-center justify-center p-6 bg-bento-bg w-full">
         {/* Immersive Background */}
         <div className="fixed inset-0 z-0">
           {brand.loginBgUrl && (
@@ -408,23 +383,6 @@ export default function Login() {
           </AnimatePresence>
         </div>
       </div>
-
-      {visibleStaffLinks.length > 0 && (
-        <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-20 text-center w-full">
-          <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-2 px-8">
-            {visibleStaffLinks.map((link) => (
-              <Link 
-                key={link.to}
-                to={link.to} 
-                className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-amber-500 transition-all flex items-center gap-2 group"
-              >
-                <span className={`w-1 h-1 rounded-full transition-colors ${deviceRole === link.role ? 'bg-amber-500' : 'bg-white/20 group-hover:bg-amber-500'}`} />
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </footer>
-      )}
     </div>
   );
 }
