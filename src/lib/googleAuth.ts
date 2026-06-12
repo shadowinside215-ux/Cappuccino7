@@ -23,10 +23,12 @@ export async function signInWithGoogleAndroidAndWeb(): Promise<UserCredential | 
       throw e;
     }
   } else {
-    // Check if we are in an Android or mobile environment that might wrap the app in a WebView/TWA
-    const isAndroidMobile = /Android/i.test(navigator.userAgent);
-    if (isAndroidMobile) {
-       // signInWithPopup notoriously breaks in Android WebViews/TWAs yielding "The requested action is invalid"
+    // Check if we are in a mobile environment or running as an installed PWA / WebView
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as any).standalone);
+    
+    if (isMobile || isStandalone) {
+       // signInWithPopup notoriously breaks in WebViews/PWAs yielding "The requested action is invalid"
        // due to lost window.opener context cross-origin. Use redirect instead.
        return signInWithRedirect(auth, googleProvider);
     } else {
