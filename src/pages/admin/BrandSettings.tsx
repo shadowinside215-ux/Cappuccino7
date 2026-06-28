@@ -19,6 +19,7 @@ export default function BrandSettings() {
   const [reviewPopupSubtitle, setReviewPopupSubtitle] = useState('Your support helps us grow. Leave us a quick 5-star review on Google Maps.');
   const [googleMapsLink, setGoogleMapsLink] = useState('https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida');
   const [reviewPopupStatsClicks, setReviewPopupStatsClicks] = useState(0);
+  const [publicSystemLogins, setPublicSystemLogins] = useState(true);
   const [activeUpload, setActiveUpload] = useState<'logo' | 'hero' | 'cart' | 'orders' | 'profile' | 'login' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +49,7 @@ export default function BrandSettings() {
           setReviewPopupSubtitle(data.reviewPopupSubtitle || 'Your support helps us grow. Leave us a quick 5-star review on Google Maps.');
           setGoogleMapsLink(data.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida');
           setReviewPopupStatsClicks(data.reviewPopupStatsClicks || 0);
+          setPublicSystemLogins(data.publicSystemLogins ?? true);
         }
       } catch (err) {
         console.error('Error fetching brand settings:', err);
@@ -64,11 +66,6 @@ export default function BrandSettings() {
 
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File is too large. Max 5MB.');
       return;
     }
 
@@ -133,6 +130,7 @@ export default function BrandSettings() {
         reviewPopupTitle,
         reviewPopupSubtitle,
         googleMapsLink,
+        publicSystemLogins,
         updatedAt: new Date().toISOString()
       }, { merge: true });
       toast.success('Brand settings saved!');
@@ -169,6 +167,29 @@ export default function BrandSettings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+          <div className="card space-y-6">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Star size={20} className="text-bento-primary" />
+              General System Settings
+            </h2>
+            
+            <div className="flex items-center justify-between p-6 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-100 dark:border-white/5">
+              <div className="space-y-1">
+                <h3 className="font-bold text-stone-800 dark:text-stone-200">Public System Logins</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 max-w-md">
+                  When toggled on, login links (Waiters, Cashiers, etc.) are visible at the bottom of the public login page. When toggled off, only users with the direct link can access or see them unless already authenticated.
+                </p>
+              </div>
+              
+              <button
+                onClick={() => setPublicSystemLogins(!publicSystemLogins)}
+                className={`w-14 h-8 rounded-full p-1 transition-colors ${publicSystemLogins ? 'bg-green-500' : 'bg-stone-300 dark:bg-stone-600'}`}
+              >
+                <div className={`w-6 h-6 rounded-full bg-white transition-transform ${publicSystemLogins ? 'translate-x-6' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          </div>
+
           <div className="card space-y-6">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <ImageIcon size={20} className="text-bento-primary" />

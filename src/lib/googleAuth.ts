@@ -23,16 +23,8 @@ export async function signInWithGoogleAndroidAndWeb(): Promise<UserCredential | 
       throw e;
     }
   } else {
-    // Check if we are in an Android or mobile environment that might wrap the app in a WebView/TWA
-    const isAndroidMobile = /Android/i.test(navigator.userAgent);
-    if (isAndroidMobile) {
-       // signInWithPopup notoriously breaks in Android WebViews/TWAs yielding "The requested action is invalid"
-       // due to lost window.opener context cross-origin. Use redirect instead.
-       return signInWithRedirect(auth, googleProvider);
-    } else {
-       // Standard web popup fallback
-       return signInWithPopup(auth, googleProvider);
-    }
+    // Standard web popup fallback works better for most environments than Redirect
+    return signInWithPopup(auth, googleProvider);
   }
 }
 

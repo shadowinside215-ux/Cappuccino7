@@ -149,12 +149,6 @@ export default function AdminMenu() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file size (e.g., 5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File is too large. Max 5MB.');
-      return;
-    }
-
     const env = (import.meta as any).env;
     const cloudName = env.VITE_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = env.VITE_CLOUDINARY_UPLOAD_PRESET;

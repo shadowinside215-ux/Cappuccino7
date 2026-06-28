@@ -18,6 +18,7 @@ export interface BrandSettings {
   reviewPopupSubtitle?: string;
   reviewPopupStatsClicks?: number;
   googleMapsLink?: string;
+  publicSystemLogins?: boolean;
 }
 
 const DEFAULT_LOGO = 'https://storage.googleapis.com/aistudio-build-prod-user-attachments/0914856f-99f6-4999-a86d-0bb39b4bcaa7/image.png?v=2';
@@ -27,7 +28,8 @@ export function useBrandSettings() {
   const [settings, setSettings] = useState<BrandSettings>({
     logoUrl: DEFAULT_LOGO,
     heroImageUrl: undefined,
-    loginBgUrl: undefined
+    loginBgUrl: undefined,
+    publicSystemLogins: true
   });
   const [loading, setLoading] = useState(true);
 

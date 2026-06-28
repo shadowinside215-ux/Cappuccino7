@@ -296,7 +296,12 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                           {/* Mini Scrollable Drink Menu */}
                           <div className="max-h-[220px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
                             {products
-                              .filter(p => (p.categoryId === 'coffee' || p.categoryId === 'drinks' || p.categoryId === 'tea') && !p.name.toLowerCase().includes('juice') && !p.name.toLowerCase().includes('jus') && !p.name.toLowerCase().includes('smoothie'))
+                              .filter(p => {
+                                const lowerName = p.name.toLowerCase();
+                                const allowedDrinks = ['tea', 'thé', 'lipton', 'verveine', 'infusion', 'café crème', 'coffe cream', 'coffee cream', 'chocolat chaud', 'chocolate milk', 'cappuccino', 'café americain', 'american coffee'];
+                                return (p.categoryId === 'coffee' || p.categoryId === 'drinks' || p.categoryId === 'tea') && 
+                                  allowedDrinks.some(kw => lowerName.includes(kw));
+                              })
                               .map((drink) => (
                                 <button
                                   key={drink.id}

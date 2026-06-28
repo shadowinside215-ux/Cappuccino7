@@ -72,6 +72,15 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   }, [userProfile?.itemLoyalty]);
 
   const handleLogout = async () => {
+    // Determine redirect based on current staff role before removing it
+    let redirectUrl = '/login';
+    if (localStorage.getItem('waiter_session_active') === 'true') redirectUrl = '/waiter/login';
+    else if (localStorage.getItem('kitchen_session_active') === 'true') redirectUrl = '/kitchen/login';
+    else if (localStorage.getItem('barman_session_active') === 'true') redirectUrl = '/barman/login';
+    else if (localStorage.getItem('cashier_session_active') === 'true') redirectUrl = '/cashier/login';
+    else if (localStorage.getItem('driver_auth')) redirectUrl = '/driver/login';
+    else if (sessionStorage.getItem('admin_mode') === 'true') redirectUrl = '/admin/login';
+
     // Clear staff markers immediately
     localStorage.removeItem('waiter_session_active');
     localStorage.removeItem('kitchen_session_active');
@@ -86,7 +95,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
       console.warn(e);
     }
     
-    window.location.href = '/login';
+    window.location.href = redirectUrl;
   };
 
   if (isGuest) {
