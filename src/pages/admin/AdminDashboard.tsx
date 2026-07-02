@@ -4,10 +4,12 @@ import { collection, query, orderBy, onSnapshot, getDocs, getDoc, doc, setDoc, w
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Image as ImageIcon, QrCode, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { CATEGORIES, PRODUCTS_DATA } from '../../data/menuData';
+import { QRCodeSVG } from 'qrcode.react';
+import jsPDF from 'jspdf';
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
@@ -33,6 +35,42 @@ export default function AdminDashboard() {
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [waiters, setWaiters] = useState<UserProfile[]>([]);
   const navigate = useNavigate();
+
+  const handleDownloadQR = () => {
+    const svg = document.getElementById('table-qr-code-admin');
+    if (!svg) return;
+    
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      canvas.width = img.width + 40;
+      canvas.height = img.height + 40;
+      
+      // Add white background
+      if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 20, 20);
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        // Add title text centered
+        pdf.setFontSize(22);
+        pdf.text('Scan for Menu', pdfWidth / 2, 20, { align: 'center' });
+        
+        pdf.addImage(imgData, 'PNG', 15, 30, pdfWidth - 30, ((pdfWidth - 30) * canvas.height) / canvas.width);
+        pdf.save('cappuccino7-qr-code.pdf');
+      }
+    };
+    
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
 
   useEffect(() => {
     // Listener for staff/waiters to check zone assignments
@@ -783,6 +821,41 @@ export default function AdminDashboard() {
             </div>
           </div>
         </button>
+      </div>
+
+      {/* QR Code Section */}
+      <div className="card space-y-6 !p-8 border-bento-card-border bg-bento-card-bg">
+        <h2 className="text-xl font-bold flex items-center gap-2 uppercase tracking-tight">
+          <QrCode size={20} className="text-bento-primary" />
+          Table QR Code
+        </h2>
+        <div className="p-6 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-100 dark:border-white/5 flex flex-col md:flex-row items-center gap-8">
+          <div className="bg-white p-4 rounded-2xl shadow-sm">
+            <QRCodeSVG 
+              id="table-qr-code-admin"
+              value="https://cappuccino7-alpha.vercel.app/" 
+              size={160} 
+              level="H"
+              includeMargin={false}
+              fgColor="#1C1917"
+            />
+          </div>
+          <div className="space-y-4 flex-1 text-center md:text-left">
+            <div>
+              <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-1 text-lg">Customer Menu QR</h3>
+              <p className="text-sm text-stone-500 dark:text-stone-400">
+                Print this QR code and place it on your tables. When scanned, it will open the app directly on the customer's phone (https://cappuccino7-alpha.vercel.app/).
+              </p>
+            </div>
+            <button
+              onClick={handleDownloadQR}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-bento-primary text-white text-sm font-bold rounded-xl hover:bg-opacity-90 transition-all active:scale-95 shadow-md"
+            >
+              <Download size={18} />
+              Download PDF
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-6">

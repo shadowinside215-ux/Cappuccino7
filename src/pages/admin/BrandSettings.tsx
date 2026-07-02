@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { ArrowLeft, Upload, Loader2, Image as ImageIcon, Save, Star } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, Image as ImageIcon, Save, Star, QrCode, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import OptimizedImage from '../../components/ui/OptimizedImage';
+import { QRCodeSVG } from 'qrcode.react';
+import jsPDF from 'jspdf';
 
 export default function BrandSettings() {
   const [logoUrl, setLogoUrl] = useState('https://raw.githubusercontent.com/Lucide-Icons/lucide/main/icons/coffee.svg');
@@ -142,6 +144,42 @@ export default function BrandSettings() {
     }
   };
 
+  const handleDownloadQR = () => {
+    const svg = document.getElementById('table-qr-code');
+    if (!svg) return;
+    
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      canvas.width = img.width + 40;
+      canvas.height = img.height + 40;
+      
+      // Add white background
+      if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 20, 20);
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        // Add title text centered
+        pdf.setFontSize(22);
+        pdf.text('Scan for Menu', pdfWidth / 2, 20, { align: 'center' });
+        
+        pdf.addImage(imgData, 'PNG', 15, 30, pdfWidth - 30, ((pdfWidth - 30) * canvas.height) / canvas.width);
+        pdf.save('cappuccino7-qr-code.pdf');
+      }
+    };
+    
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -187,6 +225,40 @@ export default function BrandSettings() {
               >
                 <div className={`w-6 h-6 rounded-full bg-white transition-transform ${publicSystemLogins ? 'translate-x-6' : 'translate-x-0'}`} />
               </button>
+            </div>
+          </div>
+
+          <div className="card space-y-6">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <QrCode size={20} className="text-bento-primary" />
+              Table QR Code
+            </h2>
+            <div className="p-6 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-100 dark:border-white/5 flex flex-col md:flex-row items-center gap-8">
+              <div className="bg-white p-4 rounded-2xl shadow-sm">
+                <QRCodeSVG 
+                  id="table-qr-code"
+                  value="https://cappuccino7-alpha.vercel.app/" 
+                  size={160} 
+                  level="H"
+                  includeMargin={false}
+                  fgColor="#1C1917" // stone-900
+                />
+              </div>
+              <div className="space-y-4 flex-1 text-center md:text-left">
+                <div>
+                  <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-1">Customer Menu QR</h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    Print this QR code and place it on your tables. When scanned, it will open the app directly on the customer's phone (https://cappuccino7-alpha.vercel.app/).
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownloadQR}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-bento-primary text-white text-sm font-bold rounded-xl hover:bg-opacity-90 transition-all active:scale-95"
+                >
+                  <Download size={16} />
+                  Download PDF
+                </button>
+              </div>
             </div>
           </div>
 
