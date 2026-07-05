@@ -2,7 +2,7 @@ import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch, setDoc } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { Product, Category } from '../../types';
-import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Check, Upload, Image as ImageIcon, Loader2, ArrowLeft, LogOut, ShieldCheck, AlertTriangle, Coffee, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -232,6 +232,17 @@ export default function AdminMenu() {
       toast.success('Product updated successfully!');
     } catch (err) { 
       handleFirestoreError(err, OperationType.UPDATE, `products/${editingId}`);
+    }
+  };
+
+  const handleToggleImageHide = async (productId: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, 'products', productId), {
+        hideImage: !currentStatus
+      });
+      toast.success(currentStatus ? 'Image is now visible' : 'Image is now hidden');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `products/${productId}`);
     }
   };
 
@@ -716,16 +727,34 @@ export default function AdminMenu() {
                               : '!bg-[#FDF8F3]'
                           }`}>
                             <div className="relative w-20 h-20 flex-shrink-0">
-                              <OptimizedImage 
-                                src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
-                                className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
-                                referrerPolicy="no-referrer"
-                                alt={product.name}
-                                showOverlay={false}
-                                containerClassName="w-full h-full"
-                              />
+                              {product.hideImage ? (
+                                <div className={`w-full h-full bg-[#f6f3f0] dark:bg-stone-800 rounded-2xl flex flex-col items-center justify-center text-stone-400 ${!product.isAvailable && 'grayscale opacity-40'}`}>
+                                  <Coffee size={24} />
+                                </div>
+                              ) : (
+                                <OptimizedImage 
+                                  src={product.image || 'https://picsum.photos/seed/coffee/200/200'} 
+                                  className={`w-full h-full object-cover rounded-2xl shadow-sm ${!product.isAvailable && 'grayscale opacity-40'}`}
+                                  referrerPolicy="no-referrer"
+                                  alt={product.name}
+                                  showOverlay={false}
+                                  containerClassName="w-full h-full"
+                                />
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleImageHide(product.id, !!product.hideImage);
+                                }}
+                                className={`absolute -top-2 -right-2 p-1.5 rounded-full shadow-md z-10 transition-all ${
+                                  product.hideImage ? 'bg-red-500 text-white' : 'bg-white text-stone-400 hover:text-stone-600'
+                                }`}
+                                title={product.hideImage ? "Show Image" : "Hide Image"}
+                              >
+                                {product.hideImage ? <EyeOff size={12} /> : <Eye size={12} />}
+                              </button>
                               {!product.isAvailable && (
-                                <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                   <div className="bg-stone-800 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Hidden</div>
                                 </div>
                               )}

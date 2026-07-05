@@ -50,8 +50,9 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
       const isAdminMode = sessionStorage.getItem('admin_mode') === 'true';
       const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
       const isCreator = auth.currentUser?.email?.toLowerCase() === adminEmail.toLowerCase();
+      const isClientAdmin = auth.currentUser?.email?.toLowerCase() === 'mohamed.erguigue@gmail.com' || auth.currentUser?.email?.toLowerCase() === 'samiarafati3@gmail.com';
       
-      if (isAdminMode || isCreator) {
+      if (isAdminMode || isCreator || isClientAdmin) {
         setIsAdminDocument(true);
         return;
       }
@@ -69,6 +70,11 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
   if (isAdminDocument === null) return <div className="min-h-screen flex items-center justify-center bg-bento-bg">{t('checking_permissions')}</div>;
 
   if (isAdminDocument || userProfile?.isAdmin) {
+    const isClientAdmin = auth.currentUser?.email?.toLowerCase() === 'mohamed.erguigue@gmail.com' || auth.currentUser?.email?.toLowerCase() === 'samiarafati3@gmail.com';
+    const currentPath = window.location.pathname;
+    if (isClientAdmin && currentPath !== '/admin' && currentPath !== '/admin/stats') {
+      return <Navigate to="/admin" />;
+    }
     return <>{children}</>;
   }
 
@@ -286,11 +292,11 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
       updateFavicon('shortcut icon');
       updateFavicon('apple-touch-icon');
       
-      if (brand?.name) {
-        document.title = brand.name;
+      if ((brand as any)?.name) {
+        document.title = (brand as any).name;
       }
     }
-  }, [brand?.logoUrl, brand?.name]);
+  }, [brand?.logoUrl, (brand as any)?.name]);
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
@@ -380,7 +386,8 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
 
     const adminEmailFallback = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
   const isCreator = auth.currentUser?.email?.toLowerCase() === adminEmailFallback.toLowerCase();
-  const isAdmin = userProfile?.isAdmin || isCreator;
+  const isClientAdmin = auth.currentUser?.email?.toLowerCase() === 'mohamed.erguigue@gmail.com' || auth.currentUser?.email?.toLowerCase() === 'samiarafati3@gmail.com';
+  const isAdmin = userProfile?.isAdmin || isCreator || isClientAdmin;
 
   useEffect(() => {
     if (isWaiterInStorage && !location.pathname.startsWith('/waiter') && location.pathname !== '/login') {
@@ -625,11 +632,10 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             </AnimatePresence>
           </main>
 
-          {location.pathname === '/login' && !user && !isStaffView && brand.publicSystemLogins !== false && (
+          {location.pathname === '/login' && !user && !isStaffView && localStorage.getItem('system_unlocked') === 'true' && brand.publicSystemLogins !== false && (
             <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
               <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-bento-card-border bg-bento-card-bg/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
                 {[
-                  { to: "/admin/login", label: t('admin_access') },
                   { to: "/waiter/login", label: t('waiter_access') },
                   { to: "/cashier/login", label: t('cashier_access', 'POS Cashier') },
                   { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen') },

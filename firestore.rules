@@ -21,6 +21,8 @@ service cloud.firestore {
       let userData = hasUser ? get(userPath).data : null;
       return isSignedIn() && (
         request.auth.token.email == 'dragonballsam86@gmail.com' ||
+        request.auth.token.email == 'mohamed.erguigue@gmail.com' ||
+        request.auth.token.email == 'samiarafati3@gmail.com' ||
         (hasUser && (userData.get('isAdmin', false) == true || userData.get('role', '') == 'admin')) ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );

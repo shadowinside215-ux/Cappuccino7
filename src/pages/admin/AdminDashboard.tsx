@@ -31,6 +31,7 @@ export default function AdminDashboard() {
   const [productsMap, setProductsMap] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [showWipeConfirm, setShowWipeConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [waiters, setWaiters] = useState<UserProfile[]>([]);
@@ -113,16 +114,7 @@ export default function AdminDashboard() {
   };
 
   const cleanupAllTestData = async () => {
-    const confirmation = window.confirm(
-      "⚠️ DANGER: This will PERMANENTLY DELETE all orders, all revenue data, all waiter requests, and CLEAR all customer loyalty points/points balances. This cannot be undone. Proceed?"
-    );
-    if (!confirmation) return;
-
-    const secondConfirmation = window.confirm(
-      "Are you absolutely sure? This will reset the app to zero test data."
-    );
-    if (!secondConfirmation) return;
-
+    setShowWipeConfirm(false);
     const toastId = toast.loading('Initiating deep cleanup...');
     try {
       // 1. Clear Orders
@@ -585,6 +577,8 @@ export default function AdminDashboard() {
     }
   }, [auth.currentUser?.email]);
 
+  const isClientAdmin = auth.currentUser?.email?.toLowerCase() === 'mohamed.erguigue@gmail.com' || auth.currentUser?.email?.toLowerCase() === 'samiarafati3@gmail.com';
+
   return (
     <div className="space-y-8 bg-bento-bg min-h-screen p-4 md:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -606,7 +600,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-      {isEmpty && (
+      {!isClientAdmin && isEmpty && (
         <div className="card accent-card overflow-hidden relative">
           <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -647,29 +641,33 @@ export default function AdminDashboard() {
             <p className="text-3xl md:text-4xl font-black text-bento-ink mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_mad')}</p>
             
-            <button 
-              onClick={resetTodayRevenue}
-              className="absolute top-4 right-4 p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
-              title="Reset Today's Revenue"
-            >
-              <X size={16} />
-            </button>
+            {!isClientAdmin && (
+              <button 
+                onClick={resetTodayRevenue}
+                className="absolute top-4 right-4 p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
+                title="Reset Today's Revenue"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
 
-        <div className="card !p-6 lg:col-span-2 accent-card !bg-bento-accent !text-bento-primary">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-white/20 rounded-2xl">
-              <Users size={20} />
+        {!isClientAdmin && (
+          <div className="card !p-6 lg:col-span-2 accent-card !bg-bento-accent !text-bento-primary">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-white/20 rounded-2xl">
+                <Users size={20} />
+              </div>
+              <div className="text-right">
+                <p className="text-3xl md:text-4xl font-black">{stats.totalUsers}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{t('registered_users')}</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-3xl md:text-4xl font-black">{stats.totalUsers}</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{t('registered_users')}</p>
-            </div>
+            <p className="text-xs font-medium opacity-80 mt-auto">
+              {t('community_growth_msg')}
+            </p>
           </div>
-          <p className="text-xs font-medium opacity-80 mt-auto">
-            {t('community_growth_msg')}
-          </p>
-        </div>
+        )}
       </div>
 
       {/* Weekly Revenue Chart-like View */}
@@ -680,37 +678,41 @@ export default function AdminDashboard() {
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mt-1">{t('revenue_per_day')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-            <button 
-              onClick={resetWeeklyRevenue}
-              className="flex-1 sm:flex-none px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
-            >
-              Reset Weekly
-            </button>
-            <button 
-              onClick={async () => {
-                if (!confirm('Clear ALL historic revenue data?')) return;
-                const toastId = toast.loading('Clearing all revenue...');
-                try {
-                  const revSnap = await getDocs(collection(db, 'dailyRevenue'));
-                  const batch = writeBatch(db);
-                  revSnap.docs.forEach(d => batch.delete(d.ref));
-                  await batch.commit();
-                  toast.success('All revenue data cleared.', { id: toastId });
-                  setWeeklyRevenue({});
-                  setStats(prev => ({ ...prev, todayRevenue: 0 }));
-                } catch (err) {
-                   toast.error('Failed to clear revenue', { id: toastId });
-                }
-              }}
-              className="flex-1 sm:flex-none px-3 py-2 bg-bento-primary text-bento-bg text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all shadow-lg"
-            >
-              Reset All Rev
-            </button>
+            {!isClientAdmin && (
+              <>
+                <button 
+                  onClick={resetWeeklyRevenue}
+                  className="flex-1 sm:flex-none px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
+                >
+                  Reset Weekly
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (!confirm('Clear ALL historic revenue data?')) return;
+                    const toastId = toast.loading('Clearing all revenue...');
+                    try {
+                      const revSnap = await getDocs(collection(db, 'dailyRevenue'));
+                      const batch = writeBatch(db);
+                      revSnap.docs.forEach(d => batch.delete(d.ref));
+                      await batch.commit();
+                      toast.success('All revenue data cleared.', { id: toastId });
+                      setWeeklyRevenue({});
+                      setStats(prev => ({ ...prev, todayRevenue: 0 }));
+                    } catch (err) {
+                       toast.error('Failed to clear revenue', { id: toastId });
+                    }
+                  }}
+                  className="flex-1 sm:flex-none px-3 py-2 bg-bento-primary text-bento-bg text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all shadow-lg"
+                >
+                  Reset All Rev
+                </button>
+              </>
+            )}
             <History className="hidden sm:block text-stone-300 dark:text-stone-700" size={32} />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className={`grid grid-cols-1 gap-4 mb-8 ${!isClientAdmin ? 'md:grid-cols-2' : ''}`}>
            <button 
              onClick={() => navigate('/admin/stats')}
              className="bg-bento-card-bg text-bento-ink p-8 rounded-3xl flex items-center justify-between group hover:bg-bento-card-bg/90 transition-all shadow-xl border border-bento-card-border"
@@ -725,16 +727,18 @@ export default function AdminDashboard() {
              </div>
            </button>
 
-           <div className="bg-amber-400 p-8 rounded-3xl flex items-center justify-between text-stone-900">
-             <div className="text-left">
-               <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">{t('community')}</span>
-               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">{t('users_list')}</h4>
-               <p className="text-xs opacity-60 mt-2">{t('manage_customers')}</p>
+           {!isClientAdmin && (
+             <div className="bg-amber-400 p-8 rounded-3xl flex items-center justify-between text-stone-900">
+               <div className="text-left">
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">{t('community')}</span>
+                 <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">{t('users_list')}</h4>
+                 <p className="text-xs opacity-60 mt-2">{t('manage_customers')}</p>
+               </div>
+               <div className="p-4 bg-stone-900/10 rounded-2xl">
+                 <Users size={28} />
+               </div>
              </div>
-             <div className="p-4 bg-stone-900/10 rounded-2xl">
-               <Users size={28} />
-             </div>
-           </div>
+           )}
 
         </div>
         
@@ -776,7 +780,9 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+      {!isClientAdmin && (
+        <>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
         <button 
           onClick={() => navigate('/admin/orders')}
           className="card accent-card !p-8 group hover:scale-[1.02]"
@@ -940,7 +946,7 @@ export default function AdminDashboard() {
               </p>
             </div>
             <button 
-              onClick={cleanupAllTestData}
+              onClick={() => setShowWipeConfirm(true)}
               className="w-full md:w-auto bg-red-600 text-white px-10 py-5 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-red-700 active:scale-95 transition-all shadow-xl shadow-red-600/30 flex items-center justify-center gap-3"
             >
               <Database size={18} />
@@ -949,6 +955,52 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showWipeConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white max-w-md w-full rounded-[2.5rem] overflow-hidden shadow-2xl"
+            >
+              <div className="bg-red-600 p-8 text-center text-white">
+                <ShieldCheck size={48} className="mx-auto mb-4 opacity-90" />
+                <h3 className="text-2xl font-black uppercase italic tracking-tighter">Confirm Data Wipe</h3>
+              </div>
+              <div className="p-8">
+                <p className="text-stone-600 font-medium leading-relaxed mb-8">
+                  <strong className="text-red-600 block mb-2">⚠️ DANGER: Irreversible Action</strong>
+                  This will PERMANENTLY DELETE all orders, all revenue data, all waiter requests, and CLEAR all customer loyalty points. 
+                  <br/><br/>
+                  Are you absolutely sure you want to proceed?
+                </p>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setShowWipeConfirm(false)}
+                    className="flex-1 px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-stone-100 text-stone-600 hover:bg-stone-200 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={cleanupAllTestData}
+                    className="flex-1 px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-red-600 text-white shadow-xl shadow-red-500/20 hover:bg-red-700 transition-all active:scale-95"
+                  >
+                    Wipe Data
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {selectedUser && (
           <motion.div 
@@ -1088,6 +1140,8 @@ export default function AdminDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+      </>
+      )}
 
     </div>
   );

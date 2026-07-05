@@ -12,7 +12,7 @@ import { signInWithGoogleAndroidAndWeb } from '../lib/googleAuth';
 import { auth, googleProvider, db, handleAuthError, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useBrandSettings } from '../lib/brand';
 import { useNavigate } from 'react-router-dom';
-import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff } from 'lucide-react';
+import { Coffee, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,34 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [clickCount, setClickCount] = useState(0);
+
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [systemPassword, setSystemPassword] = useState('');
+
+  const handleLogoClick = () => {
+    setClickCount((prev) => {
+      const newCount = prev + 1;
+      if (newCount === 7) {
+        setShowPasswordPrompt(true);
+        return 0;
+      }
+      return newCount;
+    });
+  };
+
+  const handleSystemUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (systemPassword === "systemlogin") {
+      localStorage.setItem('system_unlocked', 'true');
+      toast.success("Systems Unlocked");
+      setShowPasswordPrompt(false);
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      toast.error("Incorrect Password");
+      setSystemPassword('');
+    }
+  };
 
   useEffect(() => {
     const checkRedirectResult = async () => {
@@ -242,7 +270,10 @@ export default function Login() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full space-y-10 flex flex-col items-center"
             >
-              <div className="w-40 h-40 bg-bento-card-bg rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-bento-card-border group-hover/login:scale-110 transition-transform duration-700">
+              <div 
+                onClick={handleLogoClick}
+                className="w-40 h-40 bg-bento-card-bg rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-1 border-4 border-bento-card-border group-hover/login:scale-110 transition-transform duration-700 cursor-pointer select-none"
+              >
                 <OptimizedImage 
                   src={brand.logoUrl} 
                   size="medium"
@@ -407,6 +438,52 @@ export default function Login() {
           )}
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {showPasswordPrompt && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-bento-card-bg w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border border-bento-card-border"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black uppercase tracking-tight">System Unlock</h3>
+                <button
+                  onClick={() => setShowPasswordPrompt(false)}
+                  className="p-2 bg-stone-100 dark:bg-stone-800 rounded-full text-stone-500 hover:text-stone-900 dark:hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <form onSubmit={handleSystemUnlock} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-black tracking-widest text-bento-ink/40 ml-4">Access Code</label>
+                  <div className="relative">
+                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-bento-ink/40" size={18} />
+                    <input
+                      type="password"
+                      autoFocus
+                      required
+                      value={systemPassword}
+                      onChange={(e) => setSystemPassword(e.target.value)}
+                      placeholder="Enter system password"
+                      className="w-full pl-16 pr-6 py-5 bg-bento-ink/5 border border-bento-card-border rounded-[2rem] focus:ring-2 focus:ring-bento-card-border outline-none transition-all text-bento-ink font-bold"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-bento-primary text-bento-bg py-5 px-6 rounded-[2rem] shadow-xl active:scale-95 transition-all font-black uppercase text-xs tracking-widest"
+                >
+                  Unlock Systems
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

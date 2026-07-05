@@ -405,13 +405,19 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                     >
                       <div className="flex items-center gap-6">
                         <div className={`w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 ring-4 ${isGoldState ? 'ring-stone-900/10' : 'ring-bento-card-border'} shadow-2xl`}>
-                          <OptimizedImage 
-                            src={product.image} 
-                            size="medium"
-                            alt="" 
-                            containerClassName="w-full h-full"
-                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
-                          />
+                          {product.hideImage ? (
+                            <div className="w-full h-full bg-[#f6f3f0] dark:bg-stone-800 flex flex-col items-center justify-center text-stone-400 group-hover:scale-110 transition-transform duration-500">
+                              <Coffee size={32} className="opacity-20" />
+                            </div>
+                          ) : (
+                            <OptimizedImage 
+                              src={product.image} 
+                              size="medium"
+                              alt="" 
+                              containerClassName="w-full h-full"
+                              className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
+                            />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className={`font-black text-xl truncate uppercase tracking-tight italic ${isGoldState ? 'text-stone-900' : 'text-bento-ink'}`}>

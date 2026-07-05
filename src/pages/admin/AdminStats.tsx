@@ -35,7 +35,7 @@ export default function AdminStats() {
       const email = auth.currentUser.email?.toLowerCase();
       const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
       const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
-      const hasRole = adminDoc.exists() || email === adminEmail.toLowerCase() || sessionStorage.getItem('admin_mode') === 'true';
+      const hasRole = adminDoc.exists() || email === adminEmail.toLowerCase() || email === 'mohamed.erguigue@gmail.com' || email === 'samiarafati3@gmail.com' || sessionStorage.getItem('admin_mode') === 'true';
       setIsAdmin(hasRole);
       if (!hasRole) setLoading(false);
     };
@@ -207,11 +207,6 @@ export default function AdminStats() {
              <span className="text-[10px] font-black uppercase text-stone-400 tracking-[0.3em] block mb-1">Performance Overview</span>
              <h1 className="text-4xl font-black text-bento-ink italic tracking-tighter uppercase leading-none">{t('revenue_statistics')}</h1>
            </div>
-        </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-8 py-5 bg-stone-950 text-white rounded-[2rem] text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95">
-             <Download size={14} /> {t('export_csv')}
-          </button>
         </div>
       </div>
 

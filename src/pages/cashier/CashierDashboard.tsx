@@ -503,15 +503,21 @@ export default function CashierDashboard() {
                     className="flex flex-col bg-white dark:bg-stone-950 border border-stone-200 dark:border-white/5 rounded-2xl overflow-hidden group active:brightness-90 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1"
                   >
                     <div className="aspect-square w-full bg-stone-100 dark:bg-stone-900 overflow-hidden relative">
-                       <OptimizedImage 
-                         src={product.image} 
-                         alt={product.name}
-                         size="medium"
-                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                         containerClassName="w-full h-full"
-                         showOverlay={false}
-                         priority={idx < 12}
-                       />
+                       {product.hideImage ? (
+                         <div className="w-full h-full bg-[#f6f3f0] dark:bg-stone-800 flex flex-col items-center justify-center text-stone-400 group-hover:scale-110 transition-transform duration-500">
+                           <Coffee size={32} className="opacity-20" />
+                         </div>
+                       ) : (
+                         <OptimizedImage 
+                           src={product.image} 
+                           alt={product.name}
+                           size="medium"
+                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                           containerClassName="w-full h-full"
+                           showOverlay={false}
+                           priority={idx < 12}
+                         />
+                       )}
                        <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 shadow-lg">
                           <span className="text-[10px] sm:text-xs font-black text-white tabular-nums">{product.price.toFixed(0)} MAD</span>
                        </div>

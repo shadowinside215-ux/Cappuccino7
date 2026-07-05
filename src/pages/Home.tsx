@@ -809,14 +809,20 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                       >
                     <div className="flex flex-col md:flex-row h-full">
                       <div className="md:w-2/5 aspect-square relative overflow-hidden">
-                        <OptimizedImage
-                          size="medium"
-                          src={product.image || (product.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')}
-                          alt={product.name}
-                          containerClassName="w-full h-full"
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                          referrerPolicy="no-referrer"
-                        />
+                        {product.hideImage ? (
+                          <div className="w-full h-full bg-[#f6f3f0] dark:bg-stone-800 flex flex-col items-center justify-center text-stone-400 group-hover:scale-110 transition-transform duration-1000">
+                            <Coffee size={40} className="opacity-20" />
+                          </div>
+                        ) : (
+                          <OptimizedImage
+                            size="medium"
+                            src={product.image || (product.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')}
+                            alt={product.name}
+                            containerClassName="w-full h-full"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         
                         <div className="absolute top-4 left-4">

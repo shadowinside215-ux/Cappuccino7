@@ -51,6 +51,7 @@ export interface Product {
   categoryId: string;
   isAvailable: boolean;
   subSection?: string;
+  hideImage?: boolean;
 }
 
 export interface OrderItem {
