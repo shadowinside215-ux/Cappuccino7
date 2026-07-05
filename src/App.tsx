@@ -274,7 +274,16 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [systemUnlocked, setSystemUnlocked] = useState(() => localStorage.getItem('system_unlocked') === 'true');
   const { settings: brand } = useBrandSettings();
+
+  useEffect(() => {
+    const handleSystemUnlocked = () => {
+      setSystemUnlocked(localStorage.getItem('system_unlocked') === 'true');
+    };
+    window.addEventListener('system_unlocked_changed', handleSystemUnlocked);
+    return () => window.removeEventListener('system_unlocked_changed', handleSystemUnlocked);
+  }, []);
 
   useEffect(() => {
     if (brand?.logoUrl) {
@@ -632,7 +641,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             </AnimatePresence>
           </main>
 
-          {location.pathname === '/login' && !user && !isStaffView && localStorage.getItem('system_unlocked') === 'true' && brand.publicSystemLogins !== false && (
+          {location.pathname === '/login' && !user && !isStaffView && systemUnlocked && brand.publicSystemLogins !== false && (
             <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
               <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-bento-card-border bg-bento-card-bg/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
                 {[

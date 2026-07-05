@@ -53,9 +53,9 @@ export default function Login() {
     e.preventDefault();
     if (systemPassword === "systemlogin") {
       localStorage.setItem('system_unlocked', 'true');
+      window.dispatchEvent(new Event('system_unlocked_changed'));
       toast.success("Systems Unlocked");
       setShowPasswordPrompt(false);
-      setTimeout(() => window.location.reload(), 1000);
     } else {
       toast.error("Incorrect Password");
       setSystemPassword('');
