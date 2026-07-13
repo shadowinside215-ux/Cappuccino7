@@ -74,7 +74,11 @@ export function handleAuthError(error: any) {
     return 'Email/Password login is not enabled in Firebase. Please enable it in the Firebase Console under Authentication > Sign-in method.';
   }
   
-  if (import.meta.env.PROD) {
+  if (error.message && error.message.includes('database')) {
+    return error.message;
+  }
+  
+  if (import.meta.env.PROD && error.code?.startsWith('auth/')) {
     return 'Authentication failed. Please check your credentials and try again.';
   }
   return error.message || 'Authentication failed. Please try again.';

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { 
   signInWithPopup, 
   signInWithEmailAndPassword, 
@@ -64,15 +65,28 @@ export default function Login() {
 
   useEffect(() => {
     const checkRedirectResult = async () => {
+      if (Capacitor.isNativePlatform()) return;
       try {
         const result = await getRedirectResult(auth);
         if (result && result.user) {
           setLoading(true);
           const user = result.user;
           const userRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(userRef);
+          
+          let docSnap;
+          let retries = 3;
+          while (retries > 0) {
+            try {
+              docSnap = await getDoc(userRef);
+              break;
+            } catch (err: any) {
+              retries--;
+              if (retries === 0) throw err;
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          }
 
-          if (!docSnap.exists()) {
+          if (docSnap && !docSnap.exists()) {
             const userPath = `users/${user.uid}`;
             try {
               await setDoc(userRef, {
@@ -119,9 +133,22 @@ export default function Login() {
       const user = result.user;
 
       const userRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(userRef);
+      
+      // Retry logic for Firestore token propagation race condition on Native
+      let docSnap;
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          docSnap = await getDoc(userRef);
+          break;
+        } catch (err: any) {
+          retries--;
+          if (retries === 0) throw err;
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
 
-      if (!docSnap.exists()) {
+      if (docSnap && !docSnap.exists()) {
         const userPath = `users/${user.uid}`;
         try {
           await setDoc(userRef, {
@@ -200,21 +227,30 @@ export default function Login() {
         
         // Create profile
         const userPath = `users/${user.uid}`;
-        try {
-          await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
-            name: name,
-            email: user.email,
-            phone: phone,
-            points: 0,
-            coffeeCount: 0,
-            itemLoyalty: {},
-            isAdmin: false,
-            isAnonymous: false,
-            createdAt: serverTimestamp()
-          });
-        } catch (err) {
-          handleFirestoreError(err, OperationType.CREATE, userPath);
+        let retries = 3;
+        while (retries > 0) {
+          try {
+            await setDoc(doc(db, 'users', user.uid), {
+              uid: user.uid,
+              name: name,
+              email: user.email,
+              phone: phone,
+              points: 0,
+              coffeeCount: 0,
+              itemLoyalty: {},
+              isAdmin: false,
+              isAnonymous: false,
+              createdAt: serverTimestamp()
+            });
+            break;
+          } catch (err: any) {
+            retries--;
+            if (retries === 0) {
+              handleFirestoreError(err, OperationType.CREATE, userPath);
+            } else {
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          }
         }
         
         toast.success('Account created successfully!');
