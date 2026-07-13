@@ -15,8 +15,21 @@ export async function signInWithGoogleAndroidAndWeb(): Promise<UserCredential | 
       }
       const credential = GoogleAuthProvider.credential(result.credential.idToken);
       
-      // 3. Sign into Firebase JS SDK with the native credential
-      const userCredential = await signInWithCredential(auth, credential);
+      // 3. Sign into Firebase JS SDK with the native credential with retry logic
+      // This helps mitigate transient token validation delays (e.g. time skew, network blips)
+      let userCredential;
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          userCredential = await signInWithCredential(auth, credential);
+          break;
+        } catch (err: any) {
+          retries--;
+          if (retries === 0) throw err;
+          // Wait 1 second before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
       return userCredential;
     } catch (e: any) {
       console.error('Native Google Auth Error:', e);
