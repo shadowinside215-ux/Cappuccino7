@@ -170,7 +170,7 @@ export default function Login() {
       toast.success(t('welcome_back_msg', 'Welcome back!'));
       navigate('/');
     } catch (error: any) {
-      const message = handleAuthError(error);
+      console.error('Google login error:', error);
       
       if (error.code === 'auth/unauthorized-domain') {
         const domain = window.location.hostname;
@@ -193,7 +193,17 @@ export default function Login() {
         return; 
       }
       
-      toast.error(message);
+      const errString = String(error?.message || error).toLowerCase();
+      const isCancellationOrMissingCredentials = 
+        error.code === 'auth/popup-closed-by-user' || 
+        errString.includes('cancel') || 
+        errString.includes('credentials') || 
+        errString.includes('no id token');
+
+      if (!isCancellationOrMissingCredentials) {
+        const message = handleAuthError(error);
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }
