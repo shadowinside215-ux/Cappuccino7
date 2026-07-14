@@ -37,6 +37,7 @@ import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import VerifyTicket from './pages/VerifyTicket';
 import Settings from './pages/Settings';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import Onboarding from './components/Onboarding';
 import OptimizedImage from './components/ui/OptimizedImage';
 import ReviewPopup from './components/ReviewPopup';
@@ -617,6 +618,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/verify-ticket" element={<VerifyTicket userProfile={userProfile} />} />
                   <Route path="/track/:id" element={<OrderConfirmation />} />
                   <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} userProfile={userProfile} />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />

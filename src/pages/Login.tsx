@@ -364,6 +364,13 @@ export default function Login() {
                 >
                   {t('continue_guest')}
                 </button>
+                
+                <button
+                  onClick={() => navigate('/privacy-policy')}
+                  className="w-full flex items-center justify-center gap-2 bg-transparent text-white/40 py-2 px-6 rounded-[2rem] hover:text-white/80 transition-all text-[10px] uppercase tracking-widest font-bold mt-4"
+                >
+                  Privacy Policy
+                </button>
               </div>
             </motion.div>
           ) : (
