@@ -616,18 +616,12 @@ export default function CashierDashboard() {
                               />
                            </div>
 
-                           <div className="grid grid-cols-2 gap-2 mt-auto">
+                           <div className="grid grid-cols-1 gap-2 mt-auto">
                               <button 
                                 onClick={() => handleMarkPaid(order, 'cash')}
                                 className="bg-green-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-green-700 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
                               >
                                  <Banknote size={16} /> {t('pos_paid_cash')}
-                              </button>
-                              <button 
-                                onClick={() => handleMarkPaid(order, 'card')}
-                                className="bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
-                              >
-                                 <CreditCard size={16} /> {t('pos_paid_card')}
                               </button>
                            </div>
                         </div>
@@ -907,20 +901,13 @@ export default function CashierDashboard() {
               </div>
 
               {/* Payment Buttons (Large blocks as in image) */}
-              <div className="h-24 md:h-32 grid grid-cols-3 gap-px bg-[#111] p-px border-t border-white/5 shrink-0">
+              <div className="h-24 md:h-32 grid grid-cols-2 gap-px bg-[#111] p-px border-t border-white/5 shrink-0">
                  <button 
                    onClick={() => selectedOrder ? handleMarkPaid(selectedOrder, 'cash') : handleCheckout('cash')}
                    disabled={!selectedOrder && cart.length === 0}
                    className="bg-[#22C55E] hover:brightness-110 active:brightness-90 transition-all flex flex-col items-center justify-center gap-2 text-white font-black text-[11px] uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
                  >
                     <Banknote size={24} /> {t('pos_cash')}
-                 </button>
-                 <button 
-                   onClick={() => selectedOrder ? handleMarkPaid(selectedOrder, 'card') : handleCheckout('card')}
-                   disabled={!selectedOrder && cart.length === 0}
-                   className="bg-[#3B82F6] hover:brightness-110 active:brightness-90 transition-all flex flex-col items-center justify-center gap-2 text-white font-black text-[11px] uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
-                 >
-                    <CreditCard size={24} /> {t('pos_card')}
                  </button>
                  <button 
                    onClick={() => {
@@ -965,7 +952,7 @@ export default function CashierDashboard() {
                  <h2 className="text-3xl font-black uppercase italic tracking-tighter">{t('pos_session_closure')}</h2>
                </div>
                <div className="p-8 space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                      <div className="bg-bento-bg p-6 rounded-2xl border border-bento-card-border">
                         <span className="text-[10px] text-stone-500 font-bold uppercase block mb-1">{t('pos_total_sales')}</span>
                         <span className="text-3xl font-black text-bento-ink">{closureStats.total.toFixed(2)} MAD</span>
@@ -977,10 +964,6 @@ export default function CashierDashboard() {
                      <div className="bg-bento-bg p-6 rounded-2xl border border-bento-card-border">
                         <span className="text-[10px] text-stone-500 font-bold uppercase block mb-1">{t('pos_cash_rev')}</span>
                         <span className="text-3xl font-black text-green-500">{closureStats.cash.toFixed(2)}</span>
-                     </div>
-                     <div className="bg-bento-bg p-6 rounded-2xl border border-bento-card-border">
-                        <span className="text-[10px] text-stone-500 font-bold uppercase block mb-1">{t('pos_card_rev')}</span>
-                        <span className="text-3xl font-black text-blue-500">{closureStats.card.toFixed(2)}</span>
                      </div>
                   </div>
                   <div className="flex gap-4">
