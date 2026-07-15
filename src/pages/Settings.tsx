@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Moon, Sun, Languages, ArrowLeft, LogOut, Shield, Bell, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../lib/firebase';
+import { signOutApp } from '../lib/googleAuth';
 import toast from 'react-hot-toast';
 
 import { UserProfile } from '../types';
@@ -31,40 +32,32 @@ export default function Settings({ theme, setTheme, userProfile }: SettingsProps
   };
 
   const handleLogout = async () => {
-    // Determine redirect based on current staff role before removing it
-    let redirectUrl = '/login';
-    if (localStorage.getItem('waiter_session_active') === 'true') redirectUrl = '/waiter/login';
-    else if (localStorage.getItem('kitchen_session_active') === 'true') redirectUrl = '/kitchen/login';
-    else if (localStorage.getItem('barman_session_active') === 'true') redirectUrl = '/barman/login';
-    else if (localStorage.getItem('cashier_session_active') === 'true') redirectUrl = '/cashier/login';
-    else if (localStorage.getItem('driver_auth')) redirectUrl = '/driver/login';
-    else if (sessionStorage.getItem('admin_mode') === 'true') redirectUrl = '/admin/login';
-
     // Clear staff markers immediately to ensure local logout
     localStorage.removeItem('waiter_session_active');
     localStorage.removeItem('kitchen_session_active');
     localStorage.removeItem('barman_session_active');
     localStorage.removeItem('cashier_session_active');
     localStorage.removeItem('driver_auth');
+    localStorage.removeItem('staffSession');
     sessionStorage.removeItem('admin_mode');
-
+    
     try {
-      await auth.signOut();
+      await signOutApp();
     } catch (error) {
       console.warn('Firebase signout failed', error);
     }
     
-    window.location.href = redirectUrl;
+    navigate('/login', { replace: true });
   };
 
   return (
-    <div className="min-h-[80vh] pb-20">
+    <div className="min-h-[80vh] pb-20 pt-8 sm:pt-0">
       <div className="flex items-center gap-4 mb-8">
         <button 
-          onClick={() => navigate(-1)}
-          className="p-2 bg-bento-card-bg rounded-xl border border-bento-card-border text-bento-primary hover:bg-stone-50 transition-colors"
+          onClick={() => navigate('/profile')}
+          className="p-4 -ml-2 bg-bento-card-bg rounded-xl border border-bento-card-border text-bento-primary hover:bg-stone-50 transition-colors relative z-50 cursor-pointer active:scale-95 touch-manipulation shadow-sm"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={24} strokeWidth={2.5} />
         </button>
         <h1 className="text-3xl font-black italic text-bento-primary uppercase tracking-tighter">
           {t('settings', { defaultValue: 'Settings' })}

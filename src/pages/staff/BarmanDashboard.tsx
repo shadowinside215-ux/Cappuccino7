@@ -183,8 +183,9 @@ export default function BarmanDashboard() {
 
   const logout = () => {
     localStorage.removeItem('barman_session_active');
-    auth.signOut();
-    navigate('/barman/login');
+    localStorage.removeItem('staffSession');
+    signOutApp();
+    navigate('/login');
   };
 
   if (loading) {

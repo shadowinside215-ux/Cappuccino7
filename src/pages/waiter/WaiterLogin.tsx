@@ -121,7 +121,7 @@ export default function WaiterLogin() {
           case 'kitchen': navigate('/kitchen/dashboard'); break;
           case 'barman': navigate('/barman/dashboard'); break;
           case 'waiter': navigate('/waiter/dashboard'); break;
-          default: navigate('/login');
+          default: navigate('/');
         }
         return;
       }
@@ -150,13 +150,14 @@ export default function WaiterLogin() {
         <div className="card !p-12 space-y-10 bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[3.5rem] border border-white relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 via-stone-900 to-amber-400" />
           
+          <button 
+            onClick={() => navigate('/')}
+            className="absolute top-8 left-8 p-4 -m-4 text-stone-400 hover:text-stone-900 transition-colors flex items-center gap-2 text-[10px] font-black uppercase tracking-widest z-50 cursor-pointer touch-manipulation"
+          >
+            <ArrowRight size={16} className="rotate-180" /> Back
+          </button>
+          
           <div className="text-center space-y-6">
-            <button 
-              onClick={() => navigate('/login')}
-              className="absolute top-8 left-8 text-stone-400 hover:text-stone-900 transition-colors flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-            >
-              <ArrowRight size={16} className="rotate-180" /> Back
-            </button>
             <motion.div 
               whileHover={{ rotate: -5, scale: 1.05 }}
               className="w-32 h-32 bg-amber-50 rounded-[2.5rem] overflow-hidden shadow-2xl p-1 mx-auto border-2 border-stone-50 flex items-center justify-center relative group"

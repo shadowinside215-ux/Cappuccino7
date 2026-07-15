@@ -126,10 +126,10 @@ export default function VerifyTicket({ userProfile }: { userProfile: UserProfile
 
   return (
     <div className="min-h-screen bg-[#0c0a09] p-4 sm:p-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto pt-4">
         <button 
           onClick={() => navigate(-1)}
-          className="mb-8 flex items-center gap-2 text-stone-500 hover:text-white transition-colors"
+          className="mb-8 p-4 -ml-4 flex items-center gap-2 text-stone-500 hover:text-white transition-colors relative z-50 cursor-pointer"
         >
           <ArrowLeft size={20} />
           <span className="font-black uppercase text-[10px] tracking-widest">Back</span>

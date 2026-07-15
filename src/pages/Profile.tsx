@@ -72,30 +72,22 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   }, [userProfile?.itemLoyalty]);
 
   const handleLogout = async () => {
-    // Determine redirect based on current staff role before removing it
-    let redirectUrl = '/login';
-    if (localStorage.getItem('waiter_session_active') === 'true') redirectUrl = '/waiter/login';
-    else if (localStorage.getItem('kitchen_session_active') === 'true') redirectUrl = '/kitchen/login';
-    else if (localStorage.getItem('barman_session_active') === 'true') redirectUrl = '/barman/login';
-    else if (localStorage.getItem('cashier_session_active') === 'true') redirectUrl = '/cashier/login';
-    else if (localStorage.getItem('driver_auth')) redirectUrl = '/driver/login';
-    else if (sessionStorage.getItem('admin_mode') === 'true') redirectUrl = '/admin/login';
-
     // Clear staff markers immediately
     localStorage.removeItem('waiter_session_active');
     localStorage.removeItem('kitchen_session_active');
     localStorage.removeItem('barman_session_active');
     localStorage.removeItem('cashier_session_active');
     localStorage.removeItem('driver_auth');
+    localStorage.removeItem('staffSession');
     sessionStorage.removeItem('admin_mode');
     
     try {
-      await auth.signOut();
+      await signOutApp();
     } catch (e) {
       console.warn(e);
     }
     
-    window.location.href = redirectUrl;
+    navigate('/login', { replace: true });
   };
 
   if (isGuest) {

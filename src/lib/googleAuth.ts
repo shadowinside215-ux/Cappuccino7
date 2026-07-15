@@ -3,7 +3,19 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { signInWithCredential, signInWithPopup, signInWithRedirect, GoogleAuthProvider, UserCredential } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 
+export async function signOutApp(): Promise<void> {
+  try {
+    await auth.signOut();
+    if (Capacitor.isNativePlatform()) {
+      await FirebaseAuthentication.signOut().catch(e => console.warn('Native sign out error', e));
+    }
+  } catch (error) {
+    console.error('Sign out error', error);
+  }
+}
+
 export async function signInWithGoogleAndroidAndWeb(): Promise<UserCredential | void> {
+
   if (Capacitor.isNativePlatform()) {
     try {
       // 1. Sign in natively with Google (uses device account UI)

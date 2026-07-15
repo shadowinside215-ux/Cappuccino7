@@ -100,9 +100,9 @@ export default function OrderConfirmation() {
             <div className="space-y-4">
               <button 
                 onClick={() => navigate('/orders')}
-                className="flex items-center gap-2 text-white/40 hover:text-white transition-colors group"
+                className="flex items-center gap-2 p-4 -ml-4 text-white/40 hover:text-white transition-colors group cursor-pointer touch-manipulation relative z-50"
               >
-                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('back_to_orders', 'Back to History')}</span>
               </button>
               

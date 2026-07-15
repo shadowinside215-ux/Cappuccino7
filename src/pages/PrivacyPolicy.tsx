@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
       <div className="max-w-3xl mx-auto">
         <button 
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-bento-ink/70 hover:text-bento-ink mb-8 transition-colors"
+          className="flex items-center gap-2 p-4 -ml-4 text-bento-ink/70 hover:text-bento-ink mb-8 transition-colors cursor-pointer touch-manipulation relative z-50"
         >
           <ArrowLeft size={20} />
           <span>Back</span>

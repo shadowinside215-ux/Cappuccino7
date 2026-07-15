@@ -98,6 +98,13 @@ export default function DriverLogin() {
         <div className="bg-stone-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-white/50 to-amber-400" />
           
+          <button
+            onClick={() => navigate('/')}
+            className="absolute top-8 left-8 p-4 -m-4 text-stone-400 hover:text-white transition-colors flex items-center gap-2 text-[10px] font-black uppercase tracking-widest z-50 cursor-pointer touch-manipulation"
+          >
+            <ArrowRight className="rotate-180" size={16} /> Back
+          </button>
+          
           <div className="flex flex-col items-center gap-8 mb-12">
             <motion.div 
               whileHover={{ rotate: 5, scale: 1.1 }}

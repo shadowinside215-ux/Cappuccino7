@@ -387,12 +387,10 @@ export default function AdminMenu() {
           <button 
             onClick={() => {
               sessionStorage.removeItem('admin_mode');
-              if (auth.currentUser?.email?.toLowerCase() !== 'dragonballsam86@gmail.com') {
-                navigate('/admin/login');
-              } else {
-                navigate('/admin');
-              }
-              toast.success('Exited designer view');
+              localStorage.removeItem('staffSession');
+              signOutApp();
+              navigate('/login');
+              toast.success('Exited admin view');
             }}
             className="bg-stone-50 dark:bg-stone-900 text-stone-400 p-4 rounded-2xl flex items-center gap-2 hover:text-red-500 transition-all border border-stone-100 dark:border-white/5 shadow-sm active:scale-95"
             title="Log out of Section"

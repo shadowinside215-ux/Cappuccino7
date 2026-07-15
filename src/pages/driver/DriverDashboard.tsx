@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { signOutApp } from '../../lib/googleAuth';
 import { Order, OrderStatus } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -49,7 +50,7 @@ export default function DriverDashboard() {
 
     // Check custom driver auth
     if (localStorage.getItem('driver_auth') !== 'true') {
-      navigate('/driver/login');
+      navigate('/login');
       return;
     }
 
@@ -161,7 +162,9 @@ export default function DriverDashboard() {
             <button 
               onClick={() => {
                 localStorage.removeItem('driver_auth');
-                navigate('/driver/login');
+                localStorage.removeItem('staffSession');
+                signOutApp();
+                navigate('/login');
               }}
               className="p-3 bg-white/5 rounded-xl border border-white/10 text-white/40 hover:text-white transition-colors"
             >

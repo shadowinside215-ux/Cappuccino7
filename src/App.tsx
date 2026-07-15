@@ -361,6 +361,8 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
        localStorage.removeItem('kitchen_session_active');
        localStorage.removeItem('barman_session_active');
        localStorage.removeItem('cashier_session_active');
+       localStorage.removeItem('driver_auth');
+       localStorage.removeItem('staffSession');
        sessionStorage.removeItem('admin_mode');
     }
 
@@ -700,6 +702,8 @@ export default function App() {
         localStorage.removeItem('kitchen_session_active');
         localStorage.removeItem('barman_session_active');
         localStorage.removeItem('cashier_session_active');
+        localStorage.removeItem('driver_auth');
+        localStorage.removeItem('staffSession');
         sessionStorage.removeItem('admin_mode');
       }
 

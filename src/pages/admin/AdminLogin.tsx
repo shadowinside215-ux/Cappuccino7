@@ -215,13 +215,14 @@ export default function AdminLogin() {
         <div className="card !p-12 space-y-8 bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[3.5rem] border border-white relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-bento-primary via-amber-400 to-bento-primary" />
           
+          <button 
+            onClick={() => navigate('/')}
+            className="absolute top-8 left-8 p-4 -m-4 text-stone-400 hover:text-stone-900 transition-colors flex items-center gap-2 text-[10px] font-black uppercase tracking-widest z-50 cursor-pointer touch-manipulation"
+          >
+            <ArrowRight size={16} className="rotate-180" /> Back
+          </button>
+          
           <div className="text-center space-y-4">
-            <button 
-              onClick={() => navigate('/login')}
-              className="absolute top-8 left-8 text-stone-400 hover:text-stone-900 transition-colors flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-            >
-              <ArrowRight size={16} className="rotate-180" /> Back
-            </button>
             <motion.div 
               whileHover={{ rotate: 5, scale: 1.05 }}
               className="w-24 h-24 bg-white rounded-[2rem] overflow-hidden shadow-2xl p-2 mx-auto border-2 border-stone-50 relative group"

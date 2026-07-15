@@ -970,6 +970,9 @@ export default function CashierDashboard() {
                      <button onClick={() => setShowClosureModal(false)} className="flex-1 py-4 rounded-xl bg-stone-500/10 text-stone-500 font-black uppercase text-[11px] hover:bg-stone-500/20 transition-colors">{t('cancel')}</button>
                      <button 
                        onClick={() => {
+                         localStorage.removeItem('cashier_session_active');
+                         localStorage.removeItem('staffSession');
+                         signOutApp();
                          toast.success('Clôture validée - Session terminée');
                          navigate('/login');
                        }}
