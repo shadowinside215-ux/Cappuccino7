@@ -8,6 +8,7 @@ export interface UserProfile {
   points: number;
   coffeeCount: number;
   itemLoyalty: Record<string, number>;
+  availableRewards?: Record<string, number>;
   isAdmin: boolean;
   isWaiter?: boolean;
   isKitchen?: boolean;
@@ -22,6 +23,8 @@ export interface UserProfile {
 export type WaiterOrderStatus = 'New' | 'Accepted' | 'Preparing' | 'Ready' | 'Served';
 
 export interface WaiterRequest {
+  type?: string;
+  message?: string;
   id: string;
   clientId: string;
   orderId?: string;
@@ -82,7 +85,7 @@ export interface Order {
   barmanStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
   isPaid?: boolean;
   isPOS?: boolean;
-  paymentMethod?: 'cash' | 'card' | 'online' | 'PROVISOIRE';
+  paymentMethod?: 'cash' | 'card' | 'online' | 'PROVISOIRE' | 'reward';
   vendeur?: string;
   deliveryType: 'delivery' | 'pickup' | 'dine-in' | 'takeaway';
   prepTime: number; // in minutes

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, FormEvent, useRef } from 'react';
+import { signOutApp } from '../../lib/googleAuth';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch, setDoc } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { Product, Category } from '../../types';

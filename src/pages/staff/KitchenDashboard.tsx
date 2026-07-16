@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { signOutApp } from '../../lib/googleAuth';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ChefHat, ShoppingBag, Timer, CheckCircle2, ChevronRight, LogOut, Soup, AlertTriangle, Navigation } from 'lucide-react';

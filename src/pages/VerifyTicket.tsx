@@ -213,7 +213,7 @@ export default function VerifyTicket({ userProfile }: { userProfile: UserProfile
                       <span className="w-5 h-5 bg-stone-800 text-amber-400 rounded-md flex items-center justify-center text-[10px] font-black border border-amber-400/10">
                         {item.quantity}
                       </span>
-                      <span className="font-bold text-stone-400">{item.name}</span>
+                      <span className="font-bold text-stone-400">{t(`products.${item.name}`, item.name) as string}</span>
                     </div>
                     <span className="font-black text-white">{item.price * item.quantity} DH</span>
                   </div>

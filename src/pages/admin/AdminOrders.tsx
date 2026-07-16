@@ -299,7 +299,7 @@ export default function AdminOrders() {
                   <div className="space-y-2 mb-4">
                     {order.items.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center text-[10px] bg-stone-50 p-2 rounded-xl border border-stone-100">
-                        <span className="font-black text-stone-900">{item.quantity}x {item.name}</span>
+                        <span className="font-black text-stone-900">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
                         <span className="text-stone-400">{item.price * item.quantity} DH</span>
                       </div>
                     ))}

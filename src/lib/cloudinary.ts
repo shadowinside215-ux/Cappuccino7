@@ -11,6 +11,29 @@ export type ImageSize = 'thumbnail' | 'medium' | 'large' | 'hero' | 'avatar';
 export function getOptimizedImageUrl(url: string | undefined | null, size: ImageSize = 'medium'): string {
   if (!url) return '';
   
+  // Optimize Unsplash URLs for maximum 4K clarity if size is hero
+  if (url.includes('images.unsplash.com')) {
+    try {
+      const u = new URL(url);
+      if (size === 'hero') {
+        u.searchParams.set('w', '3840');
+        u.searchParams.set('q', '95');
+      } else if (size === 'large') {
+        u.searchParams.set('w', '2000');
+        u.searchParams.set('q', '90');
+      } else if (size === 'medium') {
+        u.searchParams.set('w', '1000');
+        u.searchParams.set('q', '85');
+      } else if (size === 'thumbnail') {
+        u.searchParams.set('w', '500');
+        u.searchParams.set('q', '80');
+      }
+      return u.toString();
+    } catch (e) {
+      // ignore parsing errors and return original
+    }
+  }
+
   const match = url.match(CLOUDINARY_REGEX);
   if (!match) return url; // Not a Cloudinary URL, return as is
 
@@ -32,10 +55,11 @@ export function getOptimizedImageUrl(url: string | undefined | null, size: Image
       params += ',w_800,c_fill,g_auto';
       break;
     case 'large':
-      params += ',w_1200,c_limit';
+      params += ',w_2000,c_limit';
       break;
     case 'hero':
-      params += ',w_1600,c_limit';
+      // Pristine 4K Quality for Heroes
+      params += ',w_3840,c_limit,q_auto:best';
       break;
     case 'avatar':
       params += ',w_100,h_100,c_fill,g_face,r_max';

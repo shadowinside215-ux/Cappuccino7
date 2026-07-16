@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { signOutApp } from '../lib/googleAuth';
 import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Product } from '../types';
@@ -159,17 +160,17 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
         </div>
       )}
 
-      <div className="relative z-10 space-y-12 max-w-5xl mx-auto">
-        <div className="flex justify-between items-start">
+      <div className="relative z-10 space-y-12 max-w-5xl w-full mx-auto">
+        <div className="flex flex-col md:flex-row md:justify-between items-center gap-6 w-full">
           <motion.h1 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", damping: 20, stiffness: 100 }}
-            className="text-6xl md:text-8xl font-black text-bento-ink italic tracking-tighter uppercase drop-shadow-2xl"
+            className="text-6xl md:text-8xl font-black text-bento-ink italic tracking-tighter uppercase drop-shadow-2xl text-center md:text-left"
           >
             {t('profile')}
           </motion.h1>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center justify-center">
             <motion.button 
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -198,7 +199,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="flex flex-col gap-8">
           {/* Profile Info Card */}
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
@@ -216,7 +217,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             </motion.div>
             
             {isEditing ? (
-              <form onSubmit={handleUpdateProfile} className="w-full px-8 space-y-4">
+              <form onSubmit={handleUpdateProfile} className="w-full max-w-md px-8 space-y-4">
                 <div className="space-y-1">
                   <label className="text-[8px] font-black uppercase text-bento-ink/40 ml-2">{t('full_name')}</label>
                   <input 
@@ -258,7 +259,6 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                   <Phone size={12} className="text-bento-ink/40" />
                   <p className="text-[10px] text-bento-ink/60 font-bold">{userProfile.phone || t('no_phone_added')}</p>
                 </div>
-                <p className="text-[10px] text-bento-ink/40 font-black uppercase tracking-widest mb-6">{t('premium_customer')}</p>
                 <button 
                   onClick={() => setIsEditing(true)}
                   className="mb-8 text-[9px] font-black uppercase tracking-widest bg-bento-ink/10 px-4 py-2 rounded-lg border border-bento-card-border hover:bg-bento-ink/20 transition-all font-bold"
@@ -267,70 +267,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                 </button>
               </>
             )}
-            
-            <div className="w-full pt-10 border-t border-bento-card-border flex justify-around">
-              <div className="text-center">
-                <p className="text-[10px] font-black text-bento-ink/40 uppercase tracking-widest mb-1">{t('membership')}</p>
-                <motion.p 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-4xl font-black text-bento-ink tracking-tighter"
-                >
-                  {t('premium_status')}
-                </motion.p>
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] font-black text-bento-ink/40 uppercase tracking-widest mb-1">{t('status')}</p>
-                <p className="text-4xl font-black text-amber-400 tracking-tighter">{t('gold_status')}</p>
-              </div>
-            </div>
           </motion.div>
-
-            {/* Global Coffee Loyalty */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="lg:col-span-2 bg-bento-card-bg/20 backdrop-blur-3xl rounded-[3rem] p-10 border border-bento-card-border shadow-2xl overflow-hidden relative flex flex-col justify-between text-bento-ink group"
-            >
-              <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-4 bg-bento-ink/5 rounded-2xl ring-1 ring-bento-card-border">
-                    <Coffee size={28} className="text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight italic">{t('coffee_club')}</h3>
-                    <p className="text-[10px] text-bento-ink/40 font-black uppercase tracking-widest">{t('exclusive_membership_rewards')}</p>
-                  </div>
-                </div>
-                <div className="flex items-end gap-8">
-                  <motion.p 
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.4, type: "spring", bounce: 0.5 }}
-                    className="text-[10rem] font-black leading-none tracking-tighter tabular-nums drop-shadow-2xl"
-                  >
-                    {userProfile.coffeeCount || 0}
-                  </motion.p>
-                  <div className="mb-6 space-y-4">
-                    <p className="text-sm font-bold opacity-60 leading-tight max-w-[120px] italic">{t('total_artisan')}</p>
-                    <div className="flex gap-2">
-                       {[...Array(5)].map((_, i) => (
-                         <motion.div 
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.6 + (i * 0.1) }}
-                          key={i} 
-                          className={`w-3 h-3 rounded-full ${i < ((userProfile.coffeeCount || 0) % 5) ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)]' : 'bg-bento-ink/10 ring-1 ring-bento-card-border'}`} 
-                         />
-                       ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <Coffee size={240} className="absolute -right-20 -bottom-20 opacity-5 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
-            </motion.div>
 
             {/* Rate Us Card */}
             {(brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida') && (
@@ -339,7 +276,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
                 onClick={() => window.open(brand.googleMapsLink || 'https://www.google.com/maps/search/?api=1&query=Cappuccino7+Sale+El+Jadida', '_blank')}
-                className="lg:col-span-3 bg-amber-400 rounded-[3rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl group"
+                className="bg-amber-400 rounded-[3rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl group"
               >
                 <div className="flex items-center gap-6">
                   <div className="w-20 h-20 bg-stone-900 rounded-[2rem] flex items-center justify-center text-amber-400 shadow-xl group-hover:rotate-12 transition-transform">
@@ -358,6 +295,9 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             )}
           </div>
 
+
+
+        
         {/* Item-Specific Loyalty Rewards */}
         <div className="space-y-8">
           <div className="flex items-center gap-6">
@@ -444,13 +384,46 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                       </div>
 
                       {rewardReady && (
-                        <motion.div 
-                          animate={{ y: [0, -10, 0] }}
-                          transition={{ repeat: Infinity, duration: 2 }}
-                          className={`absolute top-4 right-4 p-3 rounded-2xl shadow-2xl ${isGoldState ? 'bg-stone-900 text-amber-400' : 'bg-amber-400 text-stone-900'}`}
-                        >
-                          <Gift size={20} />
-                        </motion.div>
+                        <div className="absolute top-4 right-4 z-20">
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (confirm(t('confirm_redeem', 'Redeem this reward now?'))) {
+                                const { doc, updateDoc, increment, collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+                                const userRef = doc(db, 'users', userProfile.uid);
+                                
+                                await updateDoc(userRef, {
+                                  [`itemLoyalty.${product.id}`]: increment(-11),
+                                  [`availableRewards.${product.id}`]: increment(1)
+                                });
+                                
+                                await addDoc(collection(db, 'waiterRequests'), {
+                                  clientName: userProfile.name,
+                                  clientId: userProfile.uid,
+                                  status: 'new',
+                                  timestamp: serverTimestamp(),
+                                  type: 'reward_redemption',
+                                  message: `${userProfile.name} has requested their reward for ${product.name}`,
+                                  tableZone: 'General',
+                                  fullTableLabel: userProfile.name,
+                                  productId: product.id,
+                                  productName: product.name
+                                });
+                                
+                                toast.success(t('reward_redeemed', 'Reward voucher generated! Staff has been notified.'));
+                              }
+                            }}
+                            className="bg-amber-400 text-stone-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                          >
+                            <Gift size={14} /> {t('redeem_free_reward', 'Redeem Free Reward')}
+                          </button>
+                        </div>
+                      )}
+                      
+                      {(userProfile.availableRewards?.[product.id] || 0) > 0 && (
+                        <div className="absolute top-16 right-4 z-20 mt-2 bg-green-500 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
+                           {userProfile.availableRewards[product.id]} {t('vouchers_available', 'Voucher(s) Available')}
+                        </div>
                       )}
                     </motion.div>
                   );
@@ -459,6 +432,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             </div>
           )}
         </div>
+
 
         {userProfile.isAdmin && (
           <div className="pt-12">

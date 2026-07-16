@@ -9,9 +9,10 @@ import { format, startOfWeek, startOfMonth } from 'date-fns';
  * Tracks daily, weekly, and monthly stats.
  */
 
-export const addOrderToStats = async (orderId: string, orderTotal: number, options: { skipCheck?: boolean } = {}) => {
+export const addOrderToStats = async (orderId: string, orderTotal: number, options: { skipCheck?: boolean, paymentMethod?: string } = {}) => {
   try {
     const orderRef = doc(db, 'orders', orderId);
+    let isReward = options.paymentMethod === 'reward';
     
     if (!options.skipCheck) {
       const orderSnap = await getDoc(orderRef);
@@ -20,6 +21,11 @@ export const addOrderToStats = async (orderId: string, orderTotal: number, optio
       }
 
       const orderData = orderSnap.data() as Order;
+      
+      // If paymentMethod is passed in options, use it. Else check orderData.
+      if (!options.paymentMethod && orderData.paymentMethod === 'reward') {
+        isReward = true;
+      }
 
       // 1. Prevent double counting
       if (orderData.isPaid) {
@@ -38,34 +44,44 @@ export const addOrderToStats = async (orderId: string, orderTotal: number, optio
     // Month ID: YYYY-MM
     const monthId = format(startOfMonth(now), 'yyyy-MM');
 
+    const revenueInc = isReward ? 0 : orderTotal;
+    const rewardInc = isReward ? 1 : 0;
+    const rewardValueInc = isReward ? orderTotal : 0;
+
     // 2. Update Daily Revenue (The primary source for AdminStats)
     const dailyRef = doc(db, 'dailyRevenue', dayId);
     batch.set(dailyRef, {
-      amount: increment(orderTotal),
+      amount: increment(revenueInc),
       orderCount: increment(1),
+      rewardsClaimed: increment(rewardInc),
+      rewardValue: increment(rewardValueInc),
       lastUpdated: serverTimestamp()
     }, { merge: true });
 
     // 3. Update Weekly Stats (requested explicitly)
     const weeklyRef = doc(db, 'weeklyRevenue', weekId);
     batch.set(weeklyRef, {
-      amount: increment(orderTotal),
+      amount: increment(revenueInc),
       orderCount: increment(1),
+      rewardsClaimed: increment(rewardInc),
+      rewardValue: increment(rewardValueInc),
       lastUpdated: serverTimestamp()
     }, { merge: true });
 
     // 4. Update Monthly Stats (requested explicitly)
     const monthlyRef = doc(db, 'monthlyRevenue', monthId);
     batch.set(monthlyRef, {
-      amount: increment(orderTotal),
+      amount: increment(revenueInc),
       orderCount: increment(1),
+      rewardsClaimed: increment(rewardInc),
+      rewardValue: increment(rewardValueInc),
       lastUpdated: serverTimestamp()
     }, { merge: true });
 
     // 5. Update Legacy 'stats' collection (if still used by some components)
     const legacyRef = doc(db, 'stats', dayId);
     batch.set(legacyRef, {
-      revenue: increment(orderTotal),
+      revenue: increment(revenueInc),
       orders: increment(1),
       lastUpdated: serverTimestamp()
     }, { merge: true });

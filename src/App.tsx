@@ -48,6 +48,10 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
   
   useEffect(() => {
     const checkAdmin = async () => {
+      if (!auth.currentUser) {
+        setIsAdminDocument(false);
+        return;
+      }
       const isAdminMode = sessionStorage.getItem('admin_mode') === 'true';
       const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
       const isCreator = auth.currentUser?.email?.toLowerCase() === adminEmail.toLowerCase();
@@ -88,6 +92,10 @@ const WaiterGuard = ({ userProfile, children }: { userProfile: UserProfile | nul
   
   useEffect(() => {
     const checkWaiter = async () => {
+      if (!auth.currentUser) {
+        setIsWaiterDocument(false);
+        return;
+      }
       if (localStorage.getItem('waiter_session_active') === 'true') {
         setIsWaiterDocument(true);
         return;
@@ -122,6 +130,10 @@ const KitchenGuard = ({ userProfile, children }: { userProfile: UserProfile | nu
   
   useEffect(() => {
     const checkKitchen = async () => {
+      if (!auth.currentUser) {
+        setIsKitchenDocument(false);
+        return;
+      }
       if (localStorage.getItem('kitchen_session_active') === 'true') {
         setIsKitchenDocument(true);
         return;
@@ -150,6 +162,10 @@ const BarmanGuard = ({ userProfile, children }: { userProfile: UserProfile | nul
   
   useEffect(() => {
     const checkBarman = async () => {
+      if (!auth.currentUser) {
+        setIsBarmanDocument(false);
+        return;
+      }
       if (localStorage.getItem('barman_session_active') === 'true') {
         setIsBarmanDocument(true);
         return;
@@ -178,6 +194,10 @@ const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | nu
   
   useEffect(() => {
     const checkCashier = async () => {
+      if (!auth.currentUser) {
+        setIsCashierDocument(false);
+        return;
+      }
       if (localStorage.getItem('cashier_session_active') === 'true') {
         setIsCashierDocument(true);
         return;
@@ -202,7 +222,7 @@ const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | nu
 };
 
 const DriverGuard = ({ children }: { children: React.ReactNode }) => {
-  const isDriverAuth = localStorage.getItem('driver_auth') === 'true';
+  const isDriverAuth = localStorage.getItem('driver_auth') === 'true' && auth.currentUser != null;
   if (isDriverAuth) return <>{children}</>;
   return <Navigate to="/driver/login" />;
 };
@@ -615,7 +635,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/login" element={<Login />} />
                   <Route path="/cart" element={<Cart userProfile={userProfile} />} />
                   <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
-                  <Route path="/orders" element={user ? <Orders /> : <Navigate to="/login" />} />
+                  <Route path="/orders" element={user ? <Orders userProfile={userProfile} /> : <Navigate to="/login" />} />
                   <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
                   <Route path="/verify-ticket" element={<VerifyTicket userProfile={userProfile} />} />
                   <Route path="/track/:id" element={<OrderConfirmation />} />

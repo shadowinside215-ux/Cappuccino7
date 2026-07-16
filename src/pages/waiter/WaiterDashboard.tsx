@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signOutApp } from '../../lib/googleAuth';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, setDoc, increment, where } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile, WaiterRequest, WaiterOrderStatus } from '../../types';
@@ -22,7 +24,7 @@ import {
   Bell,
   Navigation,
   UserCheck
-} from 'lucide-react';
+, Check, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +34,7 @@ import { OrderTimer } from '../../components/OrderTimer';
 const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
 
 export default function WaiterDashboard() {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
@@ -221,9 +224,9 @@ export default function WaiterDashboard() {
             const isMyZoneMatch = myZone === 'Both' || req.tableZone === myZone;
 
             // Only notify if it's assigned to this waiter or unassigned AND in my zone
-            if (isMyZoneMatch && (!req.waiterId || req.waiterId === auth.currentUser?.uid)) {
+            if (isMyZoneMatch && (!(req as any).waiterId || (req as any).waiterId === auth.currentUser?.uid)) {
               toast.error(
-                `${t('waiter_called_toast', 'Customer Calling!')} - ${req.fullTableLabel || req.clientName}`,
+                `${t('waiter_called_toast', 'Customer Calling!')} - ${(req as any).fullTableLabel || (req as any).clientName}`,
                 {
                   icon: '🔔',
                   duration: 15000,
@@ -632,7 +635,7 @@ export default function WaiterDashboard() {
                             return true;
                          }).map((item, idx) => (
                            <div key={idx} className="flex justify-between items-center text-sm mb-1 last:mb-0">
-                             <span className="font-bold text-stone-700">{item.quantity}x {item.name}</span>
+                             <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
                            </div>
                          ))}
                       </div>
@@ -684,6 +687,82 @@ export default function WaiterDashboard() {
                     </div>
                   )}
 
+                  
+                  {/* General Requests / Rewards */}
+                  {(filteredRequests.filter(r => r.tableZone !== 'A' && r.tableZone !== 'B').length > 0) && (
+                    <div className="space-y-6 pt-8 border-t-2 border-stone-100">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-purple-400 decoration-4 underline-offset-4">General / Rewards</h3>
+                        <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
+                          {filteredRequests.filter(r => r.tableZone !== 'A' && r.tableZone !== 'B').length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredRequests.filter(r => r.tableZone !== 'A' && r.tableZone !== 'B').map((req) => (
+                          <motion.div 
+                            key={req.id}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className={`bg-white rounded-3xl p-6 shadow-xl border-2 ${req.status === 'accepted' ? 'border-amber-400 bg-amber-50' : 'border-purple-100'}`}
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <span className="bg-purple-100 text-purple-600 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-widest">
+                                  {(req as any).fullTableLabel || 'General'}
+                                </span>
+                                <h4 className="font-black text-xl text-stone-900 mt-2">{(req as any).clientName || 'Customer'}</h4>
+                                <p className="text-xs text-stone-500 font-bold mt-1">
+                                  {(req as any).timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              {req.status === 'new' ? (
+                                <span className="flex items-center gap-1 text-red-500 text-xs font-black uppercase tracking-widest bg-red-50 px-2 py-1 rounded-lg animate-pulse">
+                                  <Clock size={12} /> New
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-amber-600 text-xs font-black uppercase tracking-widest bg-amber-100 px-2 py-1 rounded-lg">
+                                  <Check size={12} /> Accepted
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="bg-purple-50 rounded-2xl p-4 mb-6">
+                              <div className="flex items-start gap-3">
+                                <MessageSquare size={16} className="text-purple-400 mt-0.5 shrink-0" />
+                                <p className="text-sm font-bold text-stone-700 italic">"{(req as any).message}"</p>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              {req.status === 'new' ? (
+                                <button
+                                  onClick={() => acceptRequest(req)}
+                                  className="flex-1 bg-stone-900 text-white py-3 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-stone-800 transition-colors shadow-lg shadow-stone-900/20 active:scale-95"
+                                >
+                                  Accept
+                                </button>
+                              ) : (
+                                <>
+                                  <div className="flex-1 bg-amber-100 text-amber-800 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-center border border-amber-200">
+                                    Taken by {(req as any).waiterName || 'You'}
+                                  </div>
+                                  {(req as any).waiterId === auth.currentUser?.uid && (
+                                    <button
+                                      onClick={() => completeRequest(req)}
+                                      className="flex-1 bg-green-500 text-white py-3 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                      <CheckCircle size={16} /> Done
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Outside Requests */}
                   {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'B' || !waiterProfile?.assignedZone) && (
                     <div className="space-y-6">
@@ -713,6 +792,18 @@ export default function WaiterDashboard() {
 }
 
 function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
+  const [userLoyalty, setUserLoyalty] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (order.userId && order.userId !== 'cashier') {
+      import('firebase/firestore').then(({ getDoc, doc }) => {
+        getDoc(doc(db, 'users', order.userId)).then(snap => {
+          if (snap.exists()) setUserLoyalty(snap.data().itemLoyalty || {});
+        });
+      });
+    }
+  }, [order.userId]);
+
   return (
     <motion.div
       layout
@@ -784,7 +875,14 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
           {order.items.map((item: any, idx: number) => (
             <div key={idx} className="flex justify-between items-start text-sm">
               <div className="flex flex-col flex-1 mr-4">
-                <span className="font-bold text-stone-700">{item.quantity}x {t(`products.${item.name}`, item.name) as string}</span>
+                <span className="font-bold text-stone-700">
+                  {item.quantity}x {t(`products.${item.name}`, item.name) as string}
+                  {userLoyalty[item.productId] >= 11 && (
+                    <span className="ml-2 inline-flex items-center gap-1 bg-[#d4af37]/20 text-[#d4af37] text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md">
+                      <Gift size={10} /> {t('reward_qualified', 'Reward')}
+                    </span>
+                  )}
+                </span>
                 {item.description && (
                   <span className="text-[9px] font-medium text-stone-400 italic leading-tight mt-0.5 line-clamp-2">
                     {t(`descriptions.${item.name}`, item.description)}
@@ -871,11 +969,11 @@ function RequestCard({ req, t, auth, acceptRequest, completeRequest }: any) {
                 <Bell size={24} />
             </div>
             <div>
-                <h4 className="text-xl font-black text-stone-900 uppercase italic tracking-tight">{req.fullTableLabel || req.clientName}</h4>
+                <h4 className="text-xl font-black text-stone-900 uppercase italic tracking-tight">{(req as any).fullTableLabel || (req as any).clientName}</h4>
                 <div className="flex items-center gap-2 mt-0.5">
                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{t('calling_waiter', 'Calling Waiter')}</p>
                    <span className="text-[8px] font-bold text-stone-300 whitespace-nowrap">
-                     {req.timestamp?.toDate ? req.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
+                     {(req as any).timestamp?.toDate ? (req as any).timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
                    </span>
                 </div>
                 {req.orderId && <p className="text-[8px] font-black text-amber-600 uppercase tracking-tighter mt-1">Order: #{req.orderId.slice(-6)}</p>}
@@ -895,9 +993,9 @@ function RequestCard({ req, t, auth, acceptRequest, completeRequest }: any) {
             <div className="space-y-3">
                 <div className="flex items-center gap-2 px-4 py-2 bg-stone-50 border border-stone-100 rounded-xl">
                   <UserCheck size={14} className="text-green-500" />
-                  <span className="text-[9px] font-black uppercase text-stone-500">{t('handled_by', 'Handled by')}: {req.waiterName}</span>
+                  <span className="text-[9px] font-black uppercase text-stone-500">{t('handled_by', 'Handled by')}: {(req as any).waiterName}</span>
                 </div>
-                {req.waiterId === auth.currentUser?.uid && (
+                {(req as any).waiterId === auth.currentUser?.uid && (
                   <button 
                     onClick={() => completeRequest(req)}
                     className="w-full py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-green-700 transition-all shadow-lg"

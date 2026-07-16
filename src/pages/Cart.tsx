@@ -133,6 +133,11 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       toast.error('Your cart is empty');
       return;
     }
+    
+    if (deliveryType === 'dine-in' && !tableNumber) {
+      toast.error(t('please_select_table', 'Please select a table to continue.'));
+      return;
+    }
 
     setLoading(true);
     try {
@@ -424,7 +429,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         <OptimizedImage 
                           src={item.image} 
                           size="medium"
-                          fallbackSrc="https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=200"
+                          fallbackSrc="https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=100&w=3840&w=200"
                           className="w-full h-full object-cover rounded-2xl border border-bento-card-border group-hover:scale-105 transition-transform"
                           alt={item.name}
                           showOverlay={false}
@@ -443,7 +448,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                           </p>
                         )}
                         <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-bento-ink/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Premium Selection</span>
+                          <span className="text-bento-ink/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">{t('premium_selection', 'Premium Selection')}</span>
                           {userProfile && !userProfile.isAnonymous && (
                             <span className="text-[9px] sm:text-[10px] font-black bg-bento-ink/10 text-amber-400 px-2 py-0.5 rounded-lg uppercase tracking-tighter ring-1 ring-bento-card-border">
                               Lvl {userProfile.itemLoyalty?.[item.productId] || 0}
@@ -494,7 +499,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                   {auth.currentUser?.isAnonymous ? (
                     <div className="space-y-1 text-bento-ink">
                       <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">{t('loyalty_perk')}</p>
-                      <p className="text-[10px] font-bold text-bento-ink/60">Sign in to save points!</p>
+                      <p className="text-[10px] font-bold text-bento-ink/60">{t('sign_in_save_points', 'Sign in to save points!')}</p>
                     </div>
                   ) : (
                     <div className="text-bento-ink sm:text-right">

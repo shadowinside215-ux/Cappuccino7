@@ -83,7 +83,7 @@ export default function DriverLogin() {
       {/* Immersive Background */}
       <div className="absolute inset-0 z-0">
         <img 
-          src="https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80" 
+          src="https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=100&w=3840" 
           alt="Driver backdrop" 
           className="w-full h-full object-cover opacity-20 grayscale brightness-50"
         />

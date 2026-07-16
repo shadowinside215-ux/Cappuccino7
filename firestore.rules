@@ -16,14 +16,13 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let hasUser = exists(userPath);
-      let userData = hasUser ? get(userPath).data : null;
       return isSignedIn() && (
-        request.auth.token.email == 'dragonballsam86@gmail.com' ||
-        request.auth.token.email == 'mohamed.erguigue@gmail.com' ||
-        request.auth.token.email == 'samiarafati3@gmail.com' ||
-        (hasUser && (userData.get('isAdmin', false) == true || userData.get('role', '') == 'admin')) ||
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'dragonballsam86@gmail.com') ||
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'mohamed.erguigue@gmail.com') ||
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'samiarafati3@gmail.com') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true || 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')) ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -31,51 +30,46 @@ service cloud.firestore {
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
     function isWaiter() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let hasUser = exists(userPath);
-      let userData = hasUser ? get(userPath).data : null;
       return isSignedIn() && (
-        (hasUser && (userData.get('isWaiter', false) == true || userData.get('role', '') == 'waiter')) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isWaiter', false) == true || 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'waiter')) || 
         exists(/databases/$(database)/documents/waiters/$(request.auth.uid))
       );
     }
     
     function isKitchen() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let hasUser = exists(userPath);
-      let userData = hasUser ? get(userPath).data : null;
       return isSignedIn() && (
-        (hasUser && (userData.get('isKitchen', false) == true || userData.get('role', '') == 'kitchen')) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isKitchen', false) == true || 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'kitchen')) || 
         exists(/databases/$(database)/documents/kitchen/$(request.auth.uid))
       );
     }
     
     function isBarman() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let hasUser = exists(userPath);
-      let userData = hasUser ? get(userPath).data : null;
       return isSignedIn() && (
-        (hasUser && (userData.get('isBarman', false) == true || userData.get('role', '') == 'barman')) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isBarman', false) == true || 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'barman')) || 
         exists(/databases/$(database)/documents/barman/$(request.auth.uid))
       );
     }
     
     function isDriver() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let hasUser = exists(userPath);
-      let userData = hasUser ? get(userPath).data : null;
       return isSignedIn() && (
-        (hasUser && (userData.get('isDriver', false) == true || userData.get('role', '') == 'driver')) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isDriver', false) == true || 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'driver')) || 
         exists(/databases/$(database)/documents/drivers/$(request.auth.uid))
       );
     }
 
     function isCashier() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let hasUser = exists(userPath);
-      let userData = hasUser ? get(userPath).data : null;
       return isSignedIn() && (
-        (hasUser && (userData.get('isCashier', false) == true || userData.get('role', '') == 'cashier')) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isCashier', false) == true || 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'cashier')) || 
         exists(/databases/$(database)/documents/cashiers/$(request.auth.uid))
       );
     }
@@ -111,7 +105,7 @@ service cloud.firestore {
       allow create, update: if isOwner(userId);
       
       allow update: if isStaff() && 
-                    incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty']);
+                    (incoming().diff(existing()).affectedKeys().hasOnly(['points', 'coffeeCount', 'itemLoyalty', 'availableRewards'])) || isAdmin();
       allow delete: if isAdmin();
     }
 

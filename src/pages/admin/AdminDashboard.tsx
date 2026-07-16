@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { signOutApp } from '../../lib/googleAuth';
 import { useTranslation } from 'react-i18next';
 import { collection, query, orderBy, onSnapshot, getDocs, getDoc, doc, setDoc, writeBatch, addDoc, where, serverTimestamp, increment } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Users, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Image as ImageIcon, QrCode, Download } from 'lucide-react';
+import { ShoppingBag, Users, Search, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Image as ImageIcon, QrCode, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { CATEGORIES, PRODUCTS_DATA } from '../../data/menuData';
@@ -18,7 +19,8 @@ export default function AdminDashboard() {
     totalUsers: 0,
     totalItems: 0,
     todayRevenue: 0,
-    totalOrders: 0
+    totalOrders: 0,
+    mostOrderedItem: null as { name: string, count: number } | null
   });
   const [weeklyRevenue, setWeeklyRevenue] = useState<Record<string, { amount: number, orderCount: number }>>({});
   const [isEmpty, setIsEmpty] = useState(false);
@@ -28,6 +30,7 @@ export default function AdminDashboard() {
   const [revError, setRevError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
   const [productsMap, setProductsMap] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
@@ -117,51 +120,56 @@ export default function AdminDashboard() {
     setShowWipeConfirm(false);
     const toastId = toast.loading('Initiating deep cleanup...');
     try {
-      // 1. Clear Orders
-      const orderSnap = await getDocs(collection(db, 'orders'));
-      let orderBatch = writeBatch(db);
-      let count = 0;
-      for (const d of orderSnap.docs) {
-        orderBatch.delete(d.ref);
-        count++;
-        if (count >= 400) {
-          await orderBatch.commit();
-          orderBatch = writeBatch(db);
-          count = 0;
+      const deleteInBatches = async (collectionName) => {
+        const snap = await getDocs(collection(db, collectionName));
+        let batch = writeBatch(db);
+        let count = 0;
+        for (const doc of snap.docs) {
+          batch.delete(doc.ref);
+          count++;
+          if (count >= 400) {
+            await batch.commit();
+            batch = writeBatch(db);
+            count = 0;
+          }
         }
-      }
-      await orderBatch.commit();
+        if (count > 0) await batch.commit();
+      };
+
+      // 1. Clear Orders
+      await deleteInBatches('orders');
 
       // 2. Clear Revenue
-      const revSnap = await getDocs(collection(db, 'dailyRevenue'));
-      const revBatch = writeBatch(db);
-      revSnap.docs.forEach(d => revBatch.delete(d.ref));
-      await revBatch.commit();
+      await deleteInBatches('dailyRevenue');
+
+      // 2.5 Clear Other Stats
+      const statsCollections = ['weeklyRevenue', 'monthlyRevenue', 'stats'];
+      for (const collName of statsCollections) {
+        await deleteInBatches(collName);
+      }
 
       // 3. Clear Waiter Requests
-      const reqSnap = await getDocs(collection(db, 'waiterRequests'));
-      const reqBatch = writeBatch(db);
-      reqSnap.docs.forEach(d => reqBatch.delete(d.ref));
-      await reqBatch.commit();
+      await deleteInBatches('waiterRequests');
 
       // 4. Reset User Loyalty
       const userSnap = await getDocs(collection(db, 'users'));
       let userBatch = writeBatch(db);
-      count = 0;
+      let userCount = 0;
       for (const d of userSnap.docs) {
         userBatch.update(d.ref, {
           points: 0,
           coffeeCount: 0,
-          itemLoyalty: {}
+          itemLoyalty: {},
+          availableRewards: {}
         });
-        count++;
-        if (count >= 400) {
+        userCount++;
+        if (userCount >= 400) {
           await userBatch.commit();
           userBatch = writeBatch(db);
-          count = 0;
+          userCount = 0;
         }
       }
-      await userBatch.commit();
+      if (userCount > 0) await userBatch.commit();
 
       toast.success('System reset successfully. All test data cleared.', { id: toastId });
       setWeeklyRevenue({});
@@ -261,7 +269,8 @@ export default function AdminDashboard() {
           uBatch.update(d.ref, {
             points: 0,
             coffeeCount: 0,
-            itemLoyalty: {}
+            itemLoyalty: {},
+          availableRewards: {}
           });
           count++;
           if (count >= 400) {
@@ -416,6 +425,40 @@ export default function AdminDashboard() {
     };
     fetchStats();
 
+    // Fetch all orders for analytics (Most Ordered Item)
+    const fetchPopularItem = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'orders'));
+        const itemCounts: Record<string, number> = {};
+        snap.docs.forEach(doc => {
+          const order = doc.data();
+          if (order.items && Array.isArray(order.items)) {
+            order.items.forEach((item: any) => {
+              if (item.name) {
+                itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
+              }
+            });
+          }
+        });
+        
+        let mostOrdered = null;
+        let maxCount = 0;
+        Object.entries(itemCounts).forEach(([name, count]) => {
+          if (count > maxCount) {
+            maxCount = count;
+            mostOrdered = { name, count };
+          }
+        });
+        
+        if (mostOrdered) {
+          setStats(prev => ({ ...prev, mostOrderedItem: mostOrdered }));
+        }
+      } catch (e) {
+        console.warn("Failed to fetch popular items", e);
+      }
+    };
+    fetchPopularItem();
+
     return () => {
       unsubOrders();
       unsubRev();
@@ -539,9 +582,9 @@ export default function AdminDashboard() {
       
       if (!brandSnap.exists()) {
         batch.set(brandRef, {
-          logoUrl: 'https://images.unsplash.com/photo-1541167760496-162955ed8a4f?w=800&q=80',
-          heroImageUrl: 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=80&w=1600&auto=format&fit=crop',
-          loginBgUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1600&auto=format&fit=crop',
+          logoUrl: 'https://images.unsplash.com/photo-1541167760496-162955ed8a4f?q=100&w=3840',
+          heroImageUrl: 'https://images.unsplash.com/photo-1501339819358-ee5f8babc4c1?q=100&w=3840&auto=format&fit=crop',
+          loginBgUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=100&w=3840&auto=format&fit=crop',
           updatedAt: new Date().toISOString()
         });
       } else {
@@ -584,7 +627,11 @@ export default function AdminDashboard() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => {
+                sessionStorage.removeItem('admin_mode');
+                signOutApp();
+                navigate('/admin-login', { replace: true });
+              }}
               className="p-3 bg-bento-card-bg rounded-2xl text-stone-700 hover:text-bento-primary transition-colors border border-stone-200 shadow-sm"
               title="Exit Admin Console"
             >
@@ -665,6 +712,25 @@ export default function AdminDashboard() {
             </div>
             <p className="text-xs font-medium opacity-80 mt-auto">
               {t('community_growth_msg')}
+            </p>
+          </div>
+        )}
+        
+        {stats.mostOrderedItem && (
+          <div className="card !p-6 lg:col-span-2 bg-gradient-to-br from-amber-400 to-amber-500 text-stone-900 border-none">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-white/30 rounded-2xl">
+                <Star size={20} className="fill-stone-900" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl md:text-3xl font-black truncate max-w-[150px]" title={stats.mostOrderedItem.name}>
+                   {stats.mostOrderedItem.name}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Most Ordered</p>
+              </div>
+            </div>
+            <p className="text-xs font-black uppercase tracking-widest opacity-80 mt-auto flex items-center gap-2">
+              <Award size={14} /> {stats.mostOrderedItem.count} {t('total_orders', 'Total Orders')}
             </p>
           </div>
         )}
@@ -865,15 +931,27 @@ export default function AdminDashboard() {
       </div>
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between pl-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pl-1">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-bento-primary tracking-tight">{t('customer_communities')}</h2>
             <div className="px-2 py-0.5 bg-bento-accent/20 rounded-full text-bento-primary text-[10px] font-black uppercase tracking-widest">{t('users_count', { count: users.length })}</div>
           </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
+            <input 
+              type="text" 
+              placeholder={t('search_users_by_email', 'Search by email...')}
+              value={userSearchTerm}
+              onChange={(e) => setUserSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-stone-200 focus:outline-none focus:border-bento-primary focus:ring-2 focus:ring-bento-accent/20 transition-all text-sm font-medium"
+            />
+          </div>
         </div>
 
         <div className="space-y-3">
-          {users.map(user => {
+          {users
+            .filter(user => user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) || user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()))
+            .map(user => {
             const itemLoyalty = user.itemLoyalty || {};
             // Any item with 11 or more points counts as a reward ready to redeem
             const readyRewards = Object.entries(itemLoyalty)
@@ -889,7 +967,10 @@ export default function AdminDashboard() {
                   <div>
                     <h4 className="font-bold text-bento-ink text-lg">{user.name || (t('guest') === 'guest' ? 'Anonymous User' : t('anonymous_user', 'Anonymous User'))}</h4>
                     <div className="flex items-center gap-3 mt-0.5">
-                      <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                      <p 
+                        className="text-[10px] text-stone-400 font-bold uppercase tracking-widest flex items-center gap-1 cursor-pointer hover:text-bento-primary transition-colors"
+                        onClick={() => viewUserDetails(user)}
+                      >
                         <Mail size={10} /> {user.email}
                       </p>
                       <div className="h-1 w-1 bg-stone-200 rounded-full" />
@@ -1068,7 +1149,28 @@ export default function AdminDashboard() {
                               <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mt-1">ID: {prodId.slice(-4)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              {(count as number) >= 11 && <Gift className="text-green-500" size={14} />}
+                              {(count as number) >= 11 && (
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Reset reward points for this item?')) {
+                                      const userRef = (await import('firebase/firestore')).doc(db, 'users', selectedUser.uid);
+                                      await (await import('firebase/firestore')).updateDoc(userRef, {
+                                        [`itemLoyalty.${prodId}`]: (count as number) % 11
+                                      });
+                                      setSelectedUser({
+                                        ...selectedUser,
+                                        itemLoyalty: {
+                                          ...selectedUser.itemLoyalty,
+                                          [prodId]: (count as number) % 11
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-green-200 transition-colors flex items-center gap-1 mr-2"
+                                >
+                                  <Gift size={12} /> Redeem
+                                </button>
+                              )}
                               <span className="text-sm font-black text-stone-900">{count} {(count as number) > 1 ? 'Points' : 'Point'}</span>
                             </div>
                           </div>

@@ -37,10 +37,27 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const [breakfastStep, setBreakfastStep] = useState<1 | 2>(1);
   const [selectedDrink, setSelectedDrink] = useState<string>('');
   const [sugarPreference, setSugarPreference] = useState<string>('');
+  const [syrupPreference, setSyrupPreference] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showGeoPrompt, setShowGeoPrompt] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const navigate = useNavigate();
+
+  const isDrinkCategory = (categoryId: string) => [
+    'jus', 'hot_drinks', 'hot_beverages', 'iced-latte', 'iced_latte', 'ice-tea', 'ice_tea', 'frappuccino', 'coffee', 'tea',
+    'special-hot', 'special_hot', 'juices', 'milkshakes', 'smoothies', 'mojitos'
+  ].includes(categoryId);
+  const isFlavoredMilk = (name: string) => name.toLowerCase().includes('lait parfumé');
+
+  useEffect(() => {
+    if (selectedProduct) {
+      setBreakfastStep(1);
+      setSelectedDrink('');
+      setSugarPreference('');
+      setSyrupPreference('');
+    }
+  }, [selectedProduct]);
+
 
   useEffect(() => {
     // Geolocation prompt disabled for now
@@ -89,9 +106,9 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const isEmpty = !loading && categories.length === 0;
 
   const starterMenu: Product[] = [
-    { id: 'start-1', name: 'Occidental Breakfast', price: 38, description: "Deux viennoiseries, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale.", image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800', categoryId: 'breakfast', isAvailable: true },
-    { id: 'start-2', name: 'Amazigh Breakfast', price: 48, description: "Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale.", image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?q=80&w=800', categoryId: 'breakfast', isAvailable: true },
-    { id: 'start-3', name: 'Brunch (1 Personne)', price: 87, description: 'Omelette, saucisses, Beghrir, Harcha, Meloui, Miel, Amlou, Fromage, Jus orange, Pancakes Nutella, Boisson chaude...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=80&w=800', categoryId: 'brunch', isAvailable: true }
+    { id: 'start-1', name: 'Occidental Breakfast', price: 38, description: "Deux viennoiseries, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale.", image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=100&w=3840', categoryId: 'breakfast', isAvailable: true },
+    { id: 'start-2', name: 'Amazigh Breakfast', price: 48, description: "Beghrir, Harcha, Meloui, Betbout, Amlou, Fromage, Miel, Jus d’orange, Balboula, Boisson chaude au choix, Eau minérale.", image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?q=100&w=3840', categoryId: 'breakfast', isAvailable: true },
+    { id: 'start-3', name: 'Brunch (1 Personne)', price: 87, description: 'Omelette, saucisses, Beghrir, Harcha, Meloui, Miel, Amlou, Fromage, Jus orange, Pancakes Nutella, Boisson chaude...', image: 'https://images.unsplash.com/photo-1544179855-502a50a187fd?q=100&w=3840', categoryId: 'brunch', isAvailable: true }
   ];
 
   const starterCategories: Category[] = [
@@ -193,28 +210,28 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const getTranslatedCategory = (catName: string) => {
     const name = catName.toLowerCase();
     if (name.includes('frappuccino')) return t('categories.frappuccino');
-    if (name.includes('breakfast')) return t('categories.breakfast');
-    if (name.includes('brunch')) return t('categories.brunch');
-    if (name.includes('coffee')) return t('categories.coffee');
-    if (name.includes('tea')) return t('categories.tea');
-    if (name.includes('jus') || name.includes('juice')) return t('categories.jus');
-    if (name.includes('hot drinks')) return t('categories.hot_drinks');
+    if (name.includes('breakfast') || name.includes('petit déjeuner') || name.includes('فطور')) return t('categories.breakfast');
+    if (name.includes('brunch') || name.includes('برانش')) return t('categories.brunch');
+    if (name.includes('coffee') || name.includes('café') || name.includes('Les boissons') || name.includes('قهوة')) return t('categories.coffee');
+    if (name.includes('tea') || name.includes('thé') || name.includes('شاي')) return t('categories.tea');
+    if (name.includes('jus') || name.includes('juice') || name.includes('عصير')) return t('categories.jus');
+    if (name.includes('hot drinks') || name.includes('boissons chaudes')) return t('categories.hot_drinks');
     if (name.includes('hot beverages')) return t('categories.hot_beverages');
-    if (name.includes('iced latte') || name.includes('iced latté')) return t('categories.iced_latte');
-    if (name.includes('ice tea')) return t('categories.ice_tea');
-    if (name.includes('crepes_desserts') || name.includes('crêpes')) return t('categories.crepes_desserts');
-    if (name.includes('fast food')) return t('categories.fast_food');
-    if (name.includes('healthy')) return t('categories.healthy');
-    if (name.includes('desserts')) return t('categories.desserts');
-    if (name.includes('ice cream')) return t('categories.ice_cream');
-    if (name.includes('signature')) return t('categories.signature');
-    if (name.includes('extra')) return t('categories.extras');
-    if (name.includes('salades')) return t('categories.salades');
-    if (name.includes('burgers')) return t('categories.burgers');
-    if (name.includes('sandwiches')) return t('categories.sandwiches');
-    if (name.includes('pizza')) return t('categories.pizza');
-    if (name.includes('plats gourmands') || name.includes('artisan plates')) return t('categories.plats gourmands');
-    if (name.includes('pâtes') || name.includes('pasta')) return t('categories.pâtes');
+    if (name.includes('iced latte') || name.includes('iced latté') || name.includes('لاتيه مثلج')) return t('categories.iced_latte');
+    if (name.includes('ice tea') || name.includes('thé glacé')) return t('categories.ice_tea');
+    if (name.includes('crepes_desserts') || name.includes('crêpes') || name.includes('كريب')) return t('categories.crepes_desserts');
+    if (name.includes('fast food') || name.includes('وجبات سريعة')) return t('categories.fast_food');
+    if (name.includes('healthy') || name.includes('صحي')) return t('categories.healthy');
+    if (name.includes('desserts') || name.includes('حلويات')) return t('categories.desserts');
+    if (name.includes('ice cream') || name.includes('مثلجات')) return t('categories.ice_cream');
+    if (name.includes('signature') || name.includes('مميز')) return t('categories.signature');
+    if (name.includes('extra') || name.includes('إضافات')) return t('categories.extras');
+    if (name.includes('salades') || name.includes('salad') || name.includes('سلطات')) return t('categories.salades');
+    if (name.includes('burgers') || name.includes('برجر')) return t('categories.burgers');
+    if (name.includes('sandwiches') || name.includes('سندويشات')) return t('categories.sandwiches');
+    if (name.includes('pizza') || name.includes('بيتزا')) return t('categories.pizza');
+    if (name.includes('plats gourmands') || name.includes('artisan plates') || name.includes('plats-gourmands') || name.includes('أطباق')) return t('categories.plats gourmands');
+    if (name.includes('pâtes') || name.includes('pasta') || name.includes('معكرونة') || name.includes('باستا')) return t('categories.pâtes');
     
     // Fallback to trying to find the key directly
     return t(`categories.${name}`, catName);
@@ -254,7 +271,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                 <OptimizedImage 
                   priority
                   size="large"
-                  src={selectedProduct.image || (selectedProduct.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')} 
+                  src={selectedProduct.image || (selectedProduct.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=100&w=3840' : '')} 
                   containerClassName="w-full h-full"
                   className="w-full h-full object-cover"
                   alt={selectedProduct.name}
@@ -275,11 +292,11 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   </p>
                 </div>
 
-                {/* Breakfast Customization Flow */}
-                {selectedProduct.categoryId === 'breakfast' && (
+                {/* Customization Flow */}
+                {(selectedProduct.categoryId === 'breakfast' || isDrinkCategory(selectedProduct.categoryId) || isFlavoredMilk(selectedProduct.name)) && (
                   <div className="space-y-6 pt-8 border-t border-white/5">
                     <AnimatePresence mode="wait">
-                      {breakfastStep === 1 ? (
+                      {(selectedProduct.categoryId === 'breakfast' && breakfastStep === 1) && (
                         <motion.div 
                           key="step1"
                           initial={{ opacity: 0, x: 20 }}
@@ -300,7 +317,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                                 const lowerName = p.name.toLowerCase();
                                 const allowedDrinks = ['tea', 'thé', 'lipton', 'verveine', 'infusion', 'café crème', 'coffe cream', 'coffee cream', 'chocolat chaud', 'chocolate milk', 'cappuccino', 'café americain', 'american coffee'];
                                 return (p.categoryId === 'coffee' || p.categoryId === 'drinks' || p.categoryId === 'tea') && 
-                                  allowedDrinks.some(kw => lowerName.includes(kw));
+                                   allowedDrinks.some(kw => lowerName.includes(kw));
                               })
                               .map((drink) => (
                                 <button
@@ -317,7 +334,6 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                                 </button>
                               ))}
                           </div>
-
                           <button
                             disabled={!selectedDrink}
                             onClick={() => setBreakfastStep(2)}
@@ -330,7 +346,45 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                             {t('next_step')}
                           </button>
                         </motion.div>
-                      ) : (
+                      )}
+
+                      {isFlavoredMilk(selectedProduct.name) && (
+                        <motion.div 
+                          key="step_syrup"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className="space-y-6"
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] font-black uppercase text-amber-500 tracking-[0.3em] italic">
+                              {t('choose_syrup_question')}
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            {[
+                                { id: 'Red Syrup', label: t('red_syrup') }, 
+                                { id: 'Green Syrup', label: t('green_syrup') }
+                            ].map((pref) => (
+                              <button
+                                key={pref.id}
+                                onClick={() => setSyrupPreference(pref.id)}
+                                className={`px-4 py-6 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all border ${
+                                  syrupPreference === pref.id 
+                                    ? 'bg-amber-400 text-stone-900 border-amber-400 shadow-xl shadow-amber-400/20' 
+                                    : 'bg-bento-ink/5 text-bento-ink/40 border-bento-card-border hover:border-bento-accent/20'
+                                }`}
+                              >
+                                {pref.id === 'Red Syrup' ? '🔴 ' : '🟢 '}
+                                {pref.label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {(((selectedProduct.categoryId === 'breakfast' && breakfastStep === 2) || isDrinkCategory(selectedProduct.categoryId) || isFlavoredMilk(selectedProduct.name))) && (
                         <motion.div 
                           key="step2"
                           initial={{ opacity: 0, x: 20 }}
@@ -342,12 +396,14 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                             <p className="text-[11px] font-black uppercase text-amber-500 tracking-[0.3em] italic">
                               {t('sugar_preference_question')}
                             </p>
-                            <button 
-                              onClick={() => setBreakfastStep(1)}
-                              className="text-[9px] font-black uppercase text-amber-500 hover:text-amber-400 transition-colors"
-                            >
-                              {t('go_back')}
-                            </button>
+                            {selectedProduct.categoryId === 'breakfast' && (
+                              <button 
+                                onClick={() => setBreakfastStep(1)}
+                                className="text-[9px] font-black uppercase text-amber-500 hover:text-amber-400 transition-colors"
+                              >
+                                {t('go_back')}
+                              </button>
+                            )}
                           </div>
 
                           <div className="grid grid-cols-2 gap-4">
@@ -370,12 +426,14 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                             ))}
                           </div>
 
-                          <div className="bg-bento-ink/5 p-6 rounded-3xl border border-bento-card-border">
-                            <p className="text-[9px] font-black uppercase text-bento-ink/20 tracking-widest mb-2 italic">{t('summary')}</p>
-                            <p className="text-xs font-bold text-bento-ink flex items-center gap-2">
-                              {t(`products.${selectedDrink}`, selectedDrink)} • {t(sugarPreference === 'With Sugar' ? 'with_sugar' : 'without_sugar')}
-                            </p>
-                          </div>
+                          {selectedProduct.categoryId === 'breakfast' && selectedDrink && (
+                            <div className="bg-bento-ink/5 p-6 rounded-3xl border border-bento-card-border">
+                              <p className="text-[9px] font-black uppercase text-bento-ink/20 tracking-widest mb-2 italic">{t('summary')}</p>
+                              <p className="text-xs font-bold text-bento-ink flex items-center gap-2">
+                                {t(`products.${selectedDrink}`, selectedDrink)} • {t(sugarPreference === 'With Sugar' ? 'with_sugar' : 'without_sugar')}
+                              </p>
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -393,26 +451,44 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                   </div>
                 </div>
 
-                <button 
-                  disabled={selectedProduct.categoryId === 'breakfast' && (!selectedDrink || !sugarPreference)}
-                  onClick={() => {
-                    const customization = selectedProduct.categoryId === 'breakfast' 
-                      ? `${selectedDrink} - ${sugarPreference}`
-                      : undefined;
-                    addToCart(selectedProduct, customization);
-                    setSelectedProduct(null);
-                    setBreakfastStep(1);
-                    setSelectedDrink('');
-                    setSugarPreference('');
-                  }}
-                  className={`w-full py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-3 ${
-                    (selectedProduct.categoryId === 'breakfast' && (!selectedDrink || !sugarPreference))
-                      ? 'bg-bento-ink/10 text-bento-ink/30 cursor-not-allowed'
-                      : 'bg-bento-primary text-bento-bg hover:scale-[1.02] active:scale-95'
-                  }`}
-                >
-                  {loading ? '...' : t('confirm_and_add')} <Plus size={20} />
-                </button>
+                {(() => {
+                  let isDisabled = false;
+                  if (selectedProduct.categoryId === 'breakfast') isDisabled = !selectedDrink || !sugarPreference;
+                  else if (isFlavoredMilk(selectedProduct.name)) isDisabled = !syrupPreference || !sugarPreference;
+                  else if (isDrinkCategory(selectedProduct.categoryId)) isDisabled = !sugarPreference;
+
+                  return (
+                    <button 
+                      disabled={isDisabled}
+                      onClick={() => {
+                        let customization = undefined;
+                        if (selectedProduct.categoryId === 'breakfast') {
+                          customization = `${t(`products.${selectedDrink}`, selectedDrink)} - ${sugarPreference === 'With Sugar' ? t('with_sugar') : t('without_sugar')}`;
+                        } else if (isFlavoredMilk(selectedProduct.name)) {
+                          const syrupText = syrupPreference === 'Red Syrup' ? t('red_syrup') : t('green_syrup');
+                          const sugarText = sugarPreference === 'With Sugar' ? t('with_sugar') : t('without_sugar');
+                          customization = `${syrupText} - ${sugarText}`;
+                        } else if (isDrinkCategory(selectedProduct.categoryId)) {
+                          customization = sugarPreference === 'With Sugar' ? t('with_sugar') : t('without_sugar');
+                        }
+                        
+                        addToCart(selectedProduct, customization);
+                        setSelectedProduct(null);
+                        setBreakfastStep(1);
+                        setSelectedDrink('');
+                        setSugarPreference('');
+                        setSyrupPreference('');
+                      }}
+                      className={`w-full py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-3 ${
+                        isDisabled
+                          ? 'bg-bento-ink/10 text-bento-ink/30 cursor-not-allowed'
+                          : 'bg-bento-primary text-bento-bg hover:scale-[1.02] active:scale-95'
+                      }`}
+                    >
+                      {loading ? '...' : t('confirm_and_add')} <Plus size={20} />
+                    </button>
+                  );
+                })()}
               </div>
             </motion.div>
           </div>
@@ -816,7 +892,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         ) : (
                           <OptimizedImage
                             size="medium"
-                            src={product.image || (product.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=800' : '')}
+                            src={product.image || (product.name.toLowerCase().includes('anglais') ? 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=100&w=3840' : '')}
                             alt={product.name}
                             containerClassName="w-full h-full"
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
@@ -857,7 +933,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                            <button
                              onClick={(e) => {
                                e.stopPropagation();
-                               if (product.categoryId === 'breakfast') {
+                               if (product.categoryId === 'breakfast' || isDrinkCategory(product.categoryId) || isFlavoredMilk(product.name)) {
                                  setSelectedProduct(product);
                                } else {
                                  addToCart(product);

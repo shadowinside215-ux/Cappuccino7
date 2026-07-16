@@ -134,7 +134,9 @@ const StatusIcon = ({ status }: { status: string }) => {
   }
 };
 
-export default function Orders() {
+import { UserProfile } from '../types';
+
+export default function Orders({ userProfile }: { userProfile: UserProfile | null }) {
   const { t, i18n } = useTranslation();
   const { settings: brand } = useBrandSettings();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -464,6 +466,11 @@ export default function Orders() {
                             {item.quantity}
                           </div>
                           <span className="text-[10px] font-black text-white uppercase tracking-widest">{t(`products.${item.name}`, item.name)}</span>
+                          {item.productId && userProfile && (userProfile.itemLoyalty?.[item.productId] || 0) > 0 && (
+                            <div className="ml-2 bg-amber-400 text-stone-900 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                              <Award size={8} /> {userProfile.itemLoyalty[item.productId]} PTS
+                            </div>
+                          )}
                         </div>
                         {item.customization && (
                           <span className="text-[8px] font-black uppercase text-amber-400 italic pl-9">

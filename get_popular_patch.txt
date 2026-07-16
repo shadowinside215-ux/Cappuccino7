@@ -1,0 +1,33 @@
+    // Fetch all orders for analytics (Most Ordered Item)
+    const fetchPopularItem = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'orders'));
+        const itemCounts: Record<string, number> = {};
+        snap.docs.forEach(doc => {
+          const order = doc.data();
+          if (order.items && Array.isArray(order.items)) {
+            order.items.forEach((item: any) => {
+              if (item.name) {
+                itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
+              }
+            });
+          }
+        });
+        
+        let mostOrdered = null;
+        let maxCount = 0;
+        Object.entries(itemCounts).forEach(([name, count]) => {
+          if (count > maxCount) {
+            maxCount = count;
+            mostOrdered = { name, count };
+          }
+        });
+        
+        if (mostOrdered) {
+          setStats(prev => ({ ...prev, mostOrderedItem: mostOrdered }));
+        }
+      } catch (e) {
+        console.warn("Failed to fetch popular items", e);
+      }
+    };
+    fetchPopularItem();

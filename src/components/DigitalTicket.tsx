@@ -250,22 +250,10 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
           </div>
 
           {/* Table/Order Info Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="p-4 rounded-2xl" style={{ backgroundColor: 'rgba(44,24,16,0.05)' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Order Ref</p>
-              <p className="text-lg font-black tracking-tighter">#{order.id.slice(-6).toUpperCase()}</p>
-            </div>
+          <div className="grid grid-cols-1 gap-4 mb-8">
             <div className="p-4 rounded-2xl" style={{ backgroundColor: 'rgba(44,24,16,0.05)' }}>
               <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Table Info</p>
               <p className="text-lg font-black tracking-tighter">{order.fullTableLabel || 'Takeaway'}</p>
-            </div>
-            <div className="p-4 rounded-2xl" style={{ backgroundColor: 'rgba(44,24,16,0.05)' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Client</p>
-              <p className="text-sm font-bold truncate leading-tight mt-1">{order.customerName}</p>
-            </div>
-            <div className="p-4 rounded-2xl" style={{ backgroundColor: 'rgba(44,24,16,0.05)' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Waiter</p>
-              <p className="text-sm font-bold truncate leading-tight mt-1">{order.waiterName || 'Staff'}</p>
             </div>
           </div>
 
@@ -278,7 +266,7 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-black opacity-30">{item.quantity}x</span>
-                      <p className="text-sm font-black uppercase tracking-tight">{item.name}</p>
+                      <p className="text-sm font-black uppercase tracking-tight">{t(`products.${item.name}`, item.name) as string}</p>
                     </div>
                     {item.customization && (
                       <p className="text-[10px] font-bold opacity-40 italic ml-6 leading-tight">
@@ -295,16 +283,16 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
           {/* Totals Section */}
           <div className="border-t-2 border-dashed pt-6 mb-8 space-y-2" style={{ borderColor: 'rgba(44,24,16,0.1)' }}>
             <div className="flex justify-between items-center text-sm font-bold opacity-60">
-              <p>Subtotal</p>
+              <p>{t('subtotal', 'Subtotal')}</p>
               <p>{order.total.toFixed(2)} DH</p>
             </div>
             <div className="flex justify-between items-end">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Total Amount</p>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-40">{t('total_amount', 'Total Amount')}</p>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: order.isPaid ? '#22c55e' : '#f59e0b' }} />
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                    {order.isPaid ? 'Paid' : 'Payment Pending'}
+                    {order.isPaid ? t('paid', 'Paid') : t('payment_pending', 'Payment Pending')}
                   </p>
                 </div>
               </div>

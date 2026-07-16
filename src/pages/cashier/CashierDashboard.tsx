@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { signOutApp } from '../../lib/googleAuth';
 import { 
   Calculator, 
   Search, 
@@ -39,8 +40,9 @@ import {
   Wifi,
   WifiOff,
   Database,
-  Eye
-} from 'lucide-react';
+  Eye,
+  Gift
+, Check, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, doc, setDoc, updateDoc, serverTimestamp, increment, addDoc, Timestamp, onSnapshotsInSync } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../../lib/firebase';
@@ -92,10 +94,13 @@ export default function CashierDashboard() {
   const [deliveryType, setDeliveryType] = useState<'dine-in' | 'takeaway'>('dine-in');
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [unpaidOrders, setUnpaidOrders] = useState<Order[]>([]);
+  const [rewardsHistory, setRewardsHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showMobileCart, setShowMobileCart] = useState(false);
+  const [selectedClientLoyalty, setSelectedClientLoyalty] = useState<Record<string, number> | null>(null);
+  const [selectedClientRewards, setSelectedClientRewards] = useState<Record<string, number> | null>(null);
   const { settings: brand } = useBrandSettings();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -119,7 +124,7 @@ export default function CashierDashboard() {
   }, []);
 
   // New States for POS Functionality
-  const [activeVendeur, setActiveVendeur] = useState<string>(localStorage.getItem('pos_vendeur_name') || 'CASHIER-01');
+  const [activeVendeur, setActiveVendeur] = useState<string>(localStorage.getItem('pos_vendeur_name') || 'CASHIER');
   const [staffMembers, setStaffMembers] = useState<any[]>([]);
   const [showVendeurGrid, setShowVendeurGrid] = useState(false);
   const [showClosureModal, setShowClosureModal] = useState(false);
@@ -188,6 +193,34 @@ export default function CashierDashboard() {
       where('isPaid', '==', false),
       orderBy('createdAt', 'desc')
     );
+    // Listen for loyalty reward notifications
+    const qRewards = query(
+      collection(db, 'waiterRequests'),
+      where('status', '==', 'new'),
+      where('type', 'in', ['loyalty_reward', 'reward_redemption']),
+      orderBy('timestamp', 'desc')
+    );
+    let isInitialRewardsLoad = true;
+    const unsubRewards = onSnapshot(query(collection(db, 'waiterRequests'), where('type', 'in', ['loyalty_reward', 'reward_redemption']), orderBy('timestamp', 'desc')), (snap) => {
+      setRewardsHistory(snap.docs.map(d => ({ id: d.id, ...d.data()})));
+      if (isInitialRewardsLoad) {
+        isInitialRewardsLoad = false;
+        return;
+      }
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const req = change.doc.data();
+          toast.success(`🎁 ${req.message} (${req.clientName})`, {
+            duration: 10000,
+            icon: '🏆',
+            position: 'top-center'
+          });
+        }
+      });
+    }, (error) => {
+      console.warn('Rewards listener error:', error.message);
+    });
+
     const unsubUnpaid = onSnapshot(qUnpaid, (snap) => {
       const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setUnpaidOrders(orders);
@@ -221,8 +254,30 @@ export default function CashierDashboard() {
       unsubOrders();
       unsubJournal();
       unsubUnpaid();
+      unsubRewards();
     };
   }, []);
+
+  // Fetch selected client's loyalty
+  useEffect(() => {
+    if (selectedOrder && selectedOrder.userId && selectedOrder.userId !== 'cashier') {
+      import('firebase/firestore').then(({ getDoc, doc }) => {
+        getDoc(doc(db, 'users', selectedOrder.userId)).then((snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            setSelectedClientLoyalty(data.itemLoyalty || {});
+            setSelectedClientRewards(data.availableRewards || {});
+          } else {
+            setSelectedClientLoyalty(null);
+            setSelectedClientRewards(null);
+          }
+        });
+      });
+    } else {
+      setSelectedClientLoyalty(null);
+      setSelectedClientRewards(null);
+    }
+  }, [selectedOrder?.id, selectedOrder?.userId]);
 
   // Real-time closure stats (Today's performance)
   useEffect(() => {
@@ -292,7 +347,7 @@ export default function CashierDashboard() {
 
   const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-  const handleCheckout = async (paymentMethod: 'cash' | 'card') => {
+  const handleCheckout = async (paymentMethod: 'cash' | 'card' | 'reward') => {
     if (cart.length === 0) return;
     setIsProcessing(true);
 
@@ -371,7 +426,7 @@ export default function CashierDashboard() {
     toast.success(t('pos_provisional_printed'));
   };
 
-  const handleMarkPaid = async (order: Order, method: 'cash' | 'card') => {
+  const handleMarkPaid = async (order: Order, method: 'cash' | 'card' | 'reward') => {
     setIsProcessing(true);
     try {
       setIsSyncing(true);
@@ -387,10 +442,65 @@ export default function CashierDashboard() {
 
       if (isOnline) {
         await updatePromise;
-        await addOrderToStats(order.id, order.total);
+        await addOrderToStats(order.id, order.total, { paymentMethod: method });
+        
+        // Give points to the user based on items ordered
+        if (method !== 'reward' && order.userId && !order.isPOS) {
+          try {
+            const userRef = doc(db, 'users', order.userId);
+            const userSnap = await (await import('firebase/firestore')).getDoc(userRef);
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              const itemLoyalty = userData.itemLoyalty || {};
+              const updates: Record<string, any> = {};
+              
+              order.items.forEach(item => {
+                if (item.productId) {
+                  // If reward was applied during this session, the customer paid for (item.quantity - 1) items.
+                  // If no reward was applied, the customer paid for item.quantity items.
+                  const rewardApplied = (order as any)[`rewardApplied_${item.productId}`];
+                  const paidQuantity = rewardApplied ? Math.max(0, item.quantity - 1) : item.quantity;
+                  
+                  if (paidQuantity > 0) {
+                    const currentPoints = itemLoyalty[item.productId] || 0;
+                    const newPoints = currentPoints + paidQuantity;
+                    updates[`itemLoyalty.${item.productId}`] = newPoints;
+                    
+                    if (currentPoints < 11 && newPoints >= 11) {
+                      // Reached 11 points! Send notification
+                      const notificationDoc = {
+                        tableZone: 'General',
+                        fullTableLabel: order.customerName,
+                        clientName: order.customerName,
+                        status: 'new',
+                        timestamp: serverTimestamp(),
+                        type: 'loyalty_reward',
+                        message: `Reward Unlocked for ${item.name}!`,
+                        waiterId: order.waiterId || null
+                      };
+                      import('firebase/firestore').then(({ addDoc, collection }) => {
+                        addDoc(collection(db, 'waiterRequests'), notificationDoc);
+                      });
+                    }
+                  }
+                }
+              });
+              
+              if (Object.keys(updates).length > 0) {
+                await updateDoc(userRef, updates);
+              }
+            }
+          } catch (e) {
+            console.error('Error updating loyalty points:', e);
+          }
+        }
       }
       
-      toast.success(t('pos_payment_confirmed'));
+      if (method === 'reward') {
+        toast.success(t('pos_reward_processed', 'Reward claimed successfully'));
+      } else {
+        toast.success(t('pos_payment_confirmed'));
+      }
       setSelectedOrder(null); // Clear selected order after payment
     } catch (err) {
       console.error(err);
@@ -411,6 +521,69 @@ export default function CashierDashboard() {
       const scrollAmt = 400;
       categoryScrollRef.current.scrollBy({ left: dir === 'left' ? -scrollAmt : scrollAmt, behavior: 'smooth' });
     }
+  };
+
+  const handleRewardCheck = async (productId: string, itemPrice: number) => {
+    if (!selectedOrder || !selectedOrder.userId) return;
+    try {
+      setIsProcessing(true);
+      const userRef = doc(db, 'users', selectedOrder.userId);
+      const orderRef = doc(db, 'orders', selectedOrder.id);
+      
+      const availableCount = selectedClientRewards?.[productId] || 0;
+      if (availableCount <= 0) return;
+
+      const discountAmount = itemPrice; // 1 reward consumed at a time
+      const newTotal = Math.max(0, selectedOrder.total - discountAmount);
+      const newCount = availableCount - 1;
+      
+      await (await import('firebase/firestore')).updateDoc(userRef, {
+        [`availableRewards.${productId}`]: newCount
+      });
+      
+      await (await import('firebase/firestore')).updateDoc(orderRef, {
+        total: newTotal,
+        [`rewardApplied_${productId}`]: true
+      });
+      
+      toast.success('Reward applied! Item discounted.');
+      
+      setSelectedClientRewards(prev => prev ? { ...prev, [productId]: newCount } : null);
+      setSelectedOrder({ ...selectedOrder, total: newTotal, [`rewardApplied_${productId}`]: true });
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to apply reward');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getTranslatedCategory = (catName: string) => {
+    const name = catName.toLowerCase();
+    if (name.includes('frappuccino')) return t('categories.frappuccino');
+    if (name.includes('breakfast')) return t('categories.breakfast');
+    if (name.includes('brunch')) return t('categories.brunch');
+    if (name.includes('coffee')) return t('categories.coffee');
+    if (name.includes('tea')) return t('categories.tea');
+    if (name.includes('jus') || name.includes('juice')) return t('categories.jus');
+    if (name.includes('hot drinks')) return t('categories.hot_drinks');
+    if (name.includes('hot beverages')) return t('categories.hot_beverages');
+    if (name.includes('iced latte') || name.includes('iced latté')) return t('categories.iced_latte');
+    if (name.includes('ice tea')) return t('categories.ice_tea');
+    if (name.includes('crepes_desserts') || name.includes('crêpes')) return t('categories.crepes_desserts');
+    if (name.includes('fast food')) return t('categories.fast_food');
+    if (name.includes('healthy')) return t('categories.healthy');
+    if (name.includes('desserts')) return t('categories.desserts');
+    if (name.includes('ice cream')) return t('categories.ice_cream');
+    if (name.includes('signature')) return t('categories.signature');
+    if (name.includes('extra')) return t('categories.extras');
+    if (name.includes('salades')) return t('categories.salades');
+    if (name.includes('burgers')) return t('categories.burgers');
+    if (name.includes('sandwiches')) return t('categories.sandwiches');
+    if (name.includes('pizza')) return t('categories.pizza');
+    if (name.includes('plats gourmands') || name.includes('artisan plates')) return t('categories.plats gourmands');
+    if (name.includes('pâtes') || name.includes('pasta')) return t('categories.pâtes');
+    return t(`categories.${name}`, catName);
   };
 
   const getCategoryIcon = (name: string) => {
@@ -752,7 +925,7 @@ export default function CashierDashboard() {
                           className={`flex-shrink-0 min-w-[110px] md:min-w-[140px] h-full flex flex-col items-center justify-center gap-1 border-r border-bento-card-border uppercase text-[8px] md:text-[9px] font-black transition-all ${selectedCategory === cat.id ? 'bg-bento-card-bg text-bento-ink border-b-2 border-amber-500' : 'text-stone-500 hover:bg-bento-card-bg'}`}
                         >
                           <Icon size={16} />
-                          {cat.name}
+                          {getTranslatedCategory(cat.name)}
                         </button>
                       );
                     })}
@@ -801,11 +974,9 @@ export default function CashierDashboard() {
              <div className="p-4 border-b border-gray-300 flex items-center justify-between bg-gray-200">
                 <div className="flex flex-col">
                    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600">
-                     {selectedOrder ? `${t('pos_order')} #${selectedOrder.id.slice(-6).toUpperCase()}` : t('pos_current_ticket')}
+                     {t('pos_current_ticket')}
                    </span>
-                   {selectedOrder && (
-                     <span className="text-[9px] font-bold text-stone-400 truncate w-32 uppercase leading-none">{selectedOrder.customerName}</span>
-                   )}
+                   {/* Removed customerName */}
                 </div>
                 <div className="flex gap-2">
                    {!selectedOrder && (
@@ -860,9 +1031,17 @@ export default function CashierDashboard() {
                             />
                           </div>
                         )}
-                        <span className="text-[11px] font-bold uppercase tracking-tight max-w-[150px] leading-tight text-stone-800">{item.name}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-tight max-w-[150px] leading-tight text-stone-800">{t(`products.${item.name}`, item.name) as string}</span>
                      </div>
                      <div className="flex items-center gap-1.5 self-end">
+                        {selectedOrder && selectedClientRewards && (selectedClientRewards[item.productId] || 0) > 0 && (
+                          <button
+                            onClick={() => handleRewardCheck(item.productId, item.price)}
+                            className="bg-[#d4af37] text-stone-900 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center gap-1"
+                          >
+                            Redeem Reward ({(selectedClientRewards[item.productId] || 0)})
+                          </button>
+                        )}
                         <span className="font-black tabular-nums text-stone-900">{(item.price * item.quantity).toFixed(2)}</span>
                         {!selectedOrder && (
                            <button 
@@ -901,13 +1080,20 @@ export default function CashierDashboard() {
               </div>
 
               {/* Payment Buttons (Large blocks as in image) */}
-              <div className="h-24 md:h-32 grid grid-cols-2 gap-px bg-[#111] p-px border-t border-white/5 shrink-0">
+              <div className="h-24 md:h-32 grid grid-cols-3 gap-px bg-[#111] p-px border-t border-white/5 shrink-0">
                  <button 
                    onClick={() => selectedOrder ? handleMarkPaid(selectedOrder, 'cash') : handleCheckout('cash')}
                    disabled={!selectedOrder && cart.length === 0}
                    className="bg-[#22C55E] hover:brightness-110 active:brightness-90 transition-all flex flex-col items-center justify-center gap-2 text-white font-black text-[11px] uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
                  >
                     <Banknote size={24} /> {t('pos_cash')}
+                 </button>
+                 <button 
+                   onClick={() => selectedOrder ? handleMarkPaid(selectedOrder, 'reward') : handleCheckout('reward')}
+                   disabled={!selectedOrder && cart.length === 0}
+                   className="bg-[#3B82F6] hover:brightness-110 active:brightness-90 transition-all flex flex-col items-center justify-center gap-2 text-white font-black text-[11px] uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
+                 >
+                    <Gift size={24} /> {t('pos_reward', 'REWARD')}
                  </button>
                  <button 
                    onClick={() => {
@@ -1088,20 +1274,6 @@ export default function CashierDashboard() {
                        )}
                     </motion.button>
                   ))}
-                  <motion.button
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    onClick={() => {
-                      setActiveVendeur('CASHIER-01');
-                      localStorage.setItem('pos_vendeur_name', 'CASHIER-01');
-                      setShowVendeurGrid(false);
-                    }}
-                    className="aspect-square rounded-[3rem] bg-bento-card-bg border-4 border-bento-card-border text-stone-500 flex flex-col items-center justify-center gap-6 hover:border-amber-500/30 shadow-2xl transition-all group"
-                  >
-                     <div className="p-6 rounded-[2rem] bg-bento-bg shadow-xl group-hover:bg-bento-bg/80">
-                        <LayoutGrid size={48} strokeWidth={1.5} />
-                     </div>
-                     <span className="font-black uppercase tracking-widest text-[12px]">STANDARD-POS</span>
-                  </motion.button>
                </div>
                <button onClick={() => setShowVendeurGrid(false)} className="mt-20 mx-auto block w-16 h-16 bg-bento-card-bg border border-bento-card-border rounded-full flex items-center justify-center text-stone-500 hover:text-bento-ink transition-all shadow-xl"><X size={28} /></button>
             </div>
