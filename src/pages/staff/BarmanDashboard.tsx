@@ -162,8 +162,8 @@ export default function BarmanDashboard() {
       
       const updates: any = {
         barmanStatus: newBarmanStatus,
-        ...(newBarmanStatus === 'preparing' ? { preparingAt: serverTimestamp() } : {}),
-        ...(newBarmanStatus === 'ready' ? { readyAt: serverTimestamp() } : {})
+        ...(newBarmanStatus === 'preparing' ? { preparingAt: serverTimestamp(), barmanStartedAt: serverTimestamp() } : {}),
+        ...(newBarmanStatus === 'ready' ? { readyAt: serverTimestamp(), barmanReadyAt: serverTimestamp() } : {})
       };
 
       // Check if both are ready to update global status

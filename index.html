@@ -17,6 +17,7 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   
+    
     <script>
       // Prevent double-tap to zoom
       let lastTouchEnd = 0;
@@ -26,7 +27,7 @@
           event.preventDefault();
         }
         lastTouchEnd = now;
-      }, false);
+      }, { passive: false });
 
       // Prevent pinch to zoom
       document.addEventListener('touchstart', function(event) {
@@ -35,12 +36,25 @@
         }
       }, { passive: false });
 
-      // Prevent wheel zoom (Ctrl + scroll)
-      document.addEventListener('wheel', function(event) {
-        if (event.ctrlKey) {
+      document.addEventListener('touchmove', function(event) {
+        if (event.touches.length > 1 || event.scale && event.scale !== 1) {
           event.preventDefault();
         }
       }, { passive: false });
+
+      // Prevent wheel zoom (Ctrl + scroll)
+      document.addEventListener('wheel', function(event) {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+        }
+      }, { passive: false });
+
+      // Prevent keyboard zoom
+      document.addEventListener('keydown', function(event) {
+        if ((event.ctrlKey || event.metaKey) && (event.key === '=' || event.key === '-' || event.key === '0' || event.code === 'NumpadAdd' || event.code === 'NumpadSubtract')) {
+          event.preventDefault();
+        }
+      });
     </script>
   </body>
 </html>

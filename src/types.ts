@@ -113,6 +113,12 @@ export interface Order {
   verificationToken?: string;
   isModified?: boolean;
   createdAt: any; // Firestore Timestamp
+  paymentConfirmedAt?: any; // Firestore Timestamp
+  kitchenStartedAt?: any; // Firestore Timestamp
+  barmanStartedAt?: any; // Firestore Timestamp
+  kitchenReadyAt?: any; // Firestore Timestamp
+  barmanReadyAt?: any; // Firestore Timestamp
+  completedAt?: any; // Firestore Timestamp
 }
 
 export interface AppSettings {

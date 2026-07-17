@@ -162,8 +162,8 @@ export default function KitchenDashboard() {
       
       const updates: any = {
         kitchenStatus: newKitchenStatus,
-        ...(newKitchenStatus === 'preparing' ? { preparingAt: serverTimestamp() } : {}),
-        ...(newKitchenStatus === 'ready' ? { readyAt: serverTimestamp() } : {})
+        ...(newKitchenStatus === 'preparing' ? { preparingAt: serverTimestamp(), kitchenStartedAt: serverTimestamp() } : {}),
+        ...(newKitchenStatus === 'ready' ? { readyAt: serverTimestamp(), kitchenReadyAt: serverTimestamp() } : {})
       };
 
       // Check if both are ready to update global status

@@ -54,6 +54,7 @@ import toast from 'react-hot-toast';
 import { format, startOfDay, endOfDay, isToday, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { OrderTimer } from '../../components/OrderTimer';
+import { OrderTimestamps } from '../../components/OrderTimestamps';
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTranslation } from 'react-i18next';
@@ -780,6 +781,9 @@ export default function CashierDashboard() {
                              </div>
                            )}
 
+                           <div className="mb-2">
+                              <OrderTimestamps order={order} compact={true} />
+                           </div>
                            <div className="mb-4">
                               <OrderTimer 
                                 createdAt={order.createdAt} 

@@ -89,7 +89,7 @@ export const addOrderToStats = async (orderId: string, orderTotal: number, optio
     // 6. Mark order as paid
     batch.update(orderRef, {
       isPaid: true,
-      paidAt: serverTimestamp()
+      paymentConfirmedAt: serverTimestamp(), paidAt: serverTimestamp()
     });
 
     await batch.commit();

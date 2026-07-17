@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { OrderTimer } from '../../components/OrderTimer';
+import { OrderTimestamps } from '../../components/OrderTimestamps';
 
 const STATUSES: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready', 'delivered'];
 
@@ -49,8 +50,12 @@ export default function AdminOrders() {
       
       if (newStatus === 'preparing' && !order.preparingAt) {
         updateData.preparingAt = serverTimestamp();
+        updateData.kitchenStartedAt = serverTimestamp();
+        updateData.barmanStartedAt = serverTimestamp();
       } else if (newStatus === 'ready' && !order.readyAt) {
         updateData.readyAt = serverTimestamp();
+        updateData.kitchenReadyAt = serverTimestamp();
+        updateData.barmanReadyAt = serverTimestamp();
         
         // Calculate ready time from creation
         if (order.createdAt) {
@@ -69,6 +74,7 @@ export default function AdminOrders() {
         }
       } else if (newStatus === 'delivered' && !order.deliveredAt) {
         updateData.deliveredAt = serverTimestamp();
+        updateData.completedAt = serverTimestamp();
         
         // Calculate delivery time
         if (order.createdAt) {
@@ -139,6 +145,9 @@ export default function AdminOrders() {
                       return null;
                     })()}
                     <span className="text-xs text-gray-400 font-mono ml-auto">#{order.id.slice(-6).toUpperCase()}</span>
+                  </div>
+                  <div className="mb-4">
+                    <OrderTimestamps order={order} compact={true} />
                   </div>
                   <div className="flex flex-wrap gap-4 mb-4">
                     <p className="text-gray-500 text-sm flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 italic">

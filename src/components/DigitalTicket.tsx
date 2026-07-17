@@ -23,6 +23,7 @@ import { Order } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useBrandSettings } from '../lib/brand';
 import { PUBLIC_APP_URL } from '../config';
+import { OrderTimestamps } from './OrderTimestamps';
 import toast from 'react-hot-toast';
 
 // Custom Pancake Icon
@@ -302,6 +303,9 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
             </div>
           </div>
 
+          <div className="mb-8">
+            <OrderTimestamps order={order} compact={true} />
+          </div>
           {/* Branding & Loyalty */}
           <div 
             style={{ 

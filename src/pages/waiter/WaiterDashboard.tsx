@@ -397,6 +397,7 @@ export default function WaiterDashboard() {
       await updateDoc(orderRef, {
         status: 'delivered',
         deliveredAt: serverTimestamp(),
+        completedAt: serverTimestamp(),
         deliveredInMinutes: diffMins,
         updatedAt: serverTimestamp()
       });

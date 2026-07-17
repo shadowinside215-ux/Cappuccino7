@@ -64,6 +64,9 @@
     @apply overflow-x-hidden w-full transition-colors duration-500;
     -webkit-tap-highlight-color: transparent;
     touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
   
   body {
@@ -74,7 +77,13 @@
     @apply font-serif;
   }
   
+  input, textarea, select {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+  
   img {
+    -webkit-user-drag: none;
     @apply transition-opacity duration-300;
   }
   

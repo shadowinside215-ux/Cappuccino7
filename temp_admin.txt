@@ -6,7 +6,6 @@ import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebas
 import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Users, Search, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Image as ImageIcon, QrCode, Download } from 'lucide-react';
-import { Timer } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { CATEGORIES, PRODUCTS_DATA } from '../../data/menuData';
@@ -21,15 +20,7 @@ export default function AdminDashboard() {
     totalItems: 0,
     todayRevenue: 0,
     totalOrders: 0,
-    mostOrderedItem: null as { name: string, count: number } | null,
-    performance: null as null | {
-      avgPrep: number;
-      avgDelivery: number;
-      avgTotal: number;
-      fastest: number;
-      slowest: number;
-      completedToday: number;
-    }
+    mostOrderedItem: null as { name: string, count: number } | null
   });
   const [weeklyRevenue, setWeeklyRevenue] = useState<Record<string, { amount: number, orderCount: number }>>({});
   const [isEmpty, setIsEmpty] = useState(false);
@@ -114,6 +105,17 @@ export default function AdminDashboard() {
     fetchProductsForMapping();
   }, []);
 
+  const resetTodayRevenue = async () => {
+    if (!confirm('Reset today\'s revenue to 0?')) return;
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      await setDoc(doc(db, 'dailyRevenue', today), { amount: 0, lastUpdated: serverTimestamp() });
+      toast.success("Today's revenue reset.");
+    } catch (err) {
+      toast.error("Failed to reset revenue.");
+    }
+  };
+
   const cleanupAllTestData = async () => {
     setShowWipeConfirm(false);
     const toastId = toast.loading('Initiating deep cleanup...');
@@ -175,6 +177,22 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Cleanup error:", err);
       toast.error('Cleanup failed. Check permissions.', { id: toastId });
+    }
+  };
+
+  const resetWeeklyRevenue = async () => {
+    if (!confirm('Clear all revenue data for the week?')) return;
+    const toastId = toast.loading('Clearing weekly revenue...');
+    try {
+      const revSnap = await getDocs(collection(db, 'dailyRevenue'));
+      const batch = writeBatch(db);
+      revSnap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      toast.success('Weekly revenue cleared.', { id: toastId });
+      setWeeklyRevenue({});
+      setStats(prev => ({ ...prev, todayRevenue: 0 }));
+    } catch (err) {
+      toast.error('Failed to clear revenue.', { id: toastId });
     }
   };
 
@@ -407,71 +425,19 @@ export default function AdminDashboard() {
     };
     fetchStats();
 
-    
-    // Fetch all orders for analytics (Most Ordered Item + Performance)
-    const fetchAnalytics = async () => {
+    // Fetch all orders for analytics (Most Ordered Item)
+    const fetchPopularItem = async () => {
       try {
         const snap = await getDocs(collection(db, 'orders'));
         const itemCounts: Record<string, number> = {};
-        
-        // Performance trackers
-        let prepTimes: number[] = [];
-        let deliveryTimes: number[] = [];
-        let totalTimes: number[] = [];
-        let completedToday = 0;
-        
-        const todayStr = new Date().toISOString().split('T')[0];
-
         snap.docs.forEach(doc => {
           const order = doc.data();
-          
-          // Items count
           if (order.items && Array.isArray(order.items)) {
             order.items.forEach((item: any) => {
               if (item.name) {
                 itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
               }
             });
-          }
-          
-          // Performance calculations
-          if (order.status === 'delivered' || order.status === 'completed') {
-            const getMs = (ts: any) => {
-              if (!ts) return 0;
-              if (typeof ts.toDate === 'function') return ts.toDate().getTime();
-              return new Date(ts).getTime();
-            };
-            
-            const tCreate = getMs(order.createdAt);
-            const tKStart = getMs(order.kitchenStartedAt);
-            const tBStart = getMs(order.barmanStartedAt);
-            const tKReady = getMs(order.kitchenReadyAt);
-            const tBReady = getMs(order.barmanReadyAt);
-            const tReady = getMs(order.readyAt);
-            const tDelivered = getMs(order.deliveredAt) || getMs(order.completedAt);
-            
-            if (tCreate) {
-              const orderDateStr = new Date(tCreate).toISOString().split('T')[0];
-              if (orderDateStr === todayStr) {
-                completedToday++;
-              }
-              
-              if (tDelivered) {
-                totalTimes.push(Math.round((tDelivered - tCreate) / 60000));
-              }
-            }
-            
-            // Prep time: Start -> Ready
-            const start = tKStart || tBStart || tCreate;
-            const ready = tKReady || tBReady || tReady;
-            if (start && ready && ready >= start) {
-              prepTimes.push(Math.round((ready - start) / 60000));
-            }
-            
-            // Delivery time: Ready -> Delivered
-            if (ready && tDelivered && tDelivered >= ready) {
-              deliveryTimes.push(Math.round((tDelivered - ready) / 60000));
-            }
           }
         });
         
@@ -484,24 +450,14 @@ export default function AdminDashboard() {
           }
         });
         
-        const avg = (arr: number[]) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
-        
-        const performance = {
-          avgPrep: avg(prepTimes),
-          avgDelivery: avg(deliveryTimes),
-          avgTotal: avg(totalTimes),
-          fastest: totalTimes.length ? Math.min(...totalTimes) : 0,
-          slowest: totalTimes.length ? Math.max(...totalTimes) : 0,
-          completedToday
-        };
-
-        setStats(prev => ({ ...prev, mostOrderedItem: mostOrdered, performance }));
+        if (mostOrdered) {
+          setStats(prev => ({ ...prev, mostOrderedItem: mostOrdered }));
+        }
       } catch (e) {
-        console.warn("Failed to fetch analytics", e);
+        console.warn("Failed to fetch popular items", e);
       }
     };
-    fetchAnalytics();
-
+    fetchPopularItem();
 
     return () => {
       unsubOrders();
@@ -674,7 +630,7 @@ export default function AdminDashboard() {
               onClick={() => {
                 sessionStorage.removeItem('admin_mode');
                 signOutApp();
-                navigate('/admin/login', { replace: true });
+                navigate('/admin-login', { replace: true });
               }}
               className="p-3 bg-bento-card-bg rounded-2xl text-stone-700 hover:text-bento-primary transition-colors border border-stone-200 shadow-sm"
               title="Exit Admin Console"
@@ -732,6 +688,15 @@ export default function AdminDashboard() {
             <p className="text-3xl md:text-4xl font-black text-bento-ink mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_mad')}</p>
             
+            {!isClientAdmin && (
+              <button 
+                onClick={resetTodayRevenue}
+                className="absolute top-4 right-4 p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
+                title="Reset Today's Revenue"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
 
         {!isClientAdmin && (
@@ -769,34 +734,6 @@ export default function AdminDashboard() {
             </p>
           </div>
         )}
-
-        {stats.performance && (
-          <div className="card !p-6 lg:col-span-4 bg-bento-card-bg border-bento-card-border mt-4">
-            <h3 className="text-xl font-black text-bento-primary uppercase italic tracking-tighter mb-4 flex items-center gap-2">
-              <Timer size={20} /> Service Performance
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Avg Prep Time</p>
-                <p className="text-2xl font-black text-amber-600">{stats.performance.avgPrep}m</p>
-              </div>
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Avg Delivery</p>
-                <p className="text-2xl font-black text-blue-600">{stats.performance.avgDelivery}m</p>
-              </div>
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Fastest / Slowest</p>
-                <p className="text-xl font-black text-bento-ink">
-                  {stats.performance.fastest}m <span className="text-stone-400 font-normal">/</span> {stats.performance.slowest}m
-                </p>
-              </div>
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Completed Today</p>
-                <p className="text-2xl font-black text-green-600">{stats.performance.completedToday}</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Weekly Revenue Chart-like View */}
@@ -807,7 +744,36 @@ export default function AdminDashboard() {
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mt-1">{t('revenue_per_day')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-
+            {!isClientAdmin && (
+              <>
+                <button 
+                  onClick={resetWeeklyRevenue}
+                  className="flex-1 sm:flex-none px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
+                >
+                  Reset Weekly
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (!confirm('Clear ALL historic revenue data?')) return;
+                    const toastId = toast.loading('Clearing all revenue...');
+                    try {
+                      const revSnap = await getDocs(collection(db, 'dailyRevenue'));
+                      const batch = writeBatch(db);
+                      revSnap.docs.forEach(d => batch.delete(d.ref));
+                      await batch.commit();
+                      toast.success('All revenue data cleared.', { id: toastId });
+                      setWeeklyRevenue({});
+                      setStats(prev => ({ ...prev, todayRevenue: 0 }));
+                    } catch (err) {
+                       toast.error('Failed to clear revenue', { id: toastId });
+                    }
+                  }}
+                  className="flex-1 sm:flex-none px-3 py-2 bg-bento-primary text-bento-bg text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all shadow-lg"
+                >
+                  Reset All Rev
+                </button>
+              </>
+            )}
             <History className="hidden sm:block text-stone-300 dark:text-stone-700" size={32} />
           </div>
         </div>
