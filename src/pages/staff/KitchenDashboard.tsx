@@ -1,3 +1,4 @@
+import { translateCustomization } from '../../utils/translations';
 import React, { useState, useEffect } from 'react';
 import { signOutApp } from '../../lib/googleAuth';
 import { useNavigate } from 'react-router-dom';
@@ -185,8 +186,8 @@ export default function KitchenDashboard() {
   const logout = () => {
     localStorage.removeItem('kitchen_session_active');
     localStorage.removeItem('staffSession');
-    signOutApp();
-    navigate('/login');
+    
+    navigate('/');
   };
 
   if (loading) {
@@ -290,7 +291,7 @@ export default function KitchenDashboard() {
                           <p className="font-black text-bento-ink uppercase text-sm leading-tight">{t(`products.${item.name}`, item.name)}</p>
                           {item.customization && (
                             <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-tighter mt-0.5 italic">
-                              "{item.customization}"
+                              "{translateCustomization(item.customization, t)}"
                             </p>
                           )}
                         </div>

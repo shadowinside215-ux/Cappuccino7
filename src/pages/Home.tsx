@@ -211,6 +211,10 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
     const name = catName.toLowerCase();
     if (name.includes('frappuccino')) return t('categories.frappuccino');
     if (name.includes('breakfast') || name.includes('petit déjeuner') || name.includes('فطور')) return t('categories.breakfast');
+    if (name.includes('petites faims') || name.includes('وجبات خفيفة')) return t('categories.petites_faims');
+    if (name.includes('milkshake') || name.includes('ميلك شيك')) return t('categories.milkshakes');
+    if (name.includes('smothie') || name.includes('smoothie') || name.includes('سموثي')) return t('categories.smoothies');
+    if (name.includes('mojito') || name.includes('موهيتو')) return t('categories.mojitos');
     if (name.includes('brunch') || name.includes('برانش')) return t('categories.brunch');
     if (name.includes('coffee') || name.includes('café') || name.includes('Les boissons') || name.includes('قهوة')) return t('categories.coffee');
     if (name.includes('tea') || name.includes('thé') || name.includes('شاي')) return t('categories.tea');
@@ -692,10 +696,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                       <Ticket size={14} className="text-amber-400" />
                       <span className="text-[8px] font-black text-bento-ink/50 uppercase tracking-widest">{t('automatic_rewards')}</span>
                    </div>
-                   <div className="px-4 py-2 bg-bento-card-bg/50 rounded-xl border border-bento-card-border flex items-center gap-2.5 transition-colors hover:border-amber-400/30">
-                      <Star size={14} className="text-amber-400" />
-                      <span className="text-[8px] font-black text-bento-ink/50 uppercase tracking-widest">{t('vip_tiers')}</span>
-                   </div>
+                   
                 </div>
               </div>
 

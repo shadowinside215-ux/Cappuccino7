@@ -387,11 +387,7 @@ export default function AdminMenu() {
           </button>
           <button 
             onClick={() => {
-              sessionStorage.removeItem('admin_mode');
-              localStorage.removeItem('staffSession');
-              signOutApp();
-              navigate('/login');
-              toast.success('Exited admin view');
+              navigate('/admin', { replace: true });
             }}
             className="bg-stone-50 dark:bg-stone-900 text-stone-400 p-4 rounded-2xl flex items-center gap-2 hover:text-red-500 transition-all border border-stone-100 dark:border-white/5 shadow-sm active:scale-95"
             title="Log out of Section"

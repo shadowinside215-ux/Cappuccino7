@@ -24,6 +24,8 @@ export default function AdminDashboard() {
     mostOrderedItem: null as { name: string, count: number } | null,
     performance: null as null | {
       avgPrep: number;
+      avgKitchenPrep: number;
+      avgBarmanPrep: number;
       avgDelivery: number;
       avgTotal: number;
       fastest: number;
@@ -390,12 +392,12 @@ export default function AdminDashboard() {
       );
       setUsers(emailClients); 
       setStats(prev => ({ ...prev, totalUsers: emailClients.length }));
-    });
+    }, (err) => console.log(err));
 
     // Total Items Listener
     const unsubItems = onSnapshot(collection(db, 'products'), (snapshot) => {
       setStats(prev => ({ ...prev, totalItems: snapshot.size }));
-    });
+    }, (err) => console.log(err));
 
     const fetchStats = async () => {
       try {
@@ -416,6 +418,8 @@ export default function AdminDashboard() {
         
         // Performance trackers
         let prepTimes: number[] = [];
+        let kitchenPrepTimes: number[] = [];
+        let barmanPrepTimes: number[] = [];
         let deliveryTimes: number[] = [];
         let totalTimes: number[] = [];
         let completedToday = 0;
@@ -467,6 +471,12 @@ export default function AdminDashboard() {
             if (start && ready && ready >= start) {
               prepTimes.push(Math.round((ready - start) / 60000));
             }
+            if (tKStart && tKReady && tKReady >= tKStart) {
+              kitchenPrepTimes.push(Math.round((tKReady - tKStart) / 60000));
+            }
+            if (tBStart && tBReady && tBReady >= tBStart) {
+              barmanPrepTimes.push(Math.round((tBReady - tBStart) / 60000));
+            }
             
             // Delivery time: Ready -> Delivered
             if (ready && tDelivered && tDelivered >= ready) {
@@ -488,6 +498,8 @@ export default function AdminDashboard() {
         
         const performance = {
           avgPrep: avg(prepTimes),
+          avgKitchenPrep: avg(kitchenPrepTimes),
+          avgBarmanPrep: avg(barmanPrepTimes),
           avgDelivery: avg(deliveryTimes),
           avgTotal: avg(totalTimes),
           fastest: totalTimes.length ? Math.min(...totalTimes) : 0,
@@ -672,9 +684,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => {
-                sessionStorage.removeItem('admin_mode');
-                signOutApp();
-                navigate('/admin/login', { replace: true });
+                navigate('/');
               }}
               className="p-3 bg-bento-card-bg rounded-2xl text-stone-700 hover:text-bento-primary transition-colors border border-stone-200 shadow-sm"
               title="Exit Admin Console"
@@ -775,10 +785,18 @@ export default function AdminDashboard() {
             <h3 className="text-xl font-black text-bento-primary uppercase italic tracking-tighter mb-4 flex items-center gap-2">
               <Timer size={20} /> Service Performance
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Avg Prep Time</p>
+                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Avg Total Prep</p>
                 <p className="text-2xl font-black text-amber-600">{stats.performance.avgPrep}m</p>
+              </div>
+              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
+                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Kitchen Prep</p>
+                <p className="text-2xl font-black text-orange-600">{stats.performance.avgKitchenPrep}m</p>
+              </div>
+              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
+                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Barman Prep</p>
+                <p className="text-2xl font-black text-sky-600">{stats.performance.avgBarmanPrep}m</p>
               </div>
               <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
                 <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Avg Delivery</p>

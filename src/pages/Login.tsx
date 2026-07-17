@@ -33,8 +33,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [clickCount, setClickCount] = useState(0);
+    const [clickCount, setClickCount] = useState(0);
 
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [systemPassword, setSystemPassword] = useState('');
@@ -244,8 +243,7 @@ export default function Login() {
               uid: user.uid,
               name: name,
               email: user.email,
-              phone: phone,
-              points: 0,
+                            points: 0,
               coffeeCount: 0,
               itemLoyalty: {},
               isAdmin: false,
@@ -415,21 +413,7 @@ export default function Login() {
                   </div>
                 )}
 
-                {mode === 'email-signup' && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black tracking-widest text-bento-ink/40 ml-4">{t('phone_number_optional')}</label>
-                    <div className="relative">
-                      <div className="absolute left-6 top-1/2 -translate-y-1/2 text-bento-ink/40 font-black text-xs">📞</div>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+212 6xx xxxx"
-                        className="w-full pl-16 pr-6 py-5 bg-bento-ink/5 border border-bento-card-border rounded-[2rem] focus:ring-2 focus:ring-bento-card-border outline-none transition-all text-bento-ink font-bold"
-                      />
-                    </div>
-                  </div>
-                )}
+                
 
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-black tracking-widest text-bento-ink/40 ml-4">{t('email_address')}</label>

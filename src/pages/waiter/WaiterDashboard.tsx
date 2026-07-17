@@ -1,10 +1,10 @@
+import { translateCustomization } from '../../utils/translations';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOutApp } from '../../lib/googleAuth';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, setDoc, increment, where } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile, WaiterRequest, WaiterOrderStatus } from '../../types';
-import { awardOrderPoints } from '../../services/orderService';
 import { 
   ChefHat, 
   Clock, 
@@ -402,9 +402,6 @@ export default function WaiterDashboard() {
         updatedAt: serverTimestamp()
       });
       
-      // Award points
-      await awardOrderPoints(order);
-      
       toast.success(t('order_completed_toast', 'Order completed and delivered!') as string);
     } catch (err: any) {
       handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
@@ -512,8 +509,8 @@ export default function WaiterDashboard() {
              onClick={() => {
                localStorage.removeItem('waiter_session_active');
                localStorage.removeItem('staffSession');
-               signOutApp();
-               navigate('/login');
+               
+               navigate('/');
              }}
              className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100"
            >
@@ -891,7 +888,7 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
                 )}
                 {item.customization && (
                   <span className="text-[10px] font-black uppercase text-amber-500 italic mt-1">
-                    {item.customization}
+                    {translateCustomization(item.customization, t)}
                   </span>
                 )}
               </div>

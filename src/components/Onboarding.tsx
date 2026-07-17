@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Phone, ArrowRight, Coffee } from 'lucide-react';
+import { User, ArrowRight, Coffee } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile } from '../types';
@@ -16,8 +16,7 @@ interface OnboardingProps {
 export default function Onboarding({ userProfile, isOpen, onComplete }: OnboardingProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(userProfile.name || '');
-  const [phone, setPhone] = useState(userProfile.phone || '');
-  const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
   // If name is just "Guest User" or empty, we definitely want them to change it
   const isGenericName = !userProfile.name || userProfile.name === 'Guest User';
@@ -35,8 +34,7 @@ export default function Onboarding({ userProfile, isOpen, onComplete }: Onboardi
     try {
       const userRef = doc(db, 'users', userProfile.uid);
       await updateDoc(userRef, {
-        name: name.trim(),
-        phone: phone.trim()
+        name: name.trim()
       });
       toast.success('Profile updated!');
       onComplete();
@@ -89,19 +87,7 @@ export default function Onboarding({ userProfile, isOpen, onComplete }: Onboardi
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-4">{t('phone_number')} ({t('optional')})</label>
-              <div className="relative">
-                <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40" size={18} />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+212 6xx xxxx"
-                  className="w-full pl-16 pr-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] focus:ring-2 focus:ring-white/20 outline-none transition-all text-white font-bold"
-                />
-              </div>
-            </div>
+            
 
             <button
               type="submit"

@@ -1,3 +1,4 @@
+import { translateCustomization } from '../../utils/translations';
 import React, { useState, useEffect, useRef } from 'react';
 import { signOutApp } from '../../lib/googleAuth';
 import { 
@@ -259,11 +260,12 @@ export default function CashierDashboard() {
     };
   }, []);
 
-  // Fetch selected client's loyalty
+  // Fetch selected client's loyalty in real-time
   useEffect(() => {
+    let unsubUser = () => {};
     if (selectedOrder && selectedOrder.userId && selectedOrder.userId !== 'cashier') {
-      import('firebase/firestore').then(({ getDoc, doc }) => {
-        getDoc(doc(db, 'users', selectedOrder.userId)).then((snap) => {
+      import('firebase/firestore').then(({ onSnapshot, doc }) => {
+        unsubUser = onSnapshot(doc(db, 'users', selectedOrder.userId), (snap) => {
           if (snap.exists()) {
             const data = snap.data();
             setSelectedClientLoyalty(data.itemLoyalty || {});
@@ -278,6 +280,7 @@ export default function CashierDashboard() {
       setSelectedClientLoyalty(null);
       setSelectedClientRewards(null);
     }
+    return () => unsubUser();
   }, [selectedOrder?.id, selectedOrder?.userId]);
 
   // Real-time closure stats (Today's performance)
@@ -415,7 +418,7 @@ export default function CashierDashboard() {
     const receipt = generateThermalReceipt({
       restaurantName: "Cappuccino 7",
       orderId: order.id,
-      items: order.items,
+      items: order.items.map(item => ({...item, customization: translateCustomization(item.customization || '', t)})),
       total: order.total,
       cashierName: order.vendeur || 'CASHIER',
       paymentMethod: order.paymentMethod || 'CASH',
@@ -445,9 +448,10 @@ export default function CashierDashboard() {
         await updatePromise;
         await addOrderToStats(order.id, order.total, { paymentMethod: method });
         
-        // Give points to the user based on items ordered
+// Give points to the user based on items ordered
         if (method !== 'reward' && order.userId && !order.isPOS) {
           try {
+            const { increment } = await import('firebase/firestore');
             const userRef = doc(db, 'users', order.userId);
             const userSnap = await (await import('firebase/firestore')).getDoc(userRef);
             if (userSnap.exists()) {
@@ -455,19 +459,21 @@ export default function CashierDashboard() {
               const itemLoyalty = userData.itemLoyalty || {};
               const updates: Record<string, any> = {};
               
+              const pointsEarned: Record<string, number> = {};
+              
               order.items.forEach(item => {
-                if (item.productId) {
-                  // If reward was applied during this session, the customer paid for (item.quantity - 1) items.
-                  // If no reward was applied, the customer paid for item.quantity items.
-                  const rewardApplied = (order as any)[`rewardApplied_${item.productId}`];
-                  const paidQuantity = rewardApplied ? Math.max(0, item.quantity - 1) : item.quantity;
+                if (item.productId && item.price > 0 && !item.name.includes('(Loyalty Reward)')) {
+                  pointsEarned[item.productId] = (pointsEarned[item.productId] || 0) + item.quantity;
+                }
+              });
+              
+              for (const [productId, earnedCount] of Object.entries(pointsEarned)) {
+                  updates[`itemLoyalty.${productId}`] = increment(earnedCount);
                   
-                  if (paidQuantity > 0) {
-                    const currentPoints = itemLoyalty[item.productId] || 0;
-                    const newPoints = currentPoints + paidQuantity;
-                    updates[`itemLoyalty.${item.productId}`] = newPoints;
-                    
-                    if (currentPoints < 11 && newPoints >= 11) {
+                  const currentPoints = itemLoyalty[productId] || 0;
+                  const newPoints = currentPoints + earnedCount;
+                  
+                  if (currentPoints < 11 && newPoints >= 11) {
                       // Reached 11 points! Send notification
                       const notificationDoc = {
                         tableZone: 'General',
@@ -476,16 +482,14 @@ export default function CashierDashboard() {
                         status: 'new',
                         timestamp: serverTimestamp(),
                         type: 'loyalty_reward',
-                        message: `Reward Unlocked for ${item.name}!`,
+                        message: `Reward Unlocked for ${order.items.find(i => i.productId === productId)?.name}!`,
                         waiterId: order.waiterId || null
                       };
                       import('firebase/firestore').then(({ addDoc, collection }) => {
                         addDoc(collection(db, 'waiterRequests'), notificationDoc);
                       });
-                    }
                   }
-                }
-              });
+              }
               
               if (Object.keys(updates).length > 0) {
                 await updateDoc(userRef, updates);
@@ -524,36 +528,73 @@ export default function CashierDashboard() {
     }
   };
 
-  const handleRewardCheck = async (productId: string, itemPrice: number) => {
+  const handleRewardCheck = async (productId: string, itemIndex: number, originalItem: any) => {
     if (!selectedOrder || !selectedOrder.userId) return;
     try {
       setIsProcessing(true);
+      const { runTransaction, doc } = await import('firebase/firestore');
       const userRef = doc(db, 'users', selectedOrder.userId);
       const orderRef = doc(db, 'orders', selectedOrder.id);
       
-      const availableCount = selectedClientRewards?.[productId] || 0;
-      if (availableCount <= 0) return;
-
-      const discountAmount = itemPrice; // 1 reward consumed at a time
-      const newTotal = Math.max(0, selectedOrder.total - discountAmount);
-      const newCount = availableCount - 1;
-      
-      await (await import('firebase/firestore')).updateDoc(userRef, {
-        [`availableRewards.${productId}`]: newCount
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        const orderDoc = await transaction.get(orderRef);
+        
+        if (!userDoc.exists() || !orderDoc.exists()) {
+           throw new Error("Document does not exist!");
+        }
+        
+        const itemLoyalty = userDoc.data().itemLoyalty || {};
+        const currentPoints = itemLoyalty[productId] || 0;
+        
+        if (currentPoints < 11) {
+           throw new Error("Not enough loyalty points for this reward.");
+        }
+        
+        const orderData = orderDoc.data() as Order;
+        
+        const items = [...orderData.items];
+        const item = items[itemIndex];
+        
+        if (item.price === 0 || item.name.includes('(Loyalty Reward)')) {
+            throw new Error("Item is already a reward.");
+        }
+        
+        if (item.quantity > 1) {
+            item.quantity -= 1;
+            items.push({
+               ...item,
+               productId: item.productId + '-reward',
+               name: item.name + ' (Loyalty Reward)',
+               price: 0,
+               quantity: 1
+            });
+        } else {
+            item.price = 0;
+            item.name = item.name + ' (Loyalty Reward)';
+        }
+        
+        const newTotal = Math.max(0, orderData.total - originalItem.price);
+        
+        transaction.update(userRef, {
+          [`itemLoyalty.${productId}`]: currentPoints - 11
+        });
+        
+        transaction.update(orderRef, {
+          items: items,
+          total: newTotal
+        });
       });
       
-      await (await import('firebase/firestore')).updateDoc(orderRef, {
-        total: newTotal,
-        [`rewardApplied_${productId}`]: true
-      });
+      toast.success('Loyalty reward claimed successfully! Item is now free.');
       
-      toast.success('Reward applied! Item discounted.');
-      
-      setSelectedClientRewards(prev => prev ? { ...prev, [productId]: newCount } : null);
-      setSelectedOrder({ ...selectedOrder, total: newTotal, [`rewardApplied_${productId}`]: true });
-    } catch (err) {
+      // We don't need to manually update state if we are listening to snapshot,
+      // but selectedOrder is static, so we might need to fetch it again or close it.
+      // Easiest is to let the user re-select, or just clear selectedOrder to force UI refresh.
+      setSelectedOrder(null);
+    } catch (err: any) {
       console.error(err);
-      toast.error('Failed to apply reward');
+      toast.error(err.message || 'Failed to apply reward');
     } finally {
       setIsProcessing(false);
     }
@@ -562,7 +603,11 @@ export default function CashierDashboard() {
   const getTranslatedCategory = (catName: string) => {
     const name = catName.toLowerCase();
     if (name.includes('frappuccino')) return t('categories.frappuccino');
-    if (name.includes('breakfast')) return t('categories.breakfast');
+    if (name.includes('breakfast') || name.includes('petit déjeuner') || name.includes('فطور')) return t('categories.breakfast');
+    if (name.includes('petites faims') || name.includes('وجبات خفيفة')) return t('categories.petites_faims');
+    if (name.includes('milkshake') || name.includes('ميلك شيك')) return t('categories.milkshakes');
+    if (name.includes('smothie') || name.includes('smoothie') || name.includes('سموثي')) return t('categories.smoothies');
+    if (name.includes('mojito') || name.includes('موهيتو')) return t('categories.mojitos');
     if (name.includes('brunch')) return t('categories.brunch');
     if (name.includes('coffee')) return t('categories.coffee');
     if (name.includes('tea')) return t('categories.tea');
@@ -765,7 +810,7 @@ export default function CashierDashboard() {
                                    )}
                                    {item.customization && (
                                      <span className="text-[8px] font-black text-bento-ink/40 uppercase italic">
-                                       • {item.customization}
+                                       • {translateCustomization(item.customization, t)}
                                      </span>
                                    )}
                                 </div>
@@ -1038,12 +1083,18 @@ export default function CashierDashboard() {
                         <span className="text-[11px] font-bold uppercase tracking-tight max-w-[150px] leading-tight text-stone-800">{t(`products.${item.name}`, item.name) as string}</span>
                      </div>
                      <div className="flex items-center gap-1.5 self-end">
-                        {selectedOrder && selectedClientRewards && (selectedClientRewards[item.productId] || 0) > 0 && (
+                        {selectedOrder && selectedClientLoyalty && !item.name.includes('(Loyalty Reward)') && (
                           <button
-                            onClick={() => handleRewardCheck(item.productId, item.price)}
-                            className="bg-[#d4af37] text-stone-900 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center gap-1"
+                            onClick={() => {
+                               if ((selectedClientLoyalty[item.productId] || 0) < 11) {
+                                  toast.error("Not enough loyalty points for this reward.");
+                               } else {
+                                  handleRewardCheck(item.productId, idx, item);
+                               }
+                            }}
+                            className={`${(selectedClientLoyalty[item.productId] || 0) >= 11 ? 'bg-[#d4af37] text-stone-900 shadow-lg cursor-pointer hover:bg-amber-400' : 'bg-stone-200 text-stone-400 cursor-not-allowed opacity-50'} px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1`}
                           >
-                            Redeem Reward ({(selectedClientRewards[item.productId] || 0)})
+                            {(selectedClientLoyalty[item.productId] || 0) >= 11 ? 'Redeem Reward' : `${selectedClientLoyalty[item.productId] || 0}/11 PTS`}
                           </button>
                         )}
                         <span className="font-black tabular-nums text-stone-900">{(item.price * item.quantity).toFixed(2)}</span>
@@ -1103,7 +1154,7 @@ export default function CashierDashboard() {
                    onClick={() => {
                       const displayOrder = selectedOrder || {
                         id: "PROV-" + Math.floor(Math.random()*1000),
-                        items: cart,
+                        items: cart.map(item => ({...item, customization: translateCustomization(item.customization || '', t)})),
                         total: totalPrice,
                         customerName: 'Passage',
                         deliveryType
@@ -1112,7 +1163,7 @@ export default function CashierDashboard() {
                       const r = generateThermalReceipt({
                          restaurantName: "Cappuccino 7",
                          orderId: displayOrder.id,
-                         items: displayOrder.items,
+                         items: displayOrder.items.map(item => ({...item, customization: translateCustomization(item.customization || '', t)})),
                          total: displayOrder.total,
                          cashierName: activeVendeur,
                          paymentMethod: 'PROVISOIRE',
@@ -1162,9 +1213,9 @@ export default function CashierDashboard() {
                        onClick={() => {
                          localStorage.removeItem('cashier_session_active');
                          localStorage.removeItem('staffSession');
-                         signOutApp();
+                         
                          toast.success('Clôture validée - Session terminée');
-                         navigate('/login');
+                         navigate('/');
                        }}
                        className="flex-1 py-4 rounded-xl bg-red-600 text-white font-black uppercase text-[11px] hover:bg-red-500 transition-colors shadow-lg"
                      >

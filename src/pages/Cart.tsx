@@ -1,9 +1,10 @@
+import { translateCustomization } from '../utils/translations';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { OrderItem, OrderStatus, UserProfile } from '../types';
-import { Minus, Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle, Coffee, Package } from 'lucide-react';
+import { Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle, Coffee, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -15,8 +16,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
   const { settings: brand } = useBrandSettings();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState(userProfile?.phone || '');
-  const [deliveryNotes, setDeliveryNotes] = useState('');
+    const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dine-in'>('dine-in');
   const [tableArea, setTableArea] = useState<'Inside' | 'Outside'>('Inside');
   const [tableNumber, setTableNumber] = useState<string>('');
@@ -210,13 +210,16 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
       const expectedReadyAt = new Date(Date.now() + prepTimeMinutes * 60000);
 
       // Generate a unique verification token
-      const verificationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      const verificationToken = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('') + Date.now().toString(16);
+
 
       const orderData: any = {
         userId: auth.currentUser.uid,
         customerName: userProfile?.name || auth.currentUser.displayName || (isGuest ? t('guest', 'Guest') : t('customer', 'Customer')),
-        customerPhone: phone || userProfile?.phone || '',
-        items: itemsWithMetadata,
+                items: itemsWithMetadata,
         total: total,
         kitchenStatus: hasKitchenItems ? 'pending' : 'completed',
         barmanStatus: itemsWithMetadata.some(item => item.system === 'barman') ? 'pending' : 'completed',
@@ -444,7 +447,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         </h3>
                         {item.customization && (
                           <p className="text-amber-500 font-black text-[10px] uppercase tracking-widest bg-amber-500/10 w-fit px-3 py-1 rounded-lg border border-amber-500/20">
-                            {item.customization}
+                            {translateCustomization(item.customization, t)}
                           </p>
                         )}
                         <div className="flex items-center gap-3 mt-1.5">
@@ -460,10 +463,10 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         <p className="font-black text-2xl text-bento-ink">{(item.price * item.quantity)} DH</p>
                         <div className="flex items-center gap-4 bg-bento-ink/10 rounded-full px-4 py-2 ring-1 ring-bento-card-border backdrop-blur-md">
                           <button 
-                            onClick={() => updateQuantity(item.productId, -1)}
-                            className="text-bento-ink/40 hover:text-bento-ink transition-colors"
+                            onClick={() => updateQuantity(item.productId, -item.quantity)}
+                            className="text-red-500/80 hover:text-red-500 transition-colors text-[10px] uppercase font-black tracking-widest whitespace-nowrap"
                           >
-                            <Minus size={16} />
+                            Cancel order
                           </button>
                           <button 
                             onClick={() => updateQuantity(item.productId, 1)}
@@ -595,26 +598,13 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
               className="space-y-6"
             >
                   <div className="space-y-3">
-                    <label className="block text-[10px] font-black text-bento-ink/40 uppercase tracking-[0.3em] ml-4">
-                      {t('phone_number')} ({t('optional')})
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+212 6xx xxxx"
-                      className="w-full bg-bento-card-bg/20 backdrop-blur-xl border border-bento-card-border rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-bento-card-border transition-all placeholder:text-bento-ink/20 text-bento-ink font-bold outline-none"
-                    />
-                  </div>
-
-              <div className="space-y-3">
                 <label className="block text-[10px] font-black text-bento-ink/40 uppercase tracking-[0.3em] ml-4">
                   {t('additional_notes')}
                 </label>
                 <textarea
                   value={deliveryNotes}
                   onChange={(e) => setDeliveryNotes(e.target.value)}
-                  placeholder={deliveryType === 'dine-in' ? t('table_note_placeholder') : t('allergy_note_placeholder')}
+                  placeholder={t('allergy_note_placeholder')}
                   rows={3}
                   className="w-full bg-bento-card-bg/20 backdrop-blur-xl border border-bento-card-border rounded-3xl py-5 px-8 shadow-2xl focus:ring-2 focus:ring-bento-card-border transition-all placeholder:text-bento-ink/20 text-bento-ink font-bold outline-none resize-none"
                 />

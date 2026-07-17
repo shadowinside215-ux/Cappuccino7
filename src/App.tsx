@@ -637,7 +637,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/profile" element={user ? <Profile userProfile={userProfile} /> : <Navigate to="/login" />} />
                   <Route path="/orders" element={user ? <Orders userProfile={userProfile} /> : <Navigate to="/login" />} />
                   <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
-                  <Route path="/verify-ticket" element={<VerifyTicket userProfile={userProfile} />} />
+                  <Route path="/verify" element={<VerifyTicket userProfile={userProfile} />} />
                   <Route path="/track/:id" element={<OrderConfirmation />} />
                   <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} userProfile={userProfile} />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />

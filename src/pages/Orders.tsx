@@ -1,3 +1,4 @@
+import { translateCustomization } from '../utils/translations';
 import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -474,15 +475,7 @@ export default function Orders({ userProfile }: { userProfile: UserProfile | nul
                         </div>
                         {item.customization && (
                           <span className="text-[8px] font-black uppercase text-amber-400 italic pl-9">
-                            {item.customization.includes('|') ? (
-                              <>
-                                {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim())}
-                                {' • '}
-                                {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_'))}
-                              </>
-                            ) : (
-                              item.customization
-                            )}
+                            {translateCustomization(item.customization, t)}
                           </span>
                         )}
                       </motion.div>

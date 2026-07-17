@@ -395,7 +395,12 @@ const resources = {
         "sandwiches": "🥪 Sandwiches",
         "pizza": "🍕 Pizza",
         "plats gourmands": "🥘 Artisan Plates",
-        "pâtes": "🍝 Pasta"
+        "pâtes": "🍝 Pasta",
+        "petites_faims": "🍳 Petites Faims",
+        "petites-faims": "🍳 Petites Faims",
+        "milkshakes": "🥤 Milkshakes",
+        "smoothies": "🥤 Smoothies",
+        "mojitos": "🍹 Mojitos",
       },
       "products": {
         "Omlette Fromage": "Cheese Omelette",
@@ -1008,7 +1013,12 @@ const resources = {
         "sandwiches": "🥪 Sandwiches",
         "pizza": "🍕 Pizza",
         "plats gourmands": "🥘 Plats gourmands",
-        "pâtes": "🍝 Pâtes"
+        "pâtes": "🍝 Pâtes",
+        "petites_faims": "🍳 Petites Faims",
+        "petites-faims": "🍳 Petites Faims",
+        "milkshakes": "🥤 Milkshakes",
+        "smoothies": "🥤 Smoothies",
+        "mojitos": "🍹 Mojitos"
       },
       "products": {
         "Omlette Fromage": "Omlette Fromage",
@@ -1319,6 +1329,13 @@ const resources = {
   },
   ar: {
     translation: {
+      "trust_badge_1": "مفضل محلي موثوق",
+      "trust_text_1": "تجربة رائعة، طاقم عمل ودود وأجواء مريحة.",
+      "trust_badge_2": "أفضل فطور في سلا",
+      "trust_text_2": "مجموعات الإفطار عالية الجودة والقهوة مثالية في كل مرة.",
+      "trust_badge_3": "مركز المجتمع",
+      "trust_text_3": "نظيف وحديث ومثالي لمشاهدة المباريات مع الأصدقاء.",
+
       "premium_shared_moments": "قهوة فاخرة، لحظات مشتركة.",
       "login_rewards_msg": "سجل الدخول لكسب مكافآت حصرية.",
       "continue_google": "المتابعة مع جوجل",
@@ -1696,6 +1713,11 @@ const resources = {
         "pizza": "🍕 بيتزا",
         "plats gourmands": "🥘 أطباق حرفية",
         "pâtes": "🍝 باستا",
+        "petites_faims": "🍳 وجبات خفيفة",
+        "petites-faims": "🍳 وجبات خفيفة",
+        "milkshakes": "🥤 ميلك شيك",
+        "smoothies": "🥤 سموثي",
+        "mojitos": "🍹 موهيتو",
         "mins_short": "دقيقة"
       },
       "products": {
@@ -2009,6 +2031,46 @@ const resources = {
   },
   es: {
     translation: {
+      "menu_search_placeholder": "Explorar nuestro menú...",
+      "trust_badge_1": "Favorito Local Verificado",
+      "trust_text_1": "Gran experiencia, personal amable y ambiente relajante.",
+      "trust_badge_2": "Mejor Desayuno en Salé",
+      "trust_text_2": "Los combos de desayuno son de alta calidad y el café es perfecto siempre.",
+      "trust_badge_3": "Centro Comunitario",
+      "trust_text_3": "Limpio, moderno y perfecto para ver partidos con amigos.",
+      "categories": {
+        "breakfast": "🍳 Desayuno",
+        "brunch": "🥗 Brunch",
+        "drinks": "🥤 Bebidas y Jugos",
+        "hot_drinks": "☕ Bebidas Calientes",
+        "fast_food": "🍔 Comida Rápida",
+        "healthy": "🥒 Comida Saludable",
+        "desserts": "🍰 Postres",
+        "crepes_desserts": "🥞 Crepes y Postres",
+        "ice_cream": "🍦 Helados",
+        "signature": "⭐ Menú Estrella",
+        "extras": "✨ EXTRAS",
+        "coffee": "☕ Café",
+        "tea": "🍵 Té e Infusiones",
+        "special_hot": "🔥 Bebidas Calientes Especiales",
+        "hot_beverages": "☕ Bebidas Calientes",
+        "iced_latte": "🧊 Latte Helado",
+        "ice_tea": "🍹 Té Helado",
+        "jus": "🧃 Jugos",
+        "frappuccino": "🥤 Frappuccinos",
+        "salades": "🥗 Ensaladas",
+        "burgers": "🍔 Hamburguesas",
+        "sandwiches": "🥪 Sándwiches",
+        "pizza": "🍕 Pizza",
+        "plats gourmands": "🥘 Platos Artesanales",
+        "pâtes": "🍝 Pasta",
+        "petites_faims": "🍳 Tentempiés",
+        "petites-faims": "🍳 Tentempiés",
+        "milkshakes": "🥤 Batidos",
+        "smoothies": "🥤 Smoothies",
+        "mojitos": "🍹 Mojitos"
+      },
+
       "premium_shared_moments": "Café premium, momentos compartidos.",
       "login_rewards_msg": "Inicia sesión para ganar recompensas exclusivas.",
       "continue_google": "Continuar con Google",

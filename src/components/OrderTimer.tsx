@@ -69,7 +69,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', exp
     const secs = absTime % 60;
     const displayTime = `${mins}:${secs.toString().padStart(2, '0')}`;
     const styles = isOverdue 
-      ? 'bg-red-500/10 border-red-500/20 text-red-400' 
+      ? 'bg-green-500/10 border-green-500/20 text-green-400' 
       : isOrange 
         ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' 
         : 'bg-white/5 border-white/10 text-green-400';
@@ -78,7 +78,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', exp
       <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border animate-in fade-in zoom-in duration-500 transition-colors ${styles}`}>
         <Timer size={14} className={isOverdue ? 'animate-pulse' : ''} />
         <span className="text-[10px] font-black uppercase tracking-widest leading-none tabular-nums">
-          {isOverdue ? t('ready_time_reached', 'Ready time reached') : `${t('ready_in', 'Ready in')} ${displayTime}`}
+          {isOverdue ? t('ready', 'READY') : `${t('ready_in', 'Ready in')} ${displayTime}`}
         </span>
       </div>
     );
@@ -91,7 +91,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', exp
 
   const getTimerStyles = () => {
     if (!isOrderActive) return 'bg-amber-100 text-amber-700';
-    if (isOverdue) return 'bg-red-500 text-white shadow-lg shadow-red-500/20';
+    if (isOverdue) return 'bg-green-500 text-white shadow-lg shadow-green-500/20';
     if (isOrange) return 'bg-amber-500 text-white shadow-lg shadow-amber-500/20';
     return 'bg-stone-900 text-white shadow-lg shadow-stone-900/20';
   };
@@ -101,7 +101,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', exp
        <Clock size={12} className={isOrderActive && isOverdue ? 'animate-pulse' : (isOrderActive ? 'text-white' : 'text-amber-400')} />
        <span className="tabular-nums">
          {isOrderActive 
-          ? (timeLeft !== null ? `${isOverdue ? (t('overdue', 'OVERDUE') + ' ') : ''}${formatSecs(timeLeft)} ${t('waiting').toUpperCase()}` : '--:--') 
+          ? (timeLeft !== null ? (isOverdue ? t('ready', 'READY') : `${formatSecs(timeLeft)} ${t('waiting').toUpperCase()}`) : '--:--') 
           : `${formatSecs(elapsed)} ${t('total_duration').toUpperCase()}`}
        </span>
     </div>

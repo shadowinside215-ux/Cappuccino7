@@ -1,6 +1,6 @@
+import { translateCustomization } from '../utils/translations';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'motion/react';
@@ -133,8 +133,8 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
 
   const shareTicket = async () => {
     const ticketUrl = order.verificationToken 
-      ? `${PUBLIC_APP_URL}/verify-ticket?token=${order.verificationToken}&id=${order.id}`
-      : `${PUBLIC_APP_URL}/track/${order.id}`;
+      ? `https://cappuccino7-alpha.vercel.app/verify?t=${order.verificationToken}`
+      : `https://cappuccino7-alpha.vercel.app/track/${order.id}`;
 
     const text = `Check out my order at Cappuccino7! Total: ${order.total} DH. View my digital ticket here: ${ticketUrl}`;
     
@@ -271,7 +271,7 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
                     </div>
                     {item.customization && (
                       <p className="text-[10px] font-bold opacity-40 italic ml-6 leading-tight">
-                        + {item.customization}
+                        + {translateCustomization(item.customization, t)}
                       </p>
                     )}
                   </div>
@@ -331,43 +331,6 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
                 Building your rewards! One step closer to free items ☕
               </p>
             </div>
-          </div>
-          
-          {/* QR Code Section */}
-          <div className="qr-container-wrapper flex flex-col items-center mb-8 relative z-10 animate-in fade-in zoom-in duration-700">
-             <div 
-               className="qr-container"
-               style={{ 
-                 boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
-                 backgroundColor: '#ffffff', // Explicit hex for html2canvas
-                 padding: '16px',
-                 borderRadius: '24px',
-                 border: '1px solid rgba(44,24,16,0.05)',
-                 marginBottom: '12px'
-               }}
-             >
-               <QRCodeSVG 
-                  value={order.verificationToken 
-                    ? `${PUBLIC_APP_URL}/verify-ticket?token=${order.verificationToken}&id=${order.id}`
-                    : `${PUBLIC_APP_URL}/track/${order.id}`
-                  }
-                  size={100}
-                  bgColor="#ffffff"
-                  fgColor="#2c1810"
-                  level="H"
-                  includeMargin={false}
-               />
-             </div>
-             <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40 text-center">
-               {order.verificationToken ? 'Scan to verify order owner' : 'Scan to track order'}
-             </p>
-             <div className="mt-2 flex items-center gap-1.5 opacity-20">
-               <div className="w-1 h-1 bg-[#2c1810] rounded-full" />
-               <p className="text-[7px] font-bold uppercase tracking-widest">
-                 {order.verificationToken ? 'Encrypted Auth Token' : 'Order Tracking Link'}
-               </p>
-               <div className="w-1 h-1 bg-[#2c1810] rounded-full" />
-             </div>
           </div>
           
           {/* Decorative Bottom */}

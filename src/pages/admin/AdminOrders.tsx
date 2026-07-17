@@ -1,8 +1,8 @@
+import { translateCustomization } from '../../utils/translations';
 import { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Order, OrderStatus, UserProfile } from '../../types';
-import { awardOrderPoints } from '../../services/orderService';
 import { Clock, CheckCircle2, Coffee, Package, Truck, AlertCircle, ExternalLink, MessageCircle, MapPin, ShoppingBag, Award, Gift, ChefHat, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -93,11 +93,6 @@ export default function AdminOrders() {
       }
       
       await updateDoc(doc(db, 'orders', order.id), updateData);
-      
-      // If delivered, award points
-      if (newStatus === 'delivered' && order.status !== 'delivered') {
-        await awardOrderPoints(order);
-      }
       
       toast.success(`${t('order_set_to') as string} ${newStatus}`);
     } catch (err) {
@@ -210,15 +205,7 @@ export default function AdminOrders() {
                               <span className="text-xs font-bold text-brown-900">{t(`products.${item.name}`, item.name) as string}</span>
                               {item.customization && (
                                 <p className="text-[9px] font-black uppercase text-amber-500 italic mt-0.5">
-                                  {item.customization.includes('|') ? (
-                                    <>
-                                      {t(`products.${item.customization.split('|')[0].trim()}`, item.customization.split('|')[0].trim()) as string}
-                                      {' • '}
-                                      {t(item.customization.split('|')[1].trim().toLowerCase().replace(/ /g, '_')) as string}
-                                    </>
-                                  ) : (
-                                    item.customization
-                                  )}
+                                  {translateCustomization(item.customization, t)}
                                 </p>
                               )}
                               {(item as any).categoryName && (

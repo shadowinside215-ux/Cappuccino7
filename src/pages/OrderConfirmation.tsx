@@ -33,7 +33,11 @@ export default function OrderConfirmation() {
           // Fallback: If verification token is missing for some reason, generate it now
           if (!orderData.verificationToken) {
             console.log('Generating missing verification token for order:', id);
-            const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            
+            const array = new Uint8Array(16);
+            crypto.getRandomValues(array);
+            const newToken = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('') + Date.now().toString(16);
+
             try {
               await updateDoc(doc(db, 'orders', id), {
                 verificationToken: newToken,

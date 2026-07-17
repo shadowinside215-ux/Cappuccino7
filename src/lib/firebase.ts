@@ -8,7 +8,7 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore with persistent cache (modern v9+ way)
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: true,
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
@@ -99,12 +99,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
   if (import.meta.env.DEV) {
     console.error('Firestore Error Details: ', JSON.stringify(errInfo));
-    throw new Error(JSON.stringify(errInfo));
   } else {
-    // In production, we log a generic message to console (if it's not silenced)
-    // and throw a clean, non-technical error that the UI can catch or show.
-    const genericMessage = 'A database error occurred. Please try again or contact support if the issue persists.';
-    throw new Error(genericMessage);
+    console.error('A database error occurred.', errInfo.error);
   }
 }
 

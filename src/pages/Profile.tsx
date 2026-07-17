@@ -4,7 +4,7 @@ import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Product } from '../types';
 import { collection, query, where, getDocs, updateDoc, doc, setDoc } from 'firebase/firestore';
-import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon, Phone, ListOrdered } from 'lucide-react';
+import { LogOut, Award, Coffee, Gift, ShoppingBag, Loader2, Star, LayoutDashboard, MapPin, ChevronRight, Settings as SettingsIcon, ListOrdered } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -19,14 +19,12 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(userProfile?.name || '');
-  const [phone, setPhone] = useState(userProfile?.phone || '');
-  const isGuest = auth.currentUser?.isAnonymous;
+    const isGuest = auth.currentUser?.isAnonymous;
 
   useEffect(() => {
     if (userProfile) {
       setName(userProfile.name);
-      setPhone(userProfile.phone || '');
-    }
+          }
   }, [userProfile]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -36,8 +34,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
     try {
       const userRef = doc(db, 'users', userProfile.uid);
       await updateDoc(userRef, {
-        name: name.trim(),
-        phone: phone.trim()
+        name: name.trim()
       });
       
       toast.success('Profile updated');
@@ -226,15 +223,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                     className="w-full bg-bento-ink/5 border border-bento-card-border rounded-xl px-4 py-3 text-bento-ink font-bold outline-none"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[8px] font-black uppercase text-bento-ink/40 ml-2">{t('phone_number')}</label>
-                  <input 
-                    value={phone} 
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder={t('optional')}
-                    className="w-full bg-bento-ink/5 border border-bento-card-border rounded-xl px-4 py-3 text-bento-ink font-bold outline-none"
-                  />
-                </div>
+                
                 <div className="flex gap-2 pt-2">
                   <button 
                     type="submit"
@@ -255,10 +244,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
             ) : (
               <>
                 <h2 className="text-3xl font-black uppercase tracking-tight italic mb-1">{userProfile.name}</h2>
-                <div className="flex items-center gap-2 mb-2">
-                  <Phone size={12} className="text-bento-ink/40" />
-                  <p className="text-[10px] text-bento-ink/60 font-bold">{userProfile.phone || t('no_phone_added')}</p>
-                </div>
+                
                 <button 
                   onClick={() => setIsEditing(true)}
                   className="mb-8 text-[9px] font-black uppercase tracking-widest bg-bento-ink/10 px-4 py-2 rounded-lg border border-bento-card-border hover:bg-bento-ink/20 transition-all font-bold"
@@ -324,7 +310,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                 {loyaltyProducts.map((product, idx) => {
                   const count = userProfile.itemLoyalty?.[product.id] || 0;
                   const rewardReady = count >= 11;
-                  const isGoldState = count === 11;
+                  const isGoldState = count >= 11;
 
                   return (
                     <motion.div 
@@ -356,7 +342,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                             {t(`products.${product.name}`, product.name)}
                           </h4>
                           <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isGoldState ? 'text-stone-950' : (rewardReady ? 'text-amber-500' : 'text-bento-ink/40')}`}>
-                            {isGoldState ? t('get_free_order') : (rewardReady ? t('ready_to_redeem') : t('goal_lvl', { count }))}
+                            {count >= 11 ? 'REWARD READY TO REDEEM' : `${count}/11`}
                           </p>
                         </div>
                       </div>
@@ -383,48 +369,9 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
                         </div>
                       </div>
 
-                      {rewardReady && (
-                        <div className="absolute top-4 right-4 z-20">
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (confirm(t('confirm_redeem', 'Redeem this reward now?'))) {
-                                const { doc, updateDoc, increment, collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-                                const userRef = doc(db, 'users', userProfile.uid);
-                                
-                                await updateDoc(userRef, {
-                                  [`itemLoyalty.${product.id}`]: increment(-11),
-                                  [`availableRewards.${product.id}`]: increment(1)
-                                });
-                                
-                                await addDoc(collection(db, 'waiterRequests'), {
-                                  clientName: userProfile.name,
-                                  clientId: userProfile.uid,
-                                  status: 'new',
-                                  timestamp: serverTimestamp(),
-                                  type: 'reward_redemption',
-                                  message: `${userProfile.name} has requested their reward for ${product.name}`,
-                                  tableZone: 'General',
-                                  fullTableLabel: userProfile.name,
-                                  productId: product.id,
-                                  productName: product.name
-                                });
-                                
-                                toast.success(t('reward_redeemed', 'Reward voucher generated! Staff has been notified.'));
-                              }
-                            }}
-                            className="bg-amber-400 text-stone-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-2"
-                          >
-                            <Gift size={14} /> {t('redeem_free_reward', 'Redeem Free Reward')}
-                          </button>
-                        </div>
-                      )}
                       
-                      {(userProfile.availableRewards?.[product.id] || 0) > 0 && (
-                        <div className="absolute top-16 right-4 z-20 mt-2 bg-green-500 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
-                           {userProfile.availableRewards[product.id]} {t('vouchers_available', 'Voucher(s) Available')}
-                        </div>
-                      )}
+                      
+                      
                     </motion.div>
                   );
                 })}

@@ -1,3 +1,4 @@
+import { translateCustomization } from '../../utils/translations';
 import React, { useState, useEffect } from 'react';
 import { signOutApp } from '../../lib/googleAuth';
 import { useNavigate } from 'react-router-dom';
@@ -185,8 +186,8 @@ export default function BarmanDashboard() {
   const logout = () => {
     localStorage.removeItem('barman_session_active');
     localStorage.removeItem('staffSession');
-    signOutApp();
-    navigate('/login');
+    
+    navigate('/');
   };
 
   if (loading) {
@@ -298,7 +299,7 @@ export default function BarmanDashboard() {
                             {item.customization && (
                               <p className="text-[10px] font-bold text-amber-700/60 uppercase tracking-tighter mt-1 italic leading-tight">
                                 <span className="text-amber-800 font-black mr-2">[{t('sugar_pref')}]</span>
-                                "{item.customization}"
+                                "{translateCustomization(item.customization, t)}"
                               </p>
                             )}
                           </div>

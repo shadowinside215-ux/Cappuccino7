@@ -50,7 +50,7 @@ export default function DriverDashboard() {
 
     // Check custom driver auth
     if (localStorage.getItem('driver_auth') !== 'true') {
-      navigate('/login');
+      navigate('/');
       return;
     }
 
@@ -108,7 +108,7 @@ export default function DriverDashboard() {
            <h2 className="text-xl font-black text-white uppercase italic tracking-tight mb-2">Identify Required</h2>
            <p className="text-white/40 text-xs mb-8">Please sign in as an authorized partner to access live delivery data.</p>
            <button 
-             onClick={() => navigate('/login')}
+             onClick={() => navigate('/')}
              className="w-full bg-white text-stone-900 py-4 rounded-xl font-black uppercase text-xs tracking-widest"
            >
              Sign in with Google
@@ -163,8 +163,8 @@ export default function DriverDashboard() {
               onClick={() => {
                 localStorage.removeItem('driver_auth');
                 localStorage.removeItem('staffSession');
-                signOutApp();
-                navigate('/login');
+                
+                navigate('/');
               }}
               className="p-3 bg-white/5 rounded-xl border border-white/10 text-white/40 hover:text-white transition-colors"
             >
