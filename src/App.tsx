@@ -298,7 +298,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [systemUnlocked, setSystemUnlocked] = useState(() => {
     try {
-      return localStorage.getItem('system_unlocked') === 'true';
+      return localStorage.getItem('system_unlocked_v2') === 'true';
     } catch (err) {
       return false;
     }
@@ -311,14 +311,14 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
         setSystemUnlocked(e.detail);
       } else {
         try {
-          setSystemUnlocked(localStorage.getItem('system_unlocked') === 'true');
+          setSystemUnlocked(localStorage.getItem('system_unlocked_v2') === 'true');
         } catch (err) {
           setSystemUnlocked(true); // fallback assumption if event fired without detail
         }
       }
     };
-    window.addEventListener('system_unlocked_changed', handleSystemUnlocked);
-    return () => window.removeEventListener('system_unlocked_changed', handleSystemUnlocked);
+    window.addEventListener('system_unlocked_v2_changed', handleSystemUnlocked);
+    return () => window.removeEventListener('system_unlocked_v2_changed', handleSystemUnlocked);
   }, []);
 
   useEffect(() => {

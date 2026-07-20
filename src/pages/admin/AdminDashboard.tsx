@@ -389,7 +389,11 @@ export default function AdminDashboard() {
         !u.isBarman && 
         !u.isCashier && 
         !u.isDriver
-      );
+      ).sort((a, b) => {
+        const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
+        const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
+        return timeB - timeA; // Descending, newest first
+      });
       setUsers(emailClients); 
       setStats(prev => ({ ...prev, totalUsers: emailClients.length }));
     }, (err) => console.log(err));

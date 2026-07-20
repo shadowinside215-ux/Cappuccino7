@@ -53,13 +53,15 @@ export default function Login() {
     e.preventDefault();
     if (systemPassword === "systemlogin") {
       try {
-        localStorage.setItem('system_unlocked', 'true');
+        localStorage.setItem('system_unlocked_v2', 'true');
       } catch (err) {
         console.warn('localStorage blocked, using in-memory state for system unlock');
       }
-      window.dispatchEvent(new CustomEvent('system_unlocked_changed', { detail: true }));
       toast.success("Systems Unlocked");
       setShowPasswordPrompt(false);
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } else {
       toast.error("Incorrect Password");
       setSystemPassword('');
