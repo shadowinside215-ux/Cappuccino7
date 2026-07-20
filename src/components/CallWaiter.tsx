@@ -104,15 +104,15 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             className="bg-stone-900/90 dark:bg-stone-800/90 backdrop-blur-3xl border border-white/10 p-4 rounded-3xl shadow-2xl flex items-center gap-4 pointer-events-auto min-w-[240px]"
           >
-            <div className={`p-3 rounded-2xl ${activeRequest.status === 'accepted' ? 'bg-amber-400 text-stone-900' : 'bg-white/10 text-white animate-pulse'}`}>
-              {activeRequest.status === 'accepted' ? <User size={20} /> : <Bell size={20} />}
+            <div className={`p-3 rounded-2xl ${(activeRequest.status === 'accepted' || activeRequest.status === 'Taken') ? 'bg-amber-400 text-stone-900' : 'bg-white/10 text-white animate-pulse'}`}>
+              {(activeRequest.status === 'accepted' || activeRequest.status === 'Taken') ? <User size={20} /> : <Bell size={20} />}
             </div>
             <div className="flex-1">
               <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">
-                {activeRequest.status === 'accepted' ? t('waiter_on_way', 'Waiter on the way!') : t('request_sent', 'Request Sent')}
+                {(activeRequest.status === 'accepted' || activeRequest.status === 'Taken') ? t('waiter_on_way', 'Waiter on the way!') : t('request_sent', 'Request Sent')}
               </p>
               <p className="text-xs font-bold text-white">
-                {activeRequest.status === 'accepted' ? t('waiter_assigned', { name: activeRequest.waiterName }) : t('waiting_for_waiter', 'Waiting for assistance...')}
+                {(activeRequest.status === 'accepted' || activeRequest.status === 'Taken') ? t('waiter_assigned', { name: activeRequest.waiterName }) : t('waiting_for_waiter', 'Waiting for assistance...')}
               </p>
             </div>
           </motion.div>

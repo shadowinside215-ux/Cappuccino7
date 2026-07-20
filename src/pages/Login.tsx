@@ -57,6 +57,7 @@ export default function Login() {
       } catch (err) {
         console.warn('localStorage blocked, using in-memory state for system unlock');
       }
+      window.dispatchEvent(new CustomEvent('system_unlocked_v2_changed', { detail: true }));
       toast.success("Systems Unlocked");
       setShowPasswordPrompt(false);
       setTimeout(() => {

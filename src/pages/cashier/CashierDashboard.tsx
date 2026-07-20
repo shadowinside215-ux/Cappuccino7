@@ -91,6 +91,7 @@ export default function CashierDashboard() {
   const [view, setView] = useState<'pos' | 'pending'>('pos');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [journalSearch, setJournalSearch] = useState('');
   const [cart, setCart] = useState<OrderItem[]>(() => {
     const saved = localStorage.getItem('pos_current_cart');
     return saved ? JSON.parse(saved) : [];
@@ -162,7 +163,7 @@ export default function CashierDashboard() {
     // Load Active Orders (for Network view if needed)
     const qOrders = query(
       collection(db, 'orders'),
-      where('status', 'in', ['pending', 'accepted', 'preparing', 'ready']),
+      where('status', 'in', ['pending', 'Waiting', 'accepted', 'Taken', 'preparing', 'ready']),
       orderBy('createdAt', 'desc')
     );
     const unsubOrders = onSnapshot(qOrders, (snap) => {
@@ -356,6 +357,12 @@ export default function CashierDashboard() {
   const handleCheckout = async (paymentMethod: 'cash' | 'card' | 'reward') => {
     if (cart.length === 0) return;
     setIsProcessing(true);
+    
+    if (paymentMethod === 'reward') {
+       toast.error("Not enough points for a reward");
+       setIsProcessing(false);
+       return;
+    }
 
     try {
       setIsSyncing(true);
@@ -387,7 +394,7 @@ export default function CashierDashboard() {
       // Update Stats rigorously
       const { addOrderToStats } = await import('../../lib/stats');
       // For new POS, we know it hasn't been paid/counted yet
-      const statsPromise = addOrderToStats(docRef.id, totalPrice, { skipCheck: true });
+      const statsPromise = addOrderToStats(docRef.id, totalPrice, { skipCheck: true, paymentMethod });
       
       if (isOnline) {
         await statsPromise;
@@ -437,6 +444,48 @@ export default function CashierDashboard() {
     try {
       setIsSyncing(true);
       const { addOrderToStats } = await import('../../lib/stats');
+      const { getDoc, increment } = await import('firebase/firestore');
+
+      if (method === 'reward') {
+        if (!order.userId || order.userId === 'cashier' || order.isPOS) {
+          toast.error("Not enough points for a reward");
+          setIsProcessing(false);
+          setIsSyncing(false);
+          return;
+        }
+        const userSnap = await getDoc(doc(db, 'users', order.userId));
+        const itemLoyalty = userSnap.data()?.itemLoyalty || {};
+        let eligibleItem = null;
+        for (const item of order.items) {
+          if (item.productId && itemLoyalty[item.productId] >= 11) {
+            eligibleItem = item;
+            break;
+          }
+        }
+        if (!eligibleItem) {
+          toast.error("Not enough points for a reward");
+          setIsProcessing(false);
+          setIsSyncing(false);
+          return;
+        }
+        // Deduct 11 points
+        await updateDoc(doc(db, 'users', order.userId), {
+          [`itemLoyalty.${eligibleItem.productId}`]: increment(-11)
+        });
+        
+        // Update order item price to 0
+        const updatedItems = order.items.map(i => 
+          i === eligibleItem ? { ...i, price: 0 } : i
+        );
+        const newTotal = updatedItems.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+        
+        await updateDoc(doc(db, 'orders', order.id), {
+          items: updatedItems,
+          total: newTotal
+        });
+        order.items = updatedItems;
+        order.total = newTotal;
+      }
       
       // Update order with payment method
       // We don't set isPaid: true here because addOrderToStats will handle it in a batch
@@ -662,9 +711,9 @@ export default function CashierDashboard() {
          <div className="flex-1 flex gap-2 md:gap-4 ml-2">
            <button 
              onClick={() => setView('pos')}
-             className={`px-4 md:px-6 h-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 whitespace-nowrap ${view === 'pos' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
+             className={`px-4 md:px-6 h-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${view === 'pos' ? 'border-amber-500 text-bento-ink' : 'border-transparent text-stone-500'}`}
            >
-             Terminal POS
+             {t('pos_take_order')}
            </button>
            <button 
              onClick={() => setView('pending')}
@@ -677,17 +726,7 @@ export default function CashierDashboard() {
                </span>
              )}
            </button>
-         </div>
-
-         {/* Identify/Operator Button in Top Bar for mobile visibility */}
-         <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowVendeurGrid(true)}
-              className="px-2 py-1 bg-blue-600/10 text-blue-400 border border-blue-600/20 rounded-lg text-[8px] font-black uppercase flex items-center gap-1"
-            >
-              <User size={12} />
-              <span className="max-w-[60px] truncate">{activeVendeur}</span>
-            </button>
+           
             <button 
               onClick={() => setShowClosureModal(true)}
               className="p-1.5 bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500/20"
@@ -769,7 +808,7 @@ export default function CashierDashboard() {
                      <div className="h-px flex-1 bg-stone-500/10"></div>
                   </div>
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                     {unpaidOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.isPOS).map(order => (
+                     {unpaidOrders.filter(o => (o.status === 'delivered' || o.status === 'Completed' || o.status === 'ready') || o.isPOS).map(order => (
                         <div key={order.id} className="bg-white border-2 border-green-500/50 p-6 rounded-[2.5rem] flex flex-col justify-between group hover:border-green-500 transition-all shadow-xl shadow-green-500/5 min-h-[450px]">
                            <div className="flex justify-between items-start mb-6">
                               <div>
@@ -836,7 +875,7 @@ export default function CashierDashboard() {
                                 createdAt={order.createdAt} 
                                 prepTime={order.prepTime} 
                                 status={order.status} 
-                                expectedReadyAt={order.expectedReadyAt}
+                                expectedReadyAt={order.expectedReadyAt} readyAt={order.readyAt} completedAt={order.completedAt}
                               />
                            </div>
 
@@ -850,7 +889,7 @@ export default function CashierDashboard() {
                            </div>
                         </div>
                       ))}
-                      {unpaidOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.isPOS).length === 0 && (
+                      {unpaidOrders.filter(o => (o.status === 'delivered' || o.status === 'Completed' || o.status === 'ready') || o.isPOS).length === 0 && (
                         <div className="col-span-full py-12 flex flex-col items-center justify-center opacity-20 bg-stone-500/5 rounded-[2rem] border border-dashed border-stone-500/20">
                            <p className="font-black uppercase tracking-widest text-[9px]">{t('no_ready_orders', 'No orders ready for collection')}</p>
                         </div>
@@ -868,7 +907,7 @@ export default function CashierDashboard() {
                      <div className="h-px flex-1 bg-stone-500/10"></div>
                   </div>
                   <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 opacity-70 hover:opacity-100 transition-opacity">
-                     {unpaidOrders.filter(o => o.status !== 'delivered' && o.status !== 'ready' && !o.isPOS).map(order => (
+                     {unpaidOrders.filter(o => (o.status !== 'delivered' && o.status !== 'Completed' && o.status !== 'ready') && !o.isPOS).map(order => (
                         <div key={order.id} className="bg-bento-card-bg border border-bento-card-border p-4 rounded-3xl flex flex-col justify-between group shadow-sm bg-stone-50/50">
                            <div className="flex justify-between items-start mb-4">
                               <div>
@@ -888,7 +927,7 @@ export default function CashierDashboard() {
                                 createdAt={order.createdAt} 
                                 prepTime={order.prepTime} 
                                 status={order.status} 
-                                expectedReadyAt={order.expectedReadyAt}
+                                expectedReadyAt={order.expectedReadyAt} readyAt={order.readyAt} completedAt={order.completedAt}
                               />
                            </div>
                            
@@ -898,7 +937,7 @@ export default function CashierDashboard() {
                            </div>
                         </div>
                      ))}
-                     {unpaidOrders.filter(o => o.status !== 'delivered' && o.status !== 'ready' && !o.isPOS).length === 0 && (
+                     {unpaidOrders.filter(o => (o.status !== 'delivered' && o.status !== 'Completed' && o.status !== 'ready') && !o.isPOS).length === 0 && (
                         <div className="col-span-full py-8 flex items-center justify-center opacity-20">
                            <p className="font-black uppercase tracking-widest text-[8px]">{t('no_ongoing_orders', 'No ongoing preparations')}</p>
                         </div>
@@ -1239,6 +1278,10 @@ export default function CashierDashboard() {
                       <History size={40} />
                    </div>
                    <h2 className="text-5xl font-black uppercase italic tracking-tighter text-bento-ink">{t('pos_sales_journal')}</h2>
+                   <div className="flex items-center bg-white/50 px-4 py-2 rounded-xl border border-stone-200 ml-4">
+                     <Search size={16} className="text-stone-400 mr-2" />
+                     <input type="text" value={journalSearch} onChange={e => setJournalSearch(e.target.value)} placeholder="Search..." className="bg-transparent border-none outline-none text-sm font-bold w-48 text-stone-700" />
+                   </div>
                 </div>
                 <button onClick={() => setShowJournalModal(false)} className="bg-stone-500/10 p-4 rounded-full text-bento-ink hover:bg-stone-500/20 transition-all"><X size={32} /></button>
              </header>
@@ -1251,11 +1294,18 @@ export default function CashierDashboard() {
                    <span className="text-center">Action</span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                   {journalOrders.map(order => (
+                   {journalOrders.filter(o => 
+      !journalSearch || 
+      o.id.toLowerCase().includes(journalSearch.toLowerCase()) || 
+      o.customerName?.toLowerCase().includes(journalSearch.toLowerCase()) ||
+      o.vendeur?.toLowerCase().includes(journalSearch.toLowerCase()) ||
+      o.paymentMethod?.toLowerCase().includes(journalSearch.toLowerCase()) ||
+      o.items?.some(i => i.name.toLowerCase().includes(journalSearch.toLowerCase()))
+    ).map(order => (
                      <div key={order.id} className="bg-bento-bg border border-bento-card-border p-6 rounded-2xl grid grid-cols-5 items-center hover:bg-stone-500/5 transition-colors group">
                         <span className="pl-6 text-stone-500 font-bold tabular-nums flex items-center gap-3">
                            <Clock size={14} className="opacity-40" />
-                           {order.createdAt instanceof Timestamp ? formatInTimeZone(order.createdAt.toDate(), 'Africa/Casablanca', 'HH:mm:ss') : 'LIVE'}
+                           {order.createdAt instanceof Timestamp ? formatInTimeZone(order.createdAt.toDate(), 'Africa/Casablanca', 'dd/MM/yyyy HH:mm:ss') : 'LIVE'}
                         </span>
                         <div>
                            <div className="text-bento-ink font-black uppercase text-sm italic group-hover:text-amber-500 transition-colors">#{order.id.slice(-6).toUpperCase()}</div>

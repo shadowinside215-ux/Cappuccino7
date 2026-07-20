@@ -43,6 +43,7 @@ export const addOrderToStats = async (orderId: string, orderTotal: number, optio
     const weekId = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-ww');
     // Month ID: YYYY-MM
     const monthId = format(startOfMonth(now), 'yyyy-MM');
+    const yearId = format(now, 'yyyy');
 
     const revenueInc = isReward ? 0 : orderTotal;
     const rewardInc = isReward ? 1 : 0;
@@ -78,6 +79,16 @@ export const addOrderToStats = async (orderId: string, orderTotal: number, optio
       lastUpdated: serverTimestamp()
     }, { merge: true });
 
+    // 4.5 Update Yearly Stats
+    const yearlyRef = doc(db, 'yearlyRevenue', yearId);
+    batch.set(yearlyRef, {
+      amount: increment(revenueInc),
+      orderCount: increment(1),
+      rewardsClaimed: increment(rewardInc),
+      rewardValue: increment(rewardValueInc),
+      lastUpdated: serverTimestamp()
+    }, { merge: true });
+
     // 5. Update Legacy 'stats' collection (if still used by some components)
     const legacyRef = doc(db, 'stats', dayId);
     batch.set(legacyRef, {
@@ -89,6 +100,7 @@ export const addOrderToStats = async (orderId: string, orderTotal: number, optio
     // 6. Mark order as paid
     batch.update(orderRef, {
       isPaid: true,
+      status: 'Paid',
       paymentConfirmedAt: serverTimestamp(), paidAt: serverTimestamp()
     });
 

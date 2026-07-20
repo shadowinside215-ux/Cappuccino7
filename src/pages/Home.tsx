@@ -39,24 +39,14 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   const [sugarPreference, setSugarPreference] = useState<string>('');
   const [syrupPreference, setSyrupPreference] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [showGeoPrompt, setShowGeoPrompt] = useState(false);
-  const [isLocating, setIsLocating] = useState(false);
+  
   const navigate = useNavigate();
+  const [isLocating, setIsLocating] = useState(false);
+  const isDrinkCategory = (categoryId: string) => ['boissons-chaudes', 'boissons-froides', 'jus'].includes(categoryId);
+  const isFlavoredMilk = (name: string) => name.toLowerCase().includes('aromatisé');
 
-  const isDrinkCategory = (categoryId: string) => [
-    'jus', 'hot_drinks', 'hot_beverages', 'iced-latte', 'iced_latte', 'ice-tea', 'ice_tea', 'frappuccino', 'coffee', 'tea',
-    'special-hot', 'special_hot', 'juices', 'milkshakes', 'smoothies', 'mojitos'
-  ].includes(categoryId);
-  const isFlavoredMilk = (name: string) => name.toLowerCase().includes('lait parfumé');
-
-  useEffect(() => {
-    if (selectedProduct) {
-      setBreakfastStep(1);
-      setSelectedDrink('');
-      setSugarPreference('');
-      setSyrupPreference('');
-    }
-  }, [selectedProduct]);
+  const showGeoPrompt = false;
+  const setShowGeoPrompt = (val: boolean) => {};
 
 
   useEffect(() => {
@@ -71,36 +61,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
   }, []);
 
   const handleAutoLocate = () => {
-    if (!("geolocation" in navigator)) {
-      toast.error("Geolocation not supported");
-      setShowGeoPrompt(false);
-      return;
-    }
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coords = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        sessionStorage.setItem('current_location', JSON.stringify(coords));
-        localStorage.setItem('geo_prompted', 'true');
-        setIsLocating(false);
-        setShowGeoPrompt(false);
-        toast.success(t('location_captured'));
-      },
-      (error) => {
-        console.error("GPS Error:", error);
-        localStorage.setItem('geo_prompted', 'true');
-        setIsLocating(false);
-        setShowGeoPrompt(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          toast.error("Location permission denied");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+    toast.error("GPS disabled");
   };
 
   const isEmpty = !loading && categories.length === 0;

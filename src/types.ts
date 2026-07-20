@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled' | 'Waiting' | 'Taken' | 'Completed' | 'Paid';
 
 export interface UserProfile {
   uid: string;
@@ -34,7 +34,7 @@ export interface WaiterRequest {
   tableNumber: string;
   fullTableLabel: string;
   timestamp: any;
-  status: 'new' | 'accepted' | 'completed';
+  status: 'new' | 'accepted' | 'completed' | 'Waiting' | 'Taken' | 'Completed';
   waiterId: string | null;
   waiterName: string | null;
 }
@@ -84,6 +84,7 @@ export interface Order {
   kitchenStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
   barmanStatus?: 'pending' | 'preparing' | 'ready' | 'completed';
   isPaid?: boolean;
+  paidAt?: any;
   isPOS?: boolean;
   paymentMethod?: 'cash' | 'card' | 'online' | 'PROVISOIRE' | 'reward';
   vendeur?: string;

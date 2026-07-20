@@ -141,7 +141,7 @@ service cloud.firestore {
       return (data.userId == request.auth.uid || isAdmin() || isCashier()) &&
              data.total is number &&
              data.items is list &&
-             (data.status == 'pending' || data.status == 'accepted' || ((isAdmin() || isCashier()) && data.status == 'delivered'));
+             (data.status == 'Waiting' || data.status == 'pending' || data.status == 'Taken' || data.status == 'accepted' || ((isAdmin() || isCashier()) && (data.status == 'Completed' || data.status == 'delivered')));
     }
 
     match /orders/{orderId} {
@@ -153,25 +153,10 @@ service cloud.firestore {
       
       allow create: if isSignedIn();
       
-      allow update: if (isOwner(existing().userId) && existing().status == 'pending' && 
+      allow update: if (isOwner(existing().userId) && (existing().status == 'pending' || existing().status == 'Waiting') && 
         (!('createdAt' in existing()) || existing().createdAt == null || (request.time.toMillis() - existing().createdAt.toMillis() < 300000)) &&
         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'items', 'total', 'isModified', 'kitchenStatus', 'barmanStatus', 'deliveryType', 'tableZone', 'tableArea', 'tableNumber', 'fullTableLabel', 'prepTime', 'expectedReadyAt', 'address', 'deliveryNotes', 'customerName', 'customerPhone', 'verificationToken'])) ||
-        (isStaff() && (
-          // Action: Staff self-assignment (Take Order) - Relaxed hasAny for flexibility
-          (existing().get('waiterId', null) == null && incoming().diff(existing()).affectedKeys().hasAny(['waiterId', 'waiterName', 'waiterStatus', 'status', 'updatedAt', 'verificationToken'])) ||
-          
-          // Action: Assigned staff updating status and timing metrics
-          (existing().get('waiterId', null) == request.auth.uid && incoming().diff(existing()).affectedKeys().hasAny(['status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'updatedAt', 'waiterStatus', 'deliveredAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt', 'completedAt', 'kitchenStartedAt', 'kitchenReadyAt', 'kitchenCompletedAt', 'barmanStartedAt', 'barmanReadyAt', 'barmanCompletedAt'])) ||
-          
-          // Action: Admin or Cashier updating payment or overall status
-          ((isAdmin() || isCashier()) && incoming().diff(existing()).affectedKeys().hasAny(['isPaid', 'paymentMethod', 'status', 'updatedAt', 'deliveredAt', 'paidAt', 'waiterId', 'waiterName'])) ||
-          
-          // Action: Kitchen/Barman updating their specific status
-          ((isKitchen() || isBarman() || isAdmin()) && incoming().diff(existing()).affectedKeys().hasAny(['kitchenStatus', 'barmanStatus', 'status', 'updatedAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt', 'completedAt', 'kitchenStartedAt', 'kitchenReadyAt', 'kitchenCompletedAt', 'barmanStartedAt', 'barmanReadyAt', 'barmanCompletedAt'])) ||
-          
-          // Action: Driver updating delivery status
-          (isDriver() && existing().get('deliveryType', '') == 'delivery' && incoming().diff(existing()).affectedKeys().hasAny(['status', 'updatedAt', 'deliveredAt']))
-        ));
+        (isStaff() && incoming().diff(existing()).affectedKeys().hasAny(['waiterId', 'waiterName', 'waiterStatus', 'status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'paymentMethod', 'updatedAt', 'verificationToken', 'deliveredAt', 'paidAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt', 'completedAt', 'kitchenStartedAt', 'kitchenReadyAt', 'kitchenCompletedAt', 'barmanStartedAt', 'barmanReadyAt', 'barmanCompletedAt']));
       
       allow delete: if isAdmin();
     }
@@ -195,6 +180,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /yearlyRevenue/{id} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+      allow delete: if isAdmin();
+    }
+
     match /stats/{date} {
       allow read: if isStaff();
       allow write: if isStaff();
@@ -205,7 +196,7 @@ service cloud.firestore {
     function isValidWaiterRequest(data) {
       return (data.clientId == request.auth.uid || isWaiter() || isAdmin()) &&
              data.fullTableLabel is string &&
-             data.status in ['new', 'accepted', 'completed'];
+             data.status in ['new', 'accepted', 'completed', 'New', 'Accepted', 'Completed'];
     }
 
     match /waiterRequests/{requestId} {

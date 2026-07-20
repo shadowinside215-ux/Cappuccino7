@@ -307,7 +307,7 @@ export default function DriverDashboard() {
 
                   {/* Status Actions */}
                   <div className="flex gap-3">
-                    {order.status === 'pending' && (
+                    {(order.status === 'pending' || order.status === 'Waiting') && (
                       <button 
                         onClick={() => updateStatus(order.id, 'accepted')}
                         className="flex-1 bg-amber-400 text-stone-900 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
@@ -316,7 +316,7 @@ export default function DriverDashboard() {
                         <ChevronRight size={16} />
                       </button>
                     )}
-                    {order.status === 'accepted' && (
+                    {(order.status === 'accepted' || order.status === 'Taken') && (
                       <button 
                         onClick={() => updateStatus(order.id, 'delivering')}
                         className="flex-1 bg-amber-400 text-stone-900 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"

@@ -64,7 +64,7 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
     }
   };
 
-  if (order.status === 'delivered' || order.status === 'cancelled') return null;
+  if (order.status === 'delivered' || order.status === 'Completed' || order.status === 'Paid' || order.status === 'cancelled') return null;
 
   return (
     <div className="mt-8 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -78,15 +78,15 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="flex items-center gap-4 bg-white/5 p-4 rounded-[2rem] border border-white/5"
             >
-              <div className={`p-3 rounded-2xl ${request.status === 'accepted' ? 'bg-amber-400 text-stone-900 shadow-[0_0_20px_rgba(251,191,36,0.3)]' : 'bg-white/10 text-amber-400 animate-pulse'}`}>
-                {request.status === 'accepted' ? <User size={18} /> : <Bell size={18} />}
+              <div className={`p-3 rounded-2xl ${(request.status === 'accepted' || request.status === 'Taken') ? 'bg-amber-400 text-stone-900 shadow-[0_0_20px_rgba(251,191,36,0.3)]' : 'bg-white/10 text-amber-400 animate-pulse'}`}>
+                {(request.status === 'accepted' || request.status === 'Taken') ? <User size={18} /> : <Bell size={18} />}
               </div>
               <div className="flex flex-col">
                 <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em] mb-1">
-                  {request.status === 'accepted' ? t('waiter_on_way', 'Waiter on way') : t('waiter_called', 'Notification sent')}
+                  {(request.status === 'accepted' || request.status === 'Taken') ? t('waiter_on_way', 'Waiter on way') : t('waiter_called', 'Notification sent')}
                 </p>
                 <p className="text-xs font-bold text-white leading-none">
-                  {request.status === 'accepted' ? t('waiter_assigned_to_help', { name: request.waiterName }) : t('waiting_for_help_msg', 'A waiter from your zone is coming...')}
+                  {(request.status === 'accepted' || request.status === 'Taken') ? t('waiter_assigned_to_help', { name: request.waiterName }) : t('waiting_for_help_msg', 'A waiter from your zone is coming...')}
                 </p>
               </div>
             </motion.div>
@@ -325,7 +325,7 @@ export default function Orders({ userProfile }: { userProfile: UserProfile | nul
                     <div className="flex items-center gap-4 mb-2">
                       <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">#{order.id.slice(-6).toUpperCase()}</h3>
                       <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ring-1 ${
-                        order.status === 'ready' || order.status === 'delivered'
+                        order.status === 'ready' || order.status === 'delivered' || order.status === 'Completed' || order.status === 'Paid'
                         ? 'bg-green-500/20 text-green-400 ring-green-500/20' 
                         : 'bg-amber-500/20 text-amber-400 ring-amber-500/20 animate-pulse'
                       }`}>
@@ -336,7 +336,7 @@ export default function Orders({ userProfile }: { userProfile: UserProfile | nul
                         prepTime={order.prepTime} 
                         status={order.status} 
                         variant="client"
-                        expectedReadyAt={order.expectedReadyAt}
+                        expectedReadyAt={order.expectedReadyAt} readyAt={order.readyAt} completedAt={order.completedAt}
                       />
                     </div>
                     <p className="text-[10px] text-white/40 font-black uppercase tracking-widest font-mono">
@@ -345,7 +345,7 @@ export default function Orders({ userProfile }: { userProfile: UserProfile | nul
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {order.status === 'pending' && isWithinTimeLimit(order) && (
+                    {(order.status === 'pending' || order.status === 'Waiting') && isWithinTimeLimit(order) && (
                       <div className="flex items-center gap-2">
                         {confirmCancelId === order.id ? (
                           <>

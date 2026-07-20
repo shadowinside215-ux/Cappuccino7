@@ -1,31 +1,31 @@
 import React from 'react';
 import { Order } from '../types';
-import { calculateDurationMins, formatDuration, formatServerTimestamp } from '../utils/timeTracker';
+import { calculateDurationSeconds, formatDurationSeconds, formatServerTimestampExact } from '../utils/timeTracker';
 import { Clock, CheckCircle2, ArrowDown, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const OrderTimestamps = ({ order, compact = false }: { order: Order, compact?: boolean }) => {
-  const tCreated = formatServerTimestamp(order.createdAt);
-  const tPaid = formatServerTimestamp(order.paymentConfirmedAt);
-  const tKStart = formatServerTimestamp(order.kitchenStartedAt);
-  const tBStart = formatServerTimestamp(order.barmanStartedAt);
-  const tKReady = formatServerTimestamp(order.kitchenReadyAt);
-  const tBReady = formatServerTimestamp(order.barmanReadyAt);
-  const tDelivered = formatServerTimestamp(order.deliveredAt);
-  const tCompleted = formatServerTimestamp(order.completedAt);
+  const tCreated = formatServerTimestampExact(order.createdAt);
+  const tPaid = formatServerTimestampExact(order.paymentConfirmedAt);
+  const tKStart = formatServerTimestampExact(order.kitchenStartedAt);
+  const tBStart = formatServerTimestampExact(order.barmanStartedAt);
+  const tKReady = formatServerTimestampExact(order.kitchenReadyAt);
+  const tBReady = formatServerTimestampExact(order.barmanReadyAt);
+  const tDelivered = formatServerTimestampExact(order.deliveredAt);
+  const tCompleted = formatServerTimestampExact(order.completedAt);
 
-  const durToPay = calculateDurationMins(order.createdAt, order.paymentConfirmedAt);
-  const durKPrep = calculateDurationMins(order.kitchenStartedAt, order.kitchenReadyAt);
-  const durBPrep = calculateDurationMins(order.barmanStartedAt, order.barmanReadyAt);
-  const durToDelivery = calculateDurationMins(order.readyAt || order.kitchenReadyAt || order.barmanReadyAt, order.deliveredAt);
-  const durTotal = calculateDurationMins(order.createdAt, order.completedAt);
+  const durToPay = calculateDurationSeconds(order.createdAt, order.paymentConfirmedAt);
+  const durKPrep = calculateDurationSeconds(order.kitchenStartedAt, order.kitchenReadyAt);
+  const durBPrep = calculateDurationSeconds(order.barmanStartedAt, order.barmanReadyAt);
+  const durToDelivery = calculateDurationSeconds(order.readyAt || order.kitchenReadyAt || order.barmanReadyAt, order.deliveredAt);
+  const durTotal = calculateDurationSeconds(order.createdAt, order.completedAt);
 
   const steps = [
     { label: 'Created', time: tCreated, delay: false },
     { label: 'Paid', time: tPaid, duration: durToPay, show: !!order.paymentConfirmedAt, delay: false },
-    { label: 'Kitchen Prep', time: `${tKStart} - ${tKReady}`, duration: durKPrep, show: !!order.kitchenStartedAt || !!order.kitchenReadyAt, delay: durKPrep > 15 },
-    { label: 'Bar Prep', time: `${tBStart} - ${tBReady}`, duration: durBPrep, show: !!order.barmanStartedAt || !!order.barmanReadyAt, delay: durBPrep > 15 },
-    { label: 'Delivered', time: tDelivered, duration: durToDelivery, show: !!order.deliveredAt, delay: durToDelivery > 5 },
+    { label: 'Kitchen Prep', time: `${tKStart} - ${tKReady}`, duration: durKPrep, show: !!order.kitchenStartedAt || !!order.kitchenReadyAt, delay: durKPrep > 900 },
+    { label: 'Bar Prep', time: `${tBStart} - ${tBReady}`, duration: durBPrep, show: !!order.barmanStartedAt || !!order.barmanReadyAt, delay: durBPrep > 900 },
+    { label: 'Delivered', time: tDelivered, duration: durToDelivery, show: !!order.deliveredAt, delay: durToDelivery > 300 },
     { label: 'Completed', time: tCompleted, duration: durTotal, show: !!order.completedAt, delay: false, isTotal: true },
   ].filter(s => s.show || s.label === 'Created');
 
@@ -39,7 +39,7 @@ export const OrderTimestamps = ({ order, compact = false }: { order: Order, comp
               <span className="font-mono">{s.time !== 'N/A' && s.time !== 'N/A - N/A' ? s.time : '-'}</span>
               {s.duration !== undefined && (
                 <span className={`font-black ${s.delay ? 'text-red-500' : 'text-amber-500'}`}>
-                  {s.duration > 0 ? formatDuration(s.duration) : ''}
+                  {s.duration > 0 ? formatDurationSeconds(s.duration) : ''}
                 </span>
               )}
             </div>
@@ -66,7 +66,7 @@ export const OrderTimestamps = ({ order, compact = false }: { order: Order, comp
               {s.duration !== undefined && s.duration > 0 && (
                 <div className={`flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-md ${s.delay ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30'}`}>
                   {s.delay && <AlertTriangle size={10} />}
-                  {formatDuration(s.duration)}
+                  {formatDurationSeconds(s.duration)}
                 </div>
               )}
             </div>

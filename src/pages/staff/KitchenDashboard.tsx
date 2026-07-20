@@ -9,6 +9,7 @@ import { db, auth } from '../../lib/firebase';
 import { Order, OrderStatus } from '../../types';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 import { OrderTimer } from '../../components/OrderTimer';
 
@@ -54,6 +55,7 @@ export default function KitchenDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const prevOrdersRef = React.useRef<Order[]>([]);
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -65,10 +67,11 @@ export default function KitchenDashboard() {
     }
 
     // Kitchen only sees orders with kitchen items and where kitchenStatus is not completed
-    const q = query(
-      collection(db, 'orders'),
-      where('kitchenStatus', 'in', ['pending', 'preparing', 'ready'])
-    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const q = activeTab === 'active' 
+      ? query(collection(db, 'orders'), where('kitchenStatus', 'in', ['pending', 'preparing']))
+      : query(collection(db, 'orders'), where('kitchenStatus', 'in', ['ready', 'completed']), where('createdAt', '>=', today));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData: Order[] = [];
@@ -154,7 +157,7 @@ export default function KitchenDashboard() {
     });
 
     return () => unsubscribe();
-  }, [initialLoadDone, t, auth.currentUser]);
+  }, [initialLoadDone, t, auth.currentUser, activeTab]);
 
   const updateKitchenStatus = async (order: Order, newStatus: string) => {
     try {
@@ -164,7 +167,11 @@ export default function KitchenDashboard() {
       const updates: any = {
         kitchenStatus: newKitchenStatus,
         ...(newKitchenStatus === 'preparing' ? { preparingAt: serverTimestamp(), kitchenStartedAt: serverTimestamp() } : {}),
-        ...(newKitchenStatus === 'ready' ? { readyAt: serverTimestamp(), kitchenReadyAt: serverTimestamp() } : {})
+        ...(newKitchenStatus === 'ready' ? { 
+          readyAt: serverTimestamp(), 
+          kitchenReadyAt: serverTimestamp(),
+          kitchenPrepDuration: order.kitchenStartedAt ? Math.round((Date.now() - (order.kitchenStartedAt.toDate ? order.kitchenStartedAt.toDate().getTime() : new Date(order.kitchenStartedAt).getTime())) / 60000) : 0
+        } : {})
       };
 
       // Check if both are ready to update global status
@@ -307,44 +314,42 @@ export default function KitchenDashboard() {
                        createdAt={order.createdAt} 
                        prepTime={order.prepTime} 
                        status={order.status} 
-                       expectedReadyAt={order.expectedReadyAt}
+                       expectedReadyAt={order.expectedReadyAt} readyAt={order.readyAt} completedAt={order.completedAt}
                      />
                    </div>
                    <div className="text-[10px] font-black text-stone-500 uppercase ml-4">
-                     {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString('fr-FR', { timeZone: 'Africa/Casablanca' }) : 'NOW'}
+                     {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('en-GB') + ' ' + order.createdAt.toDate().toLocaleTimeString('fr-FR', { timeZone: 'Africa/Casablanca' }) : 'NOW'}
                    </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => updateKitchenStatus(order, order.kitchenStatus === 'pending' ? 'preparing' : 'ready')}
-                    className={`flex flex-col items-center gap-2 py-6 rounded-[2rem] transition-all ${
-                      order.kitchenStatus === 'preparing' 
-                      ? 'bg-green-500 text-stone-950 shadow-lg shadow-green-500/20' 
-                      : 'bg-stone-500/10 text-stone-500 hover:bg-stone-500/20 hover:text-bento-ink'
-                    }`}
-                  >
-                    {order.kitchenStatus === 'preparing' ? <CheckCircle2 size={24} /> : <Soup size={24} />}
-                    <span className="text-[9px] font-black uppercase tracking-widest">
-                      {order.kitchenStatus === 'preparing' ? t('mark_ready_status') : t('mark_preparing')}
+                {activeTab === 'history' && (
+                  <div className="mt-4 p-4 bg-stone-100 rounded-2xl flex items-center justify-between text-stone-500">
+                    <span className="text-[10px] font-black uppercase tracking-widest">Prep Time</span>
+                    <span className="text-sm font-bold">
+                      {order.kitchenReadyAt && order.kitchenStartedAt ? 
+                        Math.round((order.kitchenReadyAt.toDate().getTime() - order.kitchenStartedAt.toDate().getTime()) / 60000) + ' min' 
+                        : 'N/A'}
                     </span>
-                  </button>
-
-                  <button 
-                    onClick={() => updateKitchenStatus(order, 'completed')}
-                    disabled={order.kitchenStatus !== 'ready'}
-                    className={`flex flex-col items-center gap-2 py-6 rounded-[2rem] transition-all ${
-                      order.kitchenStatus === 'ready'
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40'
-                      : 'bg-stone-500/10 text-stone-200 cursor-not-allowed opacity-50'
-                    }`}
-                  >
-                    <CheckCircle2 size={24} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">{t('mark_completed')}</span>
-                  </button>
-                </div>
-
+                  </div>
+                )}
+                {activeTab === 'active' && (
+                  <div className="grid grid-cols-1 gap-3">
+                    <button 
+                      onClick={() => updateKitchenStatus(order, order.kitchenStatus === 'pending' ? 'preparing' : 'ready')}
+                      className={`flex flex-col items-center gap-2 py-6 rounded-[2rem] transition-all ${
+                        order.kitchenStatus === 'preparing' 
+                        ? 'bg-green-500 text-stone-950 shadow-lg shadow-green-500/20' 
+                        : 'bg-stone-500/10 text-stone-500 hover:bg-stone-500/20 hover:text-bento-ink'
+                      }`}
+                    >
+                      {order.kitchenStatus === 'preparing' ? <CheckCircle2 size={24} /> : <Soup size={24} />}
+                      <span className="text-[9px] font-black uppercase tracking-widest">
+                        {order.kitchenStatus === 'preparing' ? t('mark_ready_status') : t('mark_preparing')}
+                      </span>
+                    </button>
+                  </div>
+                )}
                 {/* If there's persistent info like delivery notes */}
                 {order.deliveryNotes && (
                   <div className="mt-6 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 flex items-start gap-3 text-bento-ink">

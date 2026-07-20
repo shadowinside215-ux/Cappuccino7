@@ -9,9 +9,11 @@ interface OrderTimerProps {
   status: OrderStatus;
   variant?: 'admin' | 'client';
   expectedReadyAt?: any;
+  completedAt?: any;
+  readyAt?: any;
 }
 
-export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', expectedReadyAt }: OrderTimerProps) {
+export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', expectedReadyAt, completedAt, readyAt }: OrderTimerProps) {
   const { t } = useTranslation();
   const [now, setNow] = useState(Date.now());
   const [firstSeen] = useState(Date.now()); // Stable fallback for when createdAt is null
@@ -34,8 +36,21 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', exp
 
   const referenceDate = getReferenceDate();
   const durationMins = prepTime || (variant === 'admin' ? 30 : 10);
-  const isCurrentlyActive = status !== 'delivered' && status !== 'cancelled' && (variant === 'client' ? status !== 'ready' : true);
-  const elapsedSecs = Math.floor((now - referenceDate.getTime()) / 1000);
+  const isCompletedStatus = ['ready', 'delivered', 'Completed', 'Paid', 'cancelled'].includes(status);
+  const isOrderActive = !isCompletedStatus;
+  const isCurrentlyActive = !['delivered', 'Completed', 'Paid', 'cancelled'].includes(status) && (variant === 'client' ? status !== 'ready' : status !== 'ready');
+  const getEndTime = () => {
+    const endTs = completedAt || readyAt;
+    if (endTs && !isOrderActive) {
+      if (typeof endTs.toDate === 'function') return endTs.toDate().getTime();
+      if (endTs instanceof Date) return endTs.getTime();
+      if (typeof endTs === 'object' && endTs.seconds) return endTs.seconds * 1000;
+      const d = new Date(endTs);
+      if (!isNaN(d.getTime())) return d.getTime();
+    }
+    return now;
+  };
+  const elapsedSecs = Math.floor((getEndTime() - referenceDate.getTime()) / 1000);
   const elapsed = elapsedSecs < 0 ? 0 : elapsedSecs;
 
   let timeLeft: number | null = null;
@@ -56,7 +71,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', exp
     const absSecs = Math.abs(totalSecs);
     const mins = Math.floor(absSecs / 60);
     const secs = absSecs % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}m ${secs.toString().padStart(2, '0')}s`;
   };
 
   if (variant === 'client') {
@@ -67,7 +82,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', exp
     const absTime = Math.abs(timeLeft);
     const mins = Math.floor(absTime / 60);
     const secs = absTime % 60;
-    const displayTime = `${mins}:${secs.toString().padStart(2, '0')}`;
+    const displayTime = `${mins}m ${secs.toString().padStart(2, '0')}s`;
     const styles = isOverdue 
       ? 'bg-green-500/10 border-green-500/20 text-green-400' 
       : isOrange 
@@ -84,7 +99,7 @@ export function OrderTimer({ createdAt, prepTime, status, variant = 'admin', exp
     );
   }
 
-  const isOrderActive = status !== 'delivered' && status !== 'cancelled';
+
   const durationSecs = (prepTime || 30) * 60;
   const isOverdue = timeLeft !== null && timeLeft <= 0;
   const isOrange = !isOverdue && timeLeft !== null && timeLeft <= durationSecs * 0.2;

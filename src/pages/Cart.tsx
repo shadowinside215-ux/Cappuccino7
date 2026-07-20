@@ -254,7 +254,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         localStorage.removeItem('editingOrderId');
         localStorage.removeItem('editingOrderOriginalItems');
       } else {
-        orderData.status = 'pending' as OrderStatus;
+        orderData.status = 'Waiting' as OrderStatus;
         orderData.createdAt = serverTimestamp();
         orderData.isPaid = false;
         orderData.waiterStatus = deliveryType === 'dine-in' ? 'New' : undefined;

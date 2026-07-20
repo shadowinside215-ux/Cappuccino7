@@ -28,6 +28,7 @@ import {
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { OrderTimer } from '../../components/OrderTimer';
 
 
@@ -56,7 +57,7 @@ export default function WaiterDashboard() {
       await updateDoc(doc(db, 'users', auth.currentUser.uid), {
         assignedZone: zone
       });
-      toast.success(`${t('zone_updated', 'Zone updated')}: ${zone === 'Both' ? 'Both A & B' : `Zone ${zone}`}`);
+      toast.success(`${t('zone_updated', 'Zone updated')}: ${zone === 'Both' ? t('both_zones') : `Zone ${zone}`}`);
     } catch (err) {
       console.error("Error updating zone:", err);
     }
@@ -92,6 +93,7 @@ export default function WaiterDashboard() {
       // Orders subscription
       const qOrders = query(
         collection(db, 'orders'),
+        where('isPaid', '==', false),
         orderBy('createdAt', 'asc')
       );
 
@@ -105,7 +107,7 @@ export default function WaiterDashboard() {
         setOrders(data);
         
         const lastOrderCount = parseInt(sessionStorage.getItem('last_order_count') || '0');
-        const activeOrders = data.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+        const activeOrders = data.filter(o => !o.isPaid && o.status !== 'cancelled');
 
         if (activeOrders.length > lastOrderCount) {
           // Play sound and toast only if it's in the waiter's zone
@@ -270,10 +272,14 @@ export default function WaiterDashboard() {
       // Also update waiterStatus if it's a waiter's action
       const waiterStatuses: Record<OrderStatus, WaiterOrderStatus> = {
         'pending': 'New',
+        'Waiting': 'New',
         'accepted': 'Accepted',
+        'Taken': 'Accepted',
         'preparing': 'Preparing',
         'ready': 'Ready',
         'delivered': 'Served',
+        'Completed': 'Served',
+        'Paid': 'Served',
         'cancelled': 'Served',
         'delivering': 'Preparing'
       };
@@ -327,10 +333,11 @@ export default function WaiterDashboard() {
 
       // Using transaction to ensure first-come, first-served
       await updateDoc(orderRef, {
-        waiterId: waiterId,
+                waiterId: waiterId,
         waiterName: waiterName,
         waiterStatus: 'Accepted',
-        status: 'accepted',
+        status: 'Taken',
+        timeAccepted: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
       
@@ -413,7 +420,7 @@ export default function WaiterDashboard() {
       const willBarmanBeCompleted = order.barmanStatus === undefined || order.barmanStatus === 'completed' || part === 'barman' || part === 'all';
 
       if (willKitchenBeCompleted && willBarmanBeCompleted) {
-         updates.status = 'delivered';
+         updates.status = 'Completed';
          updates.deliveredAt = serverTimestamp();
          updates.completedAt = serverTimestamp();
          updates.deliveredInMinutes = diffMins;
@@ -421,7 +428,7 @@ export default function WaiterDashboard() {
 
       await updateDoc(orderRef, updates);
       
-      if (updates.status === 'delivered') {
+      if (updates.status === 'Completed') {
         toast.success(t('order_completed_toast', 'Order fully delivered!') as string);
       } else {
         toast.success(t('part_delivered_toast', 'Items marked as served!') as string);
@@ -431,10 +438,11 @@ export default function WaiterDashboard() {
     }
   };
 
-  const filteredOrders = orders.filter(o => 
-    o.status !== 'delivered' && 
+    const filteredOrders = orders.filter(o => 
+    !o.isPaid && 
     o.status !== 'cancelled' && 
-    isMyZone(o.tableZone)
+    isMyZone(o.tableZone) &&
+    (!o.waiterId || o.waiterId === auth.currentUser?.uid)
   );
 
   const filteredRequests = requests.filter(r => 
@@ -443,7 +451,7 @@ export default function WaiterDashboard() {
 
   const readyToServeOrders = orders.filter(o => 
     (o.kitchenStatus === 'ready' || o.barmanStatus === 'ready') && 
-    o.status !== 'delivered' && 
+    o.status !== 'Completed' && 
     o.status !== 'cancelled' &&
     isMyZone(o.tableZone)
   );
@@ -469,7 +477,7 @@ export default function WaiterDashboard() {
               {t('waiter_console') as string}
             </h1>
             <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em]">
-              Palace Taha • {waiterProfile?.assignedZone === 'Both' ? 'Inside & Outside' : waiterProfile?.assignedZone === 'A' ? 'Inside (Zone A)' : waiterProfile?.assignedZone === 'B' ? 'Outside (Zone B)' : 'Select Zone'}
+              Palace Taha • {waiterProfile?.assignedZone === 'Both' ? t('inside_and_outside', 'Inside & Outside') : waiterProfile?.assignedZone === 'A' ? t('inside_zone_a', 'Inside (Zone A)') : waiterProfile?.assignedZone === 'B' ? t('outside_zone_b', 'Outside (Zone B)') : t('select_zone', 'Select Zone')}
             </p>
           </div>
         </div>
@@ -479,24 +487,23 @@ export default function WaiterDashboard() {
            <button 
              onClick={() => updateAssignedZone('A')}
              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${waiterProfile?.assignedZone === 'A' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
-           >
-             Inside (A)
-           </button>
+           > {t('inside_a', 'Inside (A)')} </button>
            <button 
              onClick={() => updateAssignedZone('B')}
              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${waiterProfile?.assignedZone === 'B' ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
-           >
-             Outside (B)
-           </button>
+           > {t('outside_b', 'Outside (B)')} </button>
            <button 
              onClick={() => updateAssignedZone('Both')}
              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${waiterProfile?.assignedZone === 'Both' || !waiterProfile?.assignedZone ? 'bg-amber-400 text-stone-900 shadow-md' : 'text-stone-400 hover:text-stone-600'}`}
-           >
-             Both
-           </button>
+           > {t('both_zones', 'Both')} </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
+          <div className="flex bg-stone-100 p-1 rounded-xl">
+             <button onClick={() => i18n.changeLanguage('en')} className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${i18n.language === 'en' ? 'bg-white shadow-sm' : 'text-stone-400'}`}>EN</button>
+             <button onClick={() => i18n.changeLanguage('fr')} className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${i18n.language === 'fr' ? 'bg-white shadow-sm' : 'text-stone-400'}`}>FR</button>
+             <button onClick={() => i18n.changeLanguage('ar')} className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${i18n.language === 'ar' ? 'bg-white shadow-sm' : 'text-stone-400'}`}>AR</button>
+          </div>
            <div className="flex bg-stone-100 p-1.5 rounded-2xl border border-stone-200">
              <button 
                onClick={() => setActiveTab('orders')}
@@ -562,7 +569,7 @@ export default function WaiterDashboard() {
                    {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'A' || !waiterProfile?.assignedZone) && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 px-2 border-l-4 border-amber-400">
-                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-amber-400 decoration-4 underline-offset-4">Inside Tables (Zone A)</h3>
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-amber-400 decoration-4 underline-offset-4">{t('inside_tables', 'Inside Tables (Zone A)')}</h3>
                         <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
                           {filteredOrders.filter(o => o.tableZone === 'A' || (o.tableArea === 'Inside' && !o.tableZone)).length}
                         </span>
@@ -582,7 +589,7 @@ export default function WaiterDashboard() {
                   {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'B' || !waiterProfile?.assignedZone) && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 px-2 border-l-4 border-blue-400">
-                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-blue-400 decoration-4 underline-offset-4">Outside Tables (Zone B)</h3>
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-blue-400 decoration-4 underline-offset-4">{t('outside_tables', 'Outside Tables (Zone B)')}</h3>
                         <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
                           {filteredOrders.filter(o => o.tableZone === 'B' || (o.tableArea === 'Outside' && !o.tableZone)).length}
                         </span>
@@ -705,7 +712,7 @@ export default function WaiterDashboard() {
                   {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'A' || !waiterProfile?.assignedZone) && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 px-2 border-l-4 border-amber-400">
-                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-amber-400 decoration-4 underline-offset-4">Inside Requests (Zone A)</h3>
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-amber-400 decoration-4 underline-offset-4">{t('inside_requests', 'Inside Requests (Zone A)')}</h3>
                         <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
                           {filteredRequests.filter(r => r.tableZone === 'A').length}
                         </span>
@@ -737,7 +744,7 @@ export default function WaiterDashboard() {
                             key={req.id}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className={`bg-white rounded-3xl p-6 shadow-xl border-2 ${req.status === 'accepted' ? 'border-amber-400 bg-amber-50' : 'border-purple-100'}`}
+                            className={`bg-white rounded-3xl p-6 shadow-xl border-2 ${(req.status === 'accepted' || req.status === 'Taken') ? 'border-amber-400 bg-amber-50' : 'border-purple-100'}`}
                           >
                             <div className="flex justify-between items-start mb-4">
                               <div>
@@ -801,7 +808,7 @@ export default function WaiterDashboard() {
                   {(waiterProfile?.assignedZone === 'Both' || waiterProfile?.assignedZone === 'B' || !waiterProfile?.assignedZone) && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 px-2 border-l-4 border-blue-400">
-                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-blue-400 decoration-4 underline-offset-4">Outside Requests (Zone B)</h3>
+                        <h3 className="text-xl font-black text-stone-900 uppercase italic tracking-tight underline decoration-blue-400 decoration-4 underline-offset-4">{t('outside_requests', 'Outside Requests (Zone B)')}</h3>
                         <span className="bg-stone-100 text-stone-400 text-[10px] font-black px-2 py-0.5 rounded-full">
                           {filteredRequests.filter(r => r.tableZone === 'B').length}
                         </span>
@@ -842,7 +849,7 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
     <motion.div
       layout
       className={`bg-white rounded-[3rem] p-8 shadow-xl border relative overflow-hidden h-full flex flex-col ${
-        order.status === 'ready' ? 'ring-4 ring-green-400 border-green-400' : 'border-stone-100'
+        order.status === 'ready' ? 'ring-4 ring-green-400 border-green-400' : order.status === 'Completed' ? 'border-2 border-dashed border-amber-300 opacity-80' : 'border-stone-100'
       }`}
     >
       <div className="mb-6">
@@ -951,7 +958,7 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
           createdAt={order.createdAt} 
           prepTime={order.prepTime} 
           status={order.status} 
-          expectedReadyAt={order.expectedReadyAt}
+          expectedReadyAt={order.expectedReadyAt} readyAt={order.readyAt} completedAt={order.completedAt}
         />
       </div>
 
@@ -983,7 +990,7 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
       <div className="mt-auto pt-6 border-t border-stone-100">
          <button 
            onClick={() => completeOrder(order, 'all')} 
-           disabled={order.status !== 'ready' && order.kitchenStatus !== 'ready' && order.barmanStatus !== 'ready'}
+           disabled={order.status === 'Completed' || (order.status !== 'ready' && order.kitchenStatus !== 'ready' && order.barmanStatus !== 'ready')}
            className={`w-full flex flex-col items-center gap-1 py-4 rounded-3xl text-white transition-all text-center ${
              order.status === 'ready' || order.kitchenStatus === 'ready' || order.barmanStatus === 'ready'
              ? 'bg-stone-950 hover:bg-black shadow-xl shadow-stone-900/20 active:scale-95'
@@ -991,7 +998,7 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
            }`}
          >
            <CheckCheck size={18} className={order.status === 'ready' || order.kitchenStatus === 'ready' || order.barmanStatus === 'ready' ? 'text-amber-400' : 'text-stone-100'} />
-           <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('complete')}</span>
+           <span className="text-[10px] font-black uppercase tracking-widest leading-none">{order.status === 'Completed' ? t('waiting_for_payment', 'Waiting for Payment') : t('complete')}</span>
            <span className="text-[7px] font-bold text-stone-500 uppercase tracking-tighter">{t('mark_as_served_for_cashier', 'Mark as Served & Send to Cashier')}</span>
          </button>
       </div>

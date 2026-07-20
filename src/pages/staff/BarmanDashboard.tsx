@@ -9,6 +9,7 @@ import { db, auth } from '../../lib/firebase';
 import { Order } from '../../types';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 import { OrderTimer } from '../../components/OrderTimer';
 
@@ -54,6 +55,7 @@ export default function BarmanDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const prevOrdersRef = React.useRef<Order[]>([]);
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -65,10 +67,11 @@ export default function BarmanDashboard() {
     }
 
     // Barman only sees orders with barman items and where barmanStatus is not completed
-    const q = query(
-      collection(db, 'orders'),
-      where('barmanStatus', 'in', ['pending', 'preparing', 'ready'])
-    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const q = activeTab === 'active' 
+      ? query(collection(db, 'orders'), where('barmanStatus', 'in', ['pending', 'preparing']))
+      : query(collection(db, 'orders'), where('barmanStatus', 'in', ['ready', 'completed']), where('createdAt', '>=', today));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData: Order[] = [];
@@ -154,7 +157,7 @@ export default function BarmanDashboard() {
     });
 
     return () => unsubscribe();
-  }, [initialLoadDone, t, auth.currentUser]);
+  }, [initialLoadDone, t, auth.currentUser, activeTab]);
 
   const updateBarmanStatus = async (order: Order, newStatus: string) => {
     try {
@@ -164,7 +167,11 @@ export default function BarmanDashboard() {
       const updates: any = {
         barmanStatus: newBarmanStatus,
         ...(newBarmanStatus === 'preparing' ? { preparingAt: serverTimestamp(), barmanStartedAt: serverTimestamp() } : {}),
-        ...(newBarmanStatus === 'ready' ? { readyAt: serverTimestamp(), barmanReadyAt: serverTimestamp() } : {})
+        ...(newBarmanStatus === 'ready' ? { 
+          readyAt: serverTimestamp(), 
+          barmanReadyAt: serverTimestamp(),
+          barmanPrepDuration: order.barmanStartedAt ? Math.round((Date.now() - (order.barmanStartedAt.toDate ? order.barmanStartedAt.toDate().getTime() : new Date(order.barmanStartedAt).getTime())) / 60000) : 0
+        } : {})
       };
 
       // Check if both are ready to update global status
@@ -215,6 +222,20 @@ export default function BarmanDashboard() {
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="bg-stone-200 dark:bg-stone-800 p-1 rounded-2xl flex gap-1 mr-4">
+            <button 
+              onClick={() => setActiveTab('active')}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+            >
+              Active
+            </button>
+            <button 
+              onClick={() => setActiveTab('history')}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'history' ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+            >
+              History
+            </button>
+          </div>
           <div className="bg-bento-bg px-6 py-3 rounded-2xl border border-bento-card-border flex items-center gap-3">
              <ShoppingBag size={18} className="text-amber-500" />
              <span className="text-xl font-black">{orders.length}</span>
@@ -316,44 +337,42 @@ export default function BarmanDashboard() {
                        createdAt={order.createdAt} 
                        prepTime={order.prepTime} 
                        status={order.status} 
-                       expectedReadyAt={order.expectedReadyAt}
+                       expectedReadyAt={order.expectedReadyAt} readyAt={order.readyAt} completedAt={order.completedAt}
                      />
                    </div>
                    <div className="text-[10px] font-black text-stone-500 uppercase ml-4">
-                     {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString('fr-FR', { timeZone: 'Africa/Casablanca' }) : 'NOW'}
+                     {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('en-GB') + ' ' + order.createdAt.toDate().toLocaleTimeString('fr-FR', { timeZone: 'Africa/Casablanca' }) : 'NOW'}
                    </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => updateBarmanStatus(order, order.barmanStatus === 'pending' ? 'preparing' : 'ready')}
-                    className={`flex flex-col items-center gap-2 py-6 rounded-[2rem] transition-all ${
-                      order.barmanStatus === 'preparing' 
-                      ? 'bg-amber-500 text-stone-900 shadow-lg shadow-amber-500/20' 
-                      : 'bg-stone-500/10 text-stone-500 hover:bg-stone-500/20 hover:text-bento-ink'
-                    }`}
-                  >
-                    {order.barmanStatus === 'preparing' ? <CheckCircle2 size={24} /> : <Coffee size={24} />}
-                    <span className="text-[9px] font-black uppercase tracking-widest">
-                      {order.barmanStatus === 'preparing' ? t('mark_ready_status') : t('mark_preparing')}
+                {activeTab === 'history' && (
+                  <div className="mt-4 p-4 bg-stone-100 rounded-2xl flex items-center justify-between text-stone-500">
+                    <span className="text-[10px] font-black uppercase tracking-widest">Prep Time</span>
+                    <span className="text-sm font-bold">
+                      {order.barmanReadyAt && order.barmanStartedAt ? 
+                        Math.round((order.barmanReadyAt.toDate().getTime() - order.barmanStartedAt.toDate().getTime()) / 60000) + ' min' 
+                        : 'N/A'}
                     </span>
-                  </button>
-
-                  <button 
-                    onClick={() => updateBarmanStatus(order, 'completed')}
-                    disabled={order.barmanStatus !== 'ready'}
-                    className={`flex flex-col items-center gap-2 py-6 rounded-[2rem] transition-all ${
-                      order.barmanStatus === 'ready'
-                      ? 'bg-amber-600 text-stone-900 shadow-lg shadow-amber-900/40'
-                      : 'bg-stone-500/10 text-stone-500/30 cursor-not-allowed opacity-50'
-                    }`}
-                  >
-                    <CheckCircle2 size={24} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">{t('mark_completed')}</span>
-                  </button>
-                </div>
-
+                  </div>
+                )}
+                {activeTab === 'active' && (
+                  <div className="grid grid-cols-1 gap-3">
+                    <button 
+                      onClick={() => updateBarmanStatus(order, order.barmanStatus === 'pending' ? 'preparing' : 'ready')}
+                      className={`flex flex-col items-center gap-2 py-6 rounded-[2rem] transition-all ${
+                        order.barmanStatus === 'preparing' 
+                        ? 'bg-amber-500 text-stone-900 shadow-lg shadow-amber-500/20' 
+                        : 'bg-stone-500/10 text-stone-500 hover:bg-stone-500/20 hover:text-bento-ink'
+                      }`}
+                    >
+                      {order.barmanStatus === 'preparing' ? <CheckCircle2 size={24} /> : <Coffee size={24} />}
+                      <span className="text-[9px] font-black uppercase tracking-widest">
+                        {order.barmanStatus === 'preparing' ? t('mark_ready_status') : t('mark_preparing')}
+                      </span>
+                    </button>
+                  </div>
+                )}
                 {/* Special Instructions */}
                 {order.deliveryNotes && (
                   <div className="mt-6 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 flex items-start gap-3">

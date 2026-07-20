@@ -7,6 +7,7 @@ import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Users, Search, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Image as ImageIcon, QrCode, Download } from 'lucide-react';
 import { Timer } from 'lucide-react';
+import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { CATEGORIES, PRODUCTS_DATA } from '../../data/menuData';
@@ -34,6 +35,9 @@ export default function AdminDashboard() {
     }
   });
   const [weeklyRevenue, setWeeklyRevenue] = useState<Record<string, { amount: number, orderCount: number }>>({});
+  const [monthlyStats, setMonthlyStats] = useState({ revenue: 0, orders: 0 });
+  const [yearlyStats, setYearlyStats] = useState({ revenue: 0, orders: 0 });
+
   const [isEmpty, setIsEmpty] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isRegisteringAdmin, setIsRegisteringAdmin] = useState(false);
@@ -348,11 +352,36 @@ export default function AdminDashboard() {
       collection(db, 'dailyRevenue'), 
       orderBy('lastUpdated', 'desc')
     );
+    
+    const unsubMonth = onSnapshot(collection(db, 'monthlyRevenue'), (snapshot) => {
+      let rev = 0; let ord = 0;
+      const currentMonth = format(new Date(), 'yyyy-MM'); // yyyy-MM
+      snapshot.docs.forEach(d => {
+        if (d.id === currentMonth) {
+          rev += d.data().amount || 0;
+          ord += d.data().orderCount || 0;
+        }
+      });
+      setMonthlyStats({ revenue: rev, orders: ord });
+    });
+
+    const unsubYear = onSnapshot(collection(db, 'yearlyRevenue'), (snapshot) => {
+      let rev = 0; let ord = 0;
+      const currentYear = new Date().getFullYear().toString(); // yyyy
+      snapshot.docs.forEach(d => {
+        if (d.id === currentYear) {
+          rev += d.data().amount || 0;
+          ord += d.data().orderCount || 0;
+        }
+      });
+      setYearlyStats({ revenue: rev, orders: ord });
+    });
+
     const unsubRev = onSnapshot(qRev, (snapshot) => {
       const revData: Record<string, { amount: number, orderCount: number }> = {};
       let todayRev = 0;
       let todayOrders = 0;
-      const today = new Date().toISOString().split('T')[0];
+      const today = format(new Date(), 'yyyy-MM-dd');
       
       snapshot.docs.forEach(d => {
         const data = d.data();
@@ -390,8 +419,24 @@ export default function AdminDashboard() {
         !u.isCashier && 
         !u.isDriver
       ).sort((a, b) => {
-        const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
-        const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
+        let timeA = 0;
+        let timeB = 0;
+        if (a.createdAt) {
+           const ca = a.createdAt as any;
+           if (typeof ca.toMillis === 'function') timeA = ca.toMillis();
+           else if (ca.seconds) timeA = ca.seconds * 1000;
+           else timeA = new Date(ca).getTime() || 0;
+        } else {
+           timeA = Date.now(); // Put missing timestamps (pending writes) at the top
+        }
+        if (b.createdAt) {
+           const cb = b.createdAt as any;
+           if (typeof cb.toMillis === 'function') timeB = cb.toMillis();
+           else if (cb.seconds) timeB = cb.seconds * 1000;
+           else timeB = new Date(cb).getTime() || 0;
+        } else {
+           timeB = Date.now(); // Put missing timestamps (pending writes) at the top
+        }
         return timeB - timeA; // Descending, newest first
       });
       setUsers(emailClients); 
@@ -433,6 +478,8 @@ export default function AdminDashboard() {
         snap.docs.forEach(doc => {
           const order = doc.data();
           
+          if (!(order.isPaid || order.status === 'Paid')) return; // STRICTLY ONLY PAID ORDERS
+
           // Items count
           if (order.items && Array.isArray(order.items)) {
             order.items.forEach((item: any) => {
@@ -443,7 +490,7 @@ export default function AdminDashboard() {
           }
           
           // Performance calculations
-          if (order.status === 'delivered' || order.status === 'completed') {
+          if (true) {
             const getMs = (ts: any) => {
               if (!ts) return 0;
               if (typeof ts.toDate === 'function') return ts.toDate().getTime();
@@ -746,7 +793,17 @@ export default function AdminDashboard() {
             <p className="text-3xl md:text-4xl font-black text-bento-ink mb-1">{stats.todayRevenue.toFixed(0)} MAD</p>
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{t('today_revenue_mad')}</p>
             
+          
           </div>
+          <div className="card !p-6 flex flex-col justify-center bg-bento-card-bg border-bento-card-border relative overflow-hidden group hover:-translate-y-1 transition-transform">
+            <p className="text-2xl md:text-3xl font-black text-bento-ink mb-1">{monthlyStats.revenue.toFixed(0)} MAD</p>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Monthly Rev (Orders: {monthlyStats.orders})</p>
+          </div>
+          <div className="card !p-6 flex flex-col justify-center bg-bento-card-bg border-bento-card-border relative overflow-hidden group hover:-translate-y-1 transition-transform">
+            <p className="text-2xl md:text-3xl font-black text-bento-ink mb-1">{yearlyStats.revenue.toFixed(0)} MAD</p>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Yearly Rev (Orders: {yearlyStats.orders})</p>
+          </div>
+
 
         {!isClientAdmin && (
           <div className="card !p-6 lg:col-span-2 accent-card !bg-bento-accent !text-bento-primary">
@@ -765,60 +822,9 @@ export default function AdminDashboard() {
           </div>
         )}
         
-        {stats.mostOrderedItem && (
-          <div className="card !p-6 lg:col-span-2 bg-gradient-to-br from-amber-400 to-amber-500 text-stone-900 border-none">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-white/30 rounded-2xl">
-                <Star size={20} className="fill-stone-900" />
-              </div>
-              <div className="text-right">
-                <p className="text-2xl md:text-3xl font-black truncate max-w-[150px]" title={stats.mostOrderedItem.name}>
-                   {stats.mostOrderedItem.name}
-                </p>
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Most Ordered</p>
-              </div>
-            </div>
-            <p className="text-xs font-black uppercase tracking-widest opacity-80 mt-auto flex items-center gap-2">
-              <Award size={14} /> {stats.mostOrderedItem.count} {t('total_orders', 'Total Orders')}
-            </p>
-          </div>
-        )}
+        
 
-        {stats.performance && (
-          <div className="card !p-6 lg:col-span-4 bg-bento-card-bg border-bento-card-border mt-4">
-            <h3 className="text-xl font-black text-bento-primary uppercase italic tracking-tighter mb-4 flex items-center gap-2">
-              <Timer size={20} /> Service Performance
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Avg Total Prep</p>
-                <p className="text-2xl font-black text-amber-600">{stats.performance.avgPrep}m</p>
-              </div>
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Kitchen Prep</p>
-                <p className="text-2xl font-black text-orange-600">{stats.performance.avgKitchenPrep}m</p>
-              </div>
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Barman Prep</p>
-                <p className="text-2xl font-black text-sky-600">{stats.performance.avgBarmanPrep}m</p>
-              </div>
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Avg Delivery</p>
-                <p className="text-2xl font-black text-blue-600">{stats.performance.avgDelivery}m</p>
-              </div>
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Fastest / Slowest</p>
-                <p className="text-xl font-black text-bento-ink">
-                  {stats.performance.fastest}m <span className="text-stone-400 font-normal">/</span> {stats.performance.slowest}m
-                </p>
-              </div>
-              <div className="bg-stone-50 dark:bg-stone-900/30 p-4 rounded-2xl">
-                <p className="text-[9px] font-black uppercase text-stone-500 mb-1">Completed Today</p>
-                <p className="text-2xl font-black text-green-600">{stats.performance.completedToday}</p>
-              </div>
-            </div>
-          </div>
-        )}
+        
       </div>
 
       {/* Weekly Revenue Chart-like View */}
@@ -849,19 +855,7 @@ export default function AdminDashboard() {
              </div>
            </button>
 
-           <button 
-             onClick={() => navigate('/admin/performance')}
-             className="bg-bento-card-bg text-bento-ink p-8 rounded-3xl flex items-center justify-between group hover:bg-bento-card-bg/90 transition-all shadow-xl border border-bento-card-border"
-           >
-             <div className="text-left">
-               <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Team Tracking</span>
-               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">Staff Performance</h4>
-               <p className="text-xs opacity-60 mt-2">12-Month History</p>
-             </div>
-             <div className="p-4 bg-bento-primary/10 text-bento-primary rounded-2xl group-hover:bg-bento-primary group-hover:text-bento-bg transition-all">
-               <Users size={28} />
-             </div>
-           </button>
+           
 
            {!isClientAdmin && (
              <div className="bg-amber-400 p-8 rounded-3xl flex items-center justify-between text-stone-900">
@@ -916,6 +910,22 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 mb-4">
+        <button 
+          onClick={() => navigate('/admin/performance')}
+          className="card !p-8 border-2 border-stone-300 group hover:bg-stone-50 hover:scale-[1.02]"
+        >
+          <div className="flex items-center justify-between">
+            <div className="text-left">
+              <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-1">Staff Performance</h3>
+              <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Order History & Analytics</p>
+            </div>
+            <div className="p-4 bg-stone-100 rounded-full group-hover:bg-bento-primary group-hover:text-white transition-all">
+              <Users size={32} className="transition-colors" />
+            </div>
+          </div>
+        </button>
+        </div>
       {!isClientAdmin && (
         <>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
@@ -1282,7 +1292,7 @@ export default function AdminDashboard() {
                                    </div>
                                 </div>
                                 <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                  order.status === 'delivered' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
+                                  (order.status === 'delivered' || order.status === 'Completed') ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
                                 }`}>
                                   {order.status}
                                 </span>
