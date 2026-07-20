@@ -311,7 +311,7 @@ export default function KitchenDashboard() {
                      />
                    </div>
                    <div className="text-[10px] font-black text-stone-500 uppercase ml-4">
-                     {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'NOW'}
+                     {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString('fr-FR', { timeZone: 'Africa/Casablanca' }) : 'NOW'}
                    </div>
                 </div>
 

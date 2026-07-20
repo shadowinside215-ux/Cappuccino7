@@ -244,9 +244,9 @@ export default function DigitalTicket({ order, onClose, showActions = true }: Di
               Digital Experience
             </h2>
             <div className="flex items-center gap-2 text-[10px] font-bold opacity-50 uppercase tracking-widest">
-              <span>{new Date(order.createdAt?.toDate()).toLocaleDateString()}</span>
+              <span>{new Date(order.createdAt?.toDate()).toLocaleDateString('fr-FR', { timeZone: 'Africa/Casablanca' })}</span>
               <span>•</span>
-              <span>{new Date(order.createdAt?.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>{new Date(order.createdAt?.toDate()).toLocaleTimeString('fr-FR', { timeZone: 'Africa/Casablanca', hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
 

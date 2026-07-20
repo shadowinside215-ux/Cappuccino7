@@ -52,7 +52,9 @@ import { Category, Product, Order, OrderItem } from '../../types';
 import { processOrderItems } from '../../lib/orderRouting';
 import { generateThermalReceipt, printToThermalPrinter } from '../../lib/thermalPrinter';
 import toast from 'react-hot-toast';
-import { format, startOfDay, endOfDay, isToday, parseISO } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { format, isToday, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { OrderTimer } from '../../components/OrderTimer';
 import { OrderTimestamps } from '../../components/OrderTimestamps';
@@ -1253,7 +1255,7 @@ export default function CashierDashboard() {
                      <div key={order.id} className="bg-bento-bg border border-bento-card-border p-6 rounded-2xl grid grid-cols-5 items-center hover:bg-stone-500/5 transition-colors group">
                         <span className="pl-6 text-stone-500 font-bold tabular-nums flex items-center gap-3">
                            <Clock size={14} className="opacity-40" />
-                           {order.createdAt instanceof Timestamp ? format(order.createdAt.toDate(), 'HH:mm:ss') : 'LIVE'}
+                           {order.createdAt instanceof Timestamp ? formatInTimeZone(order.createdAt.toDate(), 'Africa/Casablanca', 'HH:mm:ss') : 'LIVE'}
                         </span>
                         <div>
                            <div className="text-bento-ink font-black uppercase text-sm italic group-hover:text-amber-500 transition-colors">#{order.id.slice(-6).toUpperCase()}</div>

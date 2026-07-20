@@ -378,7 +378,7 @@ export default function WaiterDashboard() {
     }
   };
 
-  const completeOrder = async (order: Order) => {
+  const completeOrder = async (order: Order, part: 'kitchen' | 'barman' | 'all') => {
     try {
       const now = new Date();
       let createdDate: Date | null = null;
@@ -394,15 +394,38 @@ export default function WaiterDashboard() {
       const diffMins = Math.round(diffMs / 60000);
 
       const orderRef = doc(db, 'orders', order.id);
-      await updateDoc(orderRef, {
-        status: 'delivered',
-        deliveredAt: serverTimestamp(),
-        completedAt: serverTimestamp(),
-        deliveredInMinutes: diffMins,
-        updatedAt: serverTimestamp()
-      });
       
-      toast.success(t('order_completed_toast', 'Order completed and delivered!') as string);
+      const updates: any = {
+        updatedAt: serverTimestamp()
+      };
+
+      if (part === 'kitchen' || part === 'all') {
+        updates.kitchenStatus = 'completed';
+        updates.kitchenCompletedAt = serverTimestamp();
+      }
+      if (part === 'barman' || part === 'all') {
+        updates.barmanStatus = 'completed';
+        updates.barmanCompletedAt = serverTimestamp();
+      }
+
+      // Check if order is fully completed now
+      const willKitchenBeCompleted = order.kitchenStatus === undefined || order.kitchenStatus === 'completed' || part === 'kitchen' || part === 'all';
+      const willBarmanBeCompleted = order.barmanStatus === undefined || order.barmanStatus === 'completed' || part === 'barman' || part === 'all';
+
+      if (willKitchenBeCompleted && willBarmanBeCompleted) {
+         updates.status = 'delivered';
+         updates.deliveredAt = serverTimestamp();
+         updates.completedAt = serverTimestamp();
+         updates.deliveredInMinutes = diffMins;
+      }
+
+      await updateDoc(orderRef, updates);
+      
+      if (updates.status === 'delivered') {
+        toast.success(t('order_completed_toast', 'Order fully delivered!') as string);
+      } else {
+        toast.success(t('part_delivered_toast', 'Items marked as served!') as string);
+      }
     } catch (err: any) {
       handleFirestoreError(err, OperationType.UPDATE, `orders/${order.id}`);
     }
@@ -638,13 +661,26 @@ export default function WaiterDashboard() {
                          ))}
                       </div>
 
-                      <button 
-                        onClick={() => completeOrder(order)}
-                        className="w-full py-4 bg-green-500 text-white rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl hover:bg-green-600 transition-all flex items-center justify-center gap-3"
-                      >
-                        <CheckCheck size={18} />
-                        {t('mark_served', 'Mark Served') as string}
-                      </button>
+                      <div className="flex gap-2">
+                        {order.kitchenStatus === 'ready' && (
+                          <button 
+                            onClick={() => completeOrder(order, 'kitchen')}
+                            className="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-amber-600 transition-all flex items-center justify-center gap-2"
+                          >
+                            <ChefHat size={16} />
+                            Serve Food
+                          </button>
+                        )}
+                        {order.barmanStatus === 'ready' && (
+                          <button 
+                            onClick={() => completeOrder(order, 'barman')}
+                            className="flex-1 py-4 bg-blue-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                          >
+                            <Coffee size={16} />
+                            Serve Drinks
+                          </button>
+                        )}
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -710,7 +746,7 @@ export default function WaiterDashboard() {
                                 </span>
                                 <h4 className="font-black text-xl text-stone-900 mt-2">{(req as any).clientName || 'Customer'}</h4>
                                 <p className="text-xs text-stone-500 font-bold mt-1">
-                                  {(req as any).timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {(req as any).timestamp?.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' })}
                                 </p>
                               </div>
                               {req.status === 'new' ? (
@@ -840,7 +876,7 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
             </span>
           )}
           <p className="text-[10px] font-bold text-stone-400 ml-auto whitespace-nowrap">
-            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString() : 'Just now'}
+            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleTimeString('fr-FR', { timeZone: 'Africa/Casablanca' }) : 'Just now'}
           </p>
         </div>
 
@@ -946,10 +982,15 @@ function OrderCard({ order, t, auth, acceptOrder, completeOrder }: any) {
 
       <div className="mt-auto pt-6 border-t border-stone-100">
          <button 
-           onClick={() => completeOrder(order)} 
-           className="w-full flex flex-col items-center gap-1 py-4 rounded-3xl bg-stone-950 text-white hover:bg-black shadow-xl shadow-stone-900/20 active:scale-95 transition-all text-center"
+           onClick={() => completeOrder(order, 'all')} 
+           disabled={order.status !== 'ready' && order.kitchenStatus !== 'ready' && order.barmanStatus !== 'ready'}
+           className={`w-full flex flex-col items-center gap-1 py-4 rounded-3xl text-white transition-all text-center ${
+             order.status === 'ready' || order.kitchenStatus === 'ready' || order.barmanStatus === 'ready'
+             ? 'bg-stone-950 hover:bg-black shadow-xl shadow-stone-900/20 active:scale-95'
+             : 'bg-stone-300 cursor-not-allowed'
+           }`}
          >
-           <CheckCheck size={18} className="text-amber-400" />
+           <CheckCheck size={18} className={order.status === 'ready' || order.kitchenStatus === 'ready' || order.barmanStatus === 'ready' ? 'text-amber-400' : 'text-stone-100'} />
            <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t('complete')}</span>
            <span className="text-[7px] font-bold text-stone-500 uppercase tracking-tighter">{t('mark_as_served_for_cashier', 'Mark as Served & Send to Cashier')}</span>
          </button>
@@ -971,7 +1012,7 @@ function RequestCard({ req, t, auth, acceptRequest, completeRequest }: any) {
                 <div className="flex items-center gap-2 mt-0.5">
                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{t('calling_waiter', 'Calling Waiter')}</p>
                    <span className="text-[8px] font-bold text-stone-300 whitespace-nowrap">
-                     {(req as any).timestamp?.toDate ? (req as any).timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
+                     {(req as any).timestamp?.toDate ? (req as any).timestamp.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' }) : 'Now'}
                    </span>
                 </div>
                 {req.orderId && <p className="text-[8px] font-black text-amber-600 uppercase tracking-tighter mt-1">Order: #{req.orderId.slice(-6)}</p>}

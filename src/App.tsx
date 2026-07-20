@@ -20,6 +20,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminMenu from './pages/admin/AdminMenu';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminStats from './pages/admin/AdminStats';
+import StaffPerformance from './pages/admin/StaffPerformance';
 import Login from './pages/Login';
 import AdminLogin from './pages/admin/AdminLogin';
 import OrderConfirmation from './pages/OrderConfirmation';
@@ -77,7 +78,7 @@ const AdminGuard = ({ userProfile, children }: { userProfile: UserProfile | null
   if (isAdminDocument || userProfile?.isAdmin) {
     const isClientAdmin = auth.currentUser?.email?.toLowerCase() === 'mohamed.erguigue@gmail.com' || auth.currentUser?.email?.toLowerCase() === 'samiarafati3@gmail.com';
     const currentPath = window.location.pathname;
-    if (isClientAdmin && currentPath !== '/admin' && currentPath !== '/admin/stats') {
+    if (isClientAdmin && currentPath !== '/admin' && currentPath !== '/admin/stats' && currentPath !== '/admin/performance') {
       return <Navigate to="/admin" />;
     }
     return <>{children}</>;
@@ -646,6 +647,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/admin" element={<AdminGuard userProfile={userProfile}><AdminDashboard /></AdminGuard>} />
                   <Route path="/admin/staff" element={<AdminGuard userProfile={userProfile}><StaffManagement /></AdminGuard>} />
                   <Route path="/admin/stats" element={<AdminGuard userProfile={userProfile}><AdminStats /></AdminGuard>} />
+                  <Route path="/admin/performance" element={<AdminGuard userProfile={userProfile}><StaffPerformance /></AdminGuard>} />
                   <Route path="/admin/menu" element={<AdminGuard userProfile={userProfile}><AdminMenu /></AdminGuard>} />
                   <Route path="/admin/orders" element={<AdminGuard userProfile={userProfile}><AdminOrders /></AdminGuard>} />
                   <Route path="/admin/brand" element={<AdminGuard userProfile={userProfile}><BrandSettings /></AdminGuard>} />

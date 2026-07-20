@@ -29,25 +29,6 @@ export default function OrderConfirmation() {
           const orderData = { id: docSnap.id, ...data } as Order;
           
           setOrder(orderData);
-
-          // Fallback: If verification token is missing for some reason, generate it now
-          if (!orderData.verificationToken) {
-            console.log('Generating missing verification token for order:', id);
-            
-            const array = new Uint8Array(16);
-            crypto.getRandomValues(array);
-            const newToken = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('') + Date.now().toString(16);
-
-            try {
-              await updateDoc(doc(db, 'orders', id), {
-                verificationToken: newToken,
-                updatedAt: serverTimestamp()
-              });
-              setOrder({ ...orderData, verificationToken: newToken });
-            } catch (err) {
-              console.error('Failed to update missing token:', err);
-            }
-          }
         }
       } catch (error) {
         console.error('Error fetching order:', error);

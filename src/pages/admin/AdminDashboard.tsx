@@ -830,7 +830,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className={`grid grid-cols-1 gap-4 mb-8 ${!isClientAdmin ? 'md:grid-cols-2' : ''}`}>
+        <div className={`grid grid-cols-1 gap-4 mb-8 ${!isClientAdmin ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'}`}>
            <button 
              onClick={() => navigate('/admin/stats')}
              className="bg-bento-card-bg text-bento-ink p-8 rounded-3xl flex items-center justify-between group hover:bg-bento-card-bg/90 transition-all shadow-xl border border-bento-card-border"
@@ -842,6 +842,20 @@ export default function AdminDashboard() {
              </div>
              <div className="p-4 bg-bento-primary/10 text-bento-primary rounded-2xl group-hover:bg-bento-primary group-hover:text-bento-bg transition-all">
                <TrendingUp size={28} />
+             </div>
+           </button>
+
+           <button 
+             onClick={() => navigate('/admin/performance')}
+             className="bg-bento-card-bg text-bento-ink p-8 rounded-3xl flex items-center justify-between group hover:bg-bento-card-bg/90 transition-all shadow-xl border border-bento-card-border"
+           >
+             <div className="text-left">
+               <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Team Tracking</span>
+               <h4 className="text-2xl font-black italic tracking-tighter uppercase mt-1">Staff Performance</h4>
+               <p className="text-xs opacity-60 mt-2">12-Month History</p>
+             </div>
+             <div className="p-4 bg-bento-primary/10 text-bento-primary rounded-2xl group-hover:bg-bento-primary group-hover:text-bento-bg transition-all">
+               <Users size={28} />
              </div>
            </button>
 
@@ -1254,11 +1268,11 @@ export default function AdminDashboard() {
                                    </p>
                                    <div className="flex flex-col gap-1 mt-1.5 font-bold uppercase text-[9px] tracking-wider">
                                      <div className="flex items-center gap-2 text-stone-400">
-                                       <Clock size={10} /> Placed: {orderTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                       <Clock size={10} /> Placed: {orderTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' })}
                                      </div>
                                      {deliveryTime && (
                                        <div className="flex items-center gap-2 text-green-500">
-                                         <CheckCircle2 size={10} /> Delivered: {deliveryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                         <CheckCircle2 size={10} /> Delivered: {deliveryTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' })}
                                        </div>
                                      )}
                                    </div>

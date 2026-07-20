@@ -61,7 +61,7 @@ export default function PrivacyPolicy() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold text-bento-ink">4. Data Storage and Security</h2>
             <p>
-              We use Google's Firebase (Authentication and Firestore) to securely store and manage your data. 
+              We use Google's Secure Cloud Database (Authentication and Firestore) to securely store and manage your data. 
               We adopt appropriate data collection, storage and processing practices and security measures 
               to protect against unauthorized access, alteration, disclosure or destruction of your personal 
               information, username, password, transaction information and data stored on our app.

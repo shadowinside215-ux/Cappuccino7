@@ -26,5 +26,5 @@ export function formatServerTimestamp(ts: any): string {
   if (typeof ts.toDate === 'function') d = ts.toDate();
   else d = new Date(ts);
   if (isNaN(d.getTime())) return 'N/A';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' });
 }

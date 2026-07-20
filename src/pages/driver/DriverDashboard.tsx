@@ -154,7 +154,7 @@ export default function DriverDashboard() {
                   Salé Time
                 </p>
                 <p className="text-lg font-black text-white font-mono leading-none">
-                  {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                  {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' })}
                 </p>
               </div>
               <Timer size={20} className="text-white/20" />
@@ -230,7 +230,7 @@ export default function DriverDashboard() {
                         <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg">
                           <Clock size={12} className="text-amber-400" />
                           <span className="text-[10px] font-black uppercase tracking-widest text-white">
-                            Ordered: {new Date(order.createdAt?.toMillis() || Date.now()).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                            Ordered: {new Date(order.createdAt?.toMillis() || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' })}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">

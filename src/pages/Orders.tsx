@@ -340,7 +340,7 @@ export default function Orders({ userProfile }: { userProfile: UserProfile | nul
                       />
                     </div>
                     <p className="text-[10px] text-white/40 font-black uppercase tracking-widest font-mono">
-                      {order.createdAt?.toDate().toLocaleDateString(i18n.language, { month: 'long', day: 'numeric' })} {t('at', 'at')} {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {order.createdAt?.toDate().toLocaleDateString(i18n.language, { month: 'long', day: 'numeric' })} {t('at', 'at')} {order.createdAt?.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' })}
                     </p>
                   </div>
 

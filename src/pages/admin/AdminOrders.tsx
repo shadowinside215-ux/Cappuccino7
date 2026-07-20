@@ -232,7 +232,7 @@ export default function AdminOrders() {
                   <p className="text-4xl font-black text-brown-950 mb-1 leading-none">{order.total.toFixed(0)} DH</p>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex items-center gap-2">
                     <Clock size={12} />
-                    {order.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {order.createdAt?.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' })}
                   </p>
                   <button 
                     onClick={() => navigate(`/order-confirmation/${order.id}`)}
@@ -290,7 +290,7 @@ export default function AdminOrders() {
                     <span className="text-[9px] font-bold text-stone-300">#{order.id.slice(-4).toUpperCase()}</span>
                   </div>
                   <p className="text-[10px] font-bold text-stone-400 mb-4">
-                    {order.deliveredAt?.toDate ? `Delivered at ${order.deliveredAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Delivered'}
+                    {order.deliveredAt?.toDate ? `Delivered at ${order.deliveredAt.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' })}` : 'Delivered'}
                   </p>
                   <div className="space-y-2 mb-4">
                     {order.items.map((item, idx) => (
