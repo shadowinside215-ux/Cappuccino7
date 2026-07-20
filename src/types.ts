@@ -118,6 +118,8 @@ export interface Order {
   barmanStartedAt?: any; // Firestore Timestamp
   kitchenReadyAt?: any; // Firestore Timestamp
   barmanReadyAt?: any; // Firestore Timestamp
+  kitchenCompletedAt?: any; // Firestore Timestamp
+  barmanCompletedAt?: any; // Firestore Timestamp
   completedAt?: any; // Firestore Timestamp
 }
 

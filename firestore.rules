@@ -161,13 +161,13 @@ service cloud.firestore {
           (existing().get('waiterId', null) == null && incoming().diff(existing()).affectedKeys().hasAny(['waiterId', 'waiterName', 'waiterStatus', 'status', 'updatedAt', 'verificationToken'])) ||
           
           // Action: Assigned staff updating status and timing metrics
-          (existing().get('waiterId', null) == request.auth.uid && incoming().diff(existing()).affectedKeys().hasAny(['status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'updatedAt', 'waiterStatus', 'deliveredAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt'])) ||
+          (existing().get('waiterId', null) == request.auth.uid && incoming().diff(existing()).affectedKeys().hasAny(['status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'updatedAt', 'waiterStatus', 'deliveredAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt', 'completedAt', 'kitchenStartedAt', 'kitchenReadyAt', 'kitchenCompletedAt', 'barmanStartedAt', 'barmanReadyAt', 'barmanCompletedAt'])) ||
           
           // Action: Admin or Cashier updating payment or overall status
           ((isAdmin() || isCashier()) && incoming().diff(existing()).affectedKeys().hasAny(['isPaid', 'paymentMethod', 'status', 'updatedAt', 'deliveredAt', 'paidAt', 'waiterId', 'waiterName'])) ||
           
           // Action: Kitchen/Barman updating their specific status
-          ((isKitchen() || isBarman() || isAdmin()) && incoming().diff(existing()).affectedKeys().hasAny(['kitchenStatus', 'barmanStatus', 'status', 'updatedAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt'])) ||
+          ((isKitchen() || isBarman() || isAdmin()) && incoming().diff(existing()).affectedKeys().hasAny(['kitchenStatus', 'barmanStatus', 'status', 'updatedAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt', 'completedAt', 'kitchenStartedAt', 'kitchenReadyAt', 'kitchenCompletedAt', 'barmanStartedAt', 'barmanReadyAt', 'barmanCompletedAt'])) ||
           
           // Action: Driver updating delivery status
           (isDriver() && existing().get('deliveryType', '') == 'delivery' && incoming().diff(existing()).affectedKeys().hasAny(['status', 'updatedAt', 'deliveredAt']))

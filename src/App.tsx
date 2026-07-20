@@ -296,12 +296,26 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [systemUnlocked, setSystemUnlocked] = useState(() => localStorage.getItem('system_unlocked') === 'true');
+  const [systemUnlocked, setSystemUnlocked] = useState(() => {
+    try {
+      return localStorage.getItem('system_unlocked') === 'true';
+    } catch (err) {
+      return false;
+    }
+  });
   const { settings: brand } = useBrandSettings();
 
   useEffect(() => {
-    const handleSystemUnlocked = () => {
-      setSystemUnlocked(localStorage.getItem('system_unlocked') === 'true');
+    const handleSystemUnlocked = (e: Event) => {
+      if (e instanceof CustomEvent && e.detail !== undefined) {
+        setSystemUnlocked(e.detail);
+      } else {
+        try {
+          setSystemUnlocked(localStorage.getItem('system_unlocked') === 'true');
+        } catch (err) {
+          setSystemUnlocked(true); // fallback assumption if event fired without detail
+        }
+      }
     };
     window.addEventListener('system_unlocked_changed', handleSystemUnlocked);
     return () => window.removeEventListener('system_unlocked_changed', handleSystemUnlocked);
@@ -339,10 +353,10 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const isWaiterInStorage = localStorage.getItem('waiter_session_active') === 'true';
-  const isKitchenInStorage = localStorage.getItem('kitchen_session_active') === 'true';
-  const isBarmanInStorage = localStorage.getItem('barman_session_active') === 'true';
-  const isCashierInStorage = localStorage.getItem('cashier_session_active') === 'true';
+  const isWaiterInStorage = (() => { try { return localStorage.getItem('waiter_session_active') === 'true'; } catch { return false; } })();
+  const isKitchenInStorage = (() => { try { return localStorage.getItem('kitchen_session_active') === 'true'; } catch { return false; } })();
+  const isBarmanInStorage = (() => { try { return localStorage.getItem('barman_session_active') === 'true'; } catch { return false; } })();
+  const isCashierInStorage = (() => { try { return localStorage.getItem('cashier_session_active') === 'true'; } catch { return false; } })();
   
   // Logic: Staff view is active IF we are on a staff route OR if the user is explicitly a staff member
   const isStaffRoute = location.pathname.startsWith('/waiter') || 
@@ -378,13 +392,17 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
     
     // Safety: If a normal user logs in, clear any lingering staff storage
     if (userProfile && !userProfile.isWaiter && !userProfile.isKitchen && !userProfile.isBarman && !userProfile.isCashier && !userProfile.isAdmin) {
-       localStorage.removeItem('waiter_session_active');
-       localStorage.removeItem('kitchen_session_active');
-       localStorage.removeItem('barman_session_active');
-       localStorage.removeItem('cashier_session_active');
-       localStorage.removeItem('driver_auth');
-       localStorage.removeItem('staffSession');
-       sessionStorage.removeItem('admin_mode');
+       try {
+         localStorage.removeItem('waiter_session_active');
+         localStorage.removeItem('kitchen_session_active');
+         localStorage.removeItem('barman_session_active');
+         localStorage.removeItem('cashier_session_active');
+         localStorage.removeItem('driver_auth');
+         localStorage.removeItem('staffSession');
+         sessionStorage.removeItem('admin_mode');
+       } catch {
+         // ignore
+       }
     }
 
     const q = query(
@@ -667,7 +685,7 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
             </AnimatePresence>
           </main>
 
-          {location.pathname === '/login' && !user && !isStaffView && systemUnlocked && brand.publicSystemLogins !== false && (
+          {location.pathname === '/login' && !user && !isStaffView && systemUnlocked && (
             <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
               <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-bento-card-border bg-bento-card-bg/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
                 {[
@@ -700,7 +718,11 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+    try {
+      return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+    } catch {
+      return 'light';
+    }
   });
 
   useEffect(() => {
@@ -709,7 +731,11 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('theme', theme);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // ignore
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -720,13 +746,17 @@ export default function App() {
       
       // Clear staff markers on logout to prevent layout/UI persistence bugs
       if (!u) {
-        localStorage.removeItem('waiter_session_active');
-        localStorage.removeItem('kitchen_session_active');
-        localStorage.removeItem('barman_session_active');
-        localStorage.removeItem('cashier_session_active');
-        localStorage.removeItem('driver_auth');
-        localStorage.removeItem('staffSession');
-        sessionStorage.removeItem('admin_mode');
+        try {
+          localStorage.removeItem('waiter_session_active');
+          localStorage.removeItem('kitchen_session_active');
+          localStorage.removeItem('barman_session_active');
+          localStorage.removeItem('cashier_session_active');
+          localStorage.removeItem('driver_auth');
+          localStorage.removeItem('staffSession');
+          sessionStorage.removeItem('admin_mode');
+        } catch {
+          // ignore
+        }
       }
 
       if (unsubscribeProfile) {

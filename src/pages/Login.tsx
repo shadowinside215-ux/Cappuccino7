@@ -52,8 +52,12 @@ export default function Login() {
   const handleSystemUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     if (systemPassword === "systemlogin") {
-      localStorage.setItem('system_unlocked', 'true');
-      window.dispatchEvent(new Event('system_unlocked_changed'));
+      try {
+        localStorage.setItem('system_unlocked', 'true');
+      } catch (err) {
+        console.warn('localStorage blocked, using in-memory state for system unlock');
+      }
+      window.dispatchEvent(new CustomEvent('system_unlocked_changed', { detail: true }));
       toast.success("Systems Unlocked");
       setShowPasswordPrompt(false);
     } else {
