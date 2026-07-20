@@ -69,67 +69,7 @@ export default function Login() {
     }
   };
 
-  useEffect(() => {
-    const checkRedirectResult = async () => {
-      if (Capacitor.isNativePlatform()) return;
-      try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-          setLoading(true);
-          const user = result.user;
-          const userRef = doc(db, 'users', user.uid);
-          
-          let docSnap;
-          let retries = 3;
-          while (retries > 0) {
-            try {
-              docSnap = await getDoc(userRef);
-              break;
-            } catch (err: any) {
-              retries--;
-              if (retries === 0) throw err;
-              await new Promise(r => setTimeout(r, 1000));
-            }
-          }
-
-          if (docSnap && !docSnap.exists()) {
-            const userPath = `users/${user.uid}`;
-            try {
-              await setDoc(userRef, {
-                uid: user.uid,
-                name: user.displayName || 'Guest User',
-                email: user.email,
-                points: 0,
-                coffeeCount: 0,
-                itemLoyalty: {},
-                isAdmin: false,
-                isAnonymous: false,
-                createdAt: serverTimestamp()
-              });
-            } catch (err) {
-              handleFirestoreError(err, OperationType.CREATE, userPath);
-            }
-          }
-          toast.success(t('welcome_back_msg', 'Welcome back!'));
-          navigate('/');
-        }
-      } catch (error: any) {
-        setLoading(false);
-        const message = handleAuthError(error);
-        
-        if (error.code === 'auth/unauthorized-domain') {
-          const domain = window.location.hostname;
-          toast.error(`Domain not authorized: ${domain}`);
-        } else if (error.code === 'auth/popup-closed-by-user') {
-          // ignore
-        } else {
-          toast.error(message);
-        }
-      }
-    };
-    
-    checkRedirectResult();
-  }, [navigate]);
+  
 
   const handleGoogleLogin = async () => {
     setLoading(true);

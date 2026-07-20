@@ -79,15 +79,7 @@ export const addOrderToStats = async (orderId: string, orderTotal: number, optio
       lastUpdated: serverTimestamp()
     }, { merge: true });
 
-    // 4.5 Update Yearly Stats
-    const yearlyRef = doc(db, 'yearlyRevenue', yearId);
-    batch.set(yearlyRef, {
-      amount: increment(revenueInc),
-      orderCount: increment(1),
-      rewardsClaimed: increment(rewardInc),
-      rewardValue: increment(rewardValueInc),
-      lastUpdated: serverTimestamp()
-    }, { merge: true });
+    
 
     // 5. Update Legacy 'stats' collection (if still used by some components)
     const legacyRef = doc(db, 'stats', dayId);

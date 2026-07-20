@@ -180,12 +180,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /yearlyRevenue/{id} {
-      allow read: if isStaff();
-      allow write: if isStaff();
-      allow delete: if isAdmin();
-    }
-
     match /stats/{date} {
       allow read: if isStaff();
       allow write: if isStaff();

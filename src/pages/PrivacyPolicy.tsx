@@ -78,17 +78,10 @@ export default function PrivacyPolicy() {
             </p>
           </section>
           
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-bento-ink">6. Account Deletion</h2>
-            <p>
-              You have the right to delete your account and associated personal data. 
-              You can request account deletion by contacting us using the information provided below, 
-              or through the account settings within the app if available.
-            </p>
-          </section>
+          
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-bento-ink">7. Changes to This Privacy Policy</h2>
+            <h2 className="text-2xl font-bold text-bento-ink">6. Changes to This Privacy Policy</h2>
             <p>
               Cappuccino7 has the discretion to update this privacy policy at any time. When we do, we will 
               revise the updated date at the top of this page. We encourage users to frequently check this page 

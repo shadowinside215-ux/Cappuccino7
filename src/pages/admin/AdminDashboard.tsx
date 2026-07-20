@@ -36,8 +36,7 @@ export default function AdminDashboard() {
   });
   const [weeklyRevenue, setWeeklyRevenue] = useState<Record<string, { amount: number, orderCount: number }>>({});
   const [monthlyStats, setMonthlyStats] = useState({ revenue: 0, orders: 0 });
-  const [yearlyStats, setYearlyStats] = useState({ revenue: 0, orders: 0 });
-
+  
   const [isEmpty, setIsEmpty] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isRegisteringAdmin, setIsRegisteringAdmin] = useState(false);
@@ -365,18 +364,6 @@ export default function AdminDashboard() {
       setMonthlyStats({ revenue: rev, orders: ord });
     });
 
-    const unsubYear = onSnapshot(collection(db, 'yearlyRevenue'), (snapshot) => {
-      let rev = 0; let ord = 0;
-      const currentYear = new Date().getFullYear().toString(); // yyyy
-      snapshot.docs.forEach(d => {
-        if (d.id === currentYear) {
-          rev += d.data().amount || 0;
-          ord += d.data().orderCount || 0;
-        }
-      });
-      setYearlyStats({ revenue: rev, orders: ord });
-    });
-
     const unsubRev = onSnapshot(qRev, (snapshot) => {
       const revData: Record<string, { amount: number, orderCount: number }> = {};
       let todayRev = 0;
@@ -473,7 +460,7 @@ export default function AdminDashboard() {
         let totalTimes: number[] = [];
         let completedToday = 0;
         
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
 
         snap.docs.forEach(doc => {
           const order = doc.data();
@@ -506,7 +493,7 @@ export default function AdminDashboard() {
             const tDelivered = getMs(order.deliveredAt) || getMs(order.completedAt);
             
             if (tCreate) {
-              const orderDateStr = new Date(tCreate).toISOString().split('T')[0];
+              const orderDateStr = format(new Date(tCreate), 'yyyy-MM-dd');
               if (orderDateStr === todayStr) {
                 completedToday++;
               }
@@ -799,10 +786,7 @@ export default function AdminDashboard() {
             <p className="text-2xl md:text-3xl font-black text-bento-ink mb-1">{monthlyStats.revenue.toFixed(0)} MAD</p>
             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Monthly Rev (Orders: {monthlyStats.orders})</p>
           </div>
-          <div className="card !p-6 flex flex-col justify-center bg-bento-card-bg border-bento-card-border relative overflow-hidden group hover:-translate-y-1 transition-transform">
-            <p className="text-2xl md:text-3xl font-black text-bento-ink mb-1">{yearlyStats.revenue.toFixed(0)} MAD</p>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Yearly Rev (Orders: {yearlyStats.orders})</p>
-          </div>
+          
 
 
         {!isClientAdmin && (
@@ -876,7 +860,7 @@ export default function AdminDashboard() {
           {Array.from({ length: 7 }).map((_, i) => {
             const date = new Date();
             date.setDate(date.getDate() - (6 - i));
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = format(date, 'yyyy-MM-dd');
             const revItem = weeklyRevenue[dateStr] || { amount: 0, orderCount: 0 };
             const amount = revItem.amount;
             const amounts = Object.values(weeklyRevenue).map((v: any) => v.amount);
@@ -894,7 +878,7 @@ export default function AdminDashboard() {
                     initial={{ height: 0 }}
                     animate={{ height: `${heightPercent}%` }}
                     className={`w-full max-w-[40px] rounded-t-lg md:rounded-t-xl transition-all ${
-                      dateStr === new Date().toISOString().split('T')[0] 
+                      dateStr === format(new Date(), 'yyyy-MM-dd') 
                         ? 'bg-bento-accent shadow-[0_0_15px_rgba(251,191,36,0.5)]' 
                         : 'bg-bento-card-bg/20 group-hover:bg-bento-card-bg/40'
                     }`}

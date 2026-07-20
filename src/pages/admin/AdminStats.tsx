@@ -10,6 +10,8 @@ import {
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO, subDays } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { signOutApp } from '../../lib/googleAuth';
+import { LogOut } from 'lucide-react';
 
 interface DailyStat {
   id: string; // YYYY-MM-DD
@@ -201,6 +203,19 @@ export default function AdminStats() {
            >
              <LayoutDashboard size={24} className="group-hover:-translate-x-1 transition-transform" />
              <span className="text-xs font-black uppercase tracking-widest">{t('back_to_dashboard', 'Back to Dashboard')}</span>
+           </button>
+           <button 
+             onClick={async () => {
+               try {
+                 await signOutApp(); navigate('/login');
+               } catch(e) {
+      console.error(e);
+    }
+             }}
+             className="p-5 bg-red-500/10 text-red-500 rounded-3xl hover:bg-red-500/20 transition-all active:scale-95 group flex items-center gap-3"
+             title="Logout"
+           >
+             <LogOut size={24} />
            </button>
            <div className="h-10 w-px bg-stone-200" />
            <div>

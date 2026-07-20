@@ -40,7 +40,7 @@ export default function WaiterDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'ready'>('requests'); // Default to requests as per high priority
+  const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'ready'>('orders'); // Default to requests as per high priority
   const [waiterProfile, setWaiterProfile] = useState<UserProfile | null>(null);
   const profileRef = React.useRef<UserProfile | null>(null);
   const prevOrdersRef = React.useRef<Order[]>([]);

@@ -81,11 +81,10 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
     
     try {
       await signOutApp();
+      navigate('/login', { replace: true });
     } catch (e) {
       console.warn(e);
     }
-    
-    navigate('/login', { replace: true });
   };
 
   if (isGuest) {

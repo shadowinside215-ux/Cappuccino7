@@ -4,6 +4,8 @@ import { db } from '../../lib/firebase';
 import { Order } from '../../types';
 import { ChefHat, UserCheck, ArrowLeft, Banknote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import { signOutApp } from '../../lib/googleAuth';
 import { format, isToday } from 'date-fns';
 
 export default function StaffPerformance() {
@@ -21,6 +23,8 @@ export default function StaffPerformance() {
           .filter(o => o.status === 'Completed' || o.status === 'Paid' || o.isPaid || o.status === 'delivered')
       );
       setLoading(false);
+    }, (error) => {
+      console.warn("Staff performance listener error:", error.message);
     });
     return () => unsubscribe();
   }, []);
@@ -153,7 +157,8 @@ export default function StaffPerformance() {
 
   return (
     <div className="space-y-8 pb-20 max-w-5xl mx-auto w-full">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between w-full">
+<div className="flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="p-3 bg-bento-card-bg text-bento-ink rounded-full hover:bg-stone-200 transition-colors border border-bento-card-border">
           <ArrowLeft size={20} />
         </button>
@@ -161,6 +166,20 @@ export default function StaffPerformance() {
           <h1 className="text-3xl font-black text-bento-ink uppercase italic tracking-tighter">Order History</h1>
           <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-1">Staff Performance & Timestamps</p>
         </div>
+      </div>
+      <button 
+        onClick={async () => {
+          try {
+            await signOutApp();
+            navigate('/login');
+          } catch(e) {
+      console.error(e);
+    }
+        }}
+        className="p-3 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500/20 transition-all border border-red-500/20 flex items-center justify-center"
+      >
+        <LogOut size={24} />
+      </button>
       </div>
       
       {/* Statistics Dashboard */}
@@ -225,6 +244,18 @@ export default function StaffPerformance() {
                 </div>
               </div>
 
+              
+                <div className="w-full mt-3 pt-3 border-t border-dashed border-stone-200">
+                  <p className="text-[10px] font-black uppercase text-stone-400 mb-1 tracking-widest">Items Served:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {(order.items || []).map((item, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-stone-100 text-stone-600 rounded-md text-[10px] font-bold">
+                        {item.quantity}x {item.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
               {/* Staff Assignments */}
               <div className="flex flex-wrap gap-6 mb-4 pb-4 border-b border-bento-card-border/50">
                 <div className="flex items-center gap-2">
@@ -245,7 +276,7 @@ export default function StaffPerformance() {
                   <div className="p-1.5 bg-green-500/10 text-green-600 rounded-lg"><Banknote size={14} /></div>
                   <div>
                     <p className="text-[8px] font-black uppercase tracking-widest text-stone-500">Cashier</p>
-                    <p className="text-[10px] font-black text-bento-ink uppercase truncate max-w-[100px]">{order.cashierName || 'N/A'}</p>
+                    <p className="text-[10px] font-black text-bento-ink uppercase truncate max-w-[100px]">{(order as any).cashierName || 'N/A'}</p>
                   </div>
                 </div>
               </div>

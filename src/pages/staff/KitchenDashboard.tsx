@@ -194,7 +194,7 @@ export default function KitchenDashboard() {
     localStorage.removeItem('kitchen_session_active');
     localStorage.removeItem('staffSession');
     
-    navigate('/');
+    navigate('/login');
   };
 
   if (loading) {
@@ -221,7 +221,17 @@ export default function KitchenDashboard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2 bg-stone-100 p-1 rounded-xl">
+             <button onClick={() => i18n.changeLanguage('en')} className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${i18n.language === 'en' ? 'bg-white shadow-sm' : 'text-stone-400'}`}>EN</button>
+             <button onClick={() => i18n.changeLanguage('fr')} className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${i18n.language === 'fr' ? 'bg-white shadow-sm' : 'text-stone-400'}`}>FR</button>
+             <button onClick={() => i18n.changeLanguage('ar')} className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${i18n.language === 'ar' ? 'bg-white shadow-sm' : 'text-stone-400'}`}>AR</button>
+          </div>
+          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-bento-bg p-1 rounded-2xl border border-bento-card-border">
+             <button onClick={() => setActiveTab('active')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-stone-500 hover:bg-stone-100'}`}>Active</button>
+             <button onClick={() => setActiveTab('history')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'history' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-stone-500 hover:bg-stone-100'}`}>History</button>
+          </div>
           <div className="bg-bento-bg px-6 py-3 rounded-2xl border border-bento-card-border flex items-center gap-3">
              <ShoppingBag size={18} className="text-blue-400" />
              <span className="text-xl font-black">{orders.length}</span>
@@ -234,8 +244,8 @@ export default function KitchenDashboard() {
             <LogOut size={20} />
           </button>
         </div>
+        </div>
       </div>
-
       {/* Orders Grid */}
       {orders.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-40 text-stone-300">
