@@ -34,6 +34,8 @@ const CallWaiterButton = ({ order }: { order: Order }) => {
       } else {
         setRequest(null);
       }
+    }, (error) => {
+      console.warn("Orders waiterRequests snapshot error:", error);
     });
   }, [order.id]);
 

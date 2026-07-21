@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { OrderItem, OrderStatus, UserProfile } from '../types';
-import { Plus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle, Coffee, Package } from 'lucide-react';
+import { Plus, Minus, Trash2, MapPin, Truck, ShoppingBag, Navigation2, AlertCircle, Coffee, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -463,16 +463,24 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         <p className="font-black text-2xl text-bento-ink">{(item.price * item.quantity)} DH</p>
                         <div className="flex items-center gap-4 bg-bento-ink/10 rounded-full px-4 py-2 ring-1 ring-bento-card-border backdrop-blur-md">
                           <button 
-                            onClick={() => updateQuantity(item.productId, -item.quantity)}
-                            className="text-red-500/80 hover:text-red-500 transition-colors text-[10px] uppercase font-black tracking-widest whitespace-nowrap"
+                            onClick={() => updateQuantity(item.productId, -1)}
+                            className="text-bento-ink/40 hover:text-bento-ink transition-colors"
                           >
-                            Cancel order
+                            <Minus size={16} />
                           </button>
+                          <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
                           <button 
                             onClick={() => updateQuantity(item.productId, 1)}
                             className="text-bento-ink/40 hover:text-bento-ink transition-colors"
                           >
                             <Plus size={16} />
+                          </button>
+                          <div className="w-[1px] h-4 bg-bento-card-border mx-2"></div>
+                          <button 
+                            onClick={() => updateQuantity(item.productId, -item.quantity)}
+                            className="text-red-500/80 hover:text-red-500 transition-colors text-[10px] uppercase font-black tracking-widest whitespace-nowrap"
+                          >
+                            {t('remove', 'Remove')}
                           </button>
                         </div>
                       </div>

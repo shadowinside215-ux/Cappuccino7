@@ -34,8 +34,6 @@ import CashierLogin from './pages/cashier/CashierLogin';
 import CashierDashboard from './pages/cashier/CashierDashboard';
 import BrandSettings from './pages/admin/BrandSettings';
 import StaffManagement from './pages/admin/StaffManagement';
-import DriverLogin from './pages/driver/DriverLogin';
-import DriverDashboard from './pages/driver/DriverDashboard';
 import VerifyTicket from './pages/VerifyTicket';
 import Settings from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -222,11 +220,6 @@ const CashierGuard = ({ userProfile, children }: { userProfile: UserProfile | nu
   return <Navigate to="/cashier/login" />;
 };
 
-const DriverGuard = ({ children }: { children: React.ReactNode }) => {
-  const isDriverAuth = localStorage.getItem('driver_auth') === 'true' && auth.currentUser != null;
-  if (isDriverAuth) return <>{children}</>;
-  return <Navigate to="/driver/login" />;
-};
 
 function Navbar({ userProfile }: { userProfile: UserProfile | null }) {
   const location = useLocation();
@@ -678,14 +671,12 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   <Route path="/barman/dashboard" element={<BarmanGuard userProfile={userProfile}><BarmanDashboard /></BarmanGuard>} />
                   <Route path="/cashier/login" element={<CashierLogin />} />
                   <Route path="/cashier/dashboard" element={<CashierGuard userProfile={userProfile}><CashierDashboard /></CashierGuard>} />
-                  <Route path="/driver/login" element={<DriverLogin />} />
-                  <Route path="/driver/dashboard" element={<DriverGuard><DriverDashboard /></DriverGuard>} />
                 </Routes>
               </motion.div>
             </AnimatePresence>
           </main>
 
-          {location.pathname === '/login' && !user && !isStaffView && systemUnlocked && (
+          {location.pathname === '/login' && !isStaffView && systemUnlocked && (
             <footer className="relative z-[70] max-w-2xl mx-auto px-6 pb-40 sm:pb-24 text-center mt-20">
               <div className="flex justify-center gap-x-6 gap-y-4 flex-wrap py-10 border border-bento-card-border bg-bento-card-bg/20 backdrop-blur-md rounded-[2.5rem] px-8 shadow-2xl">
                 {[
@@ -693,7 +684,6 @@ function AppContent({ user, userProfile, loading, theme, setTheme }: {
                   { to: "/cashier/login", label: t('cashier_access', 'POS Cashier') },
                   { to: "/kitchen/login", label: t('kitchen_access', 'Kitchen') },
                   { to: "/barman/login", label: t('barman_access', 'Barman') },
-                  { to: "/driver/login", label: t('driver_access', 'Driver') },
                 ].map((link) => (
                   <Link 
                     key={link.to}

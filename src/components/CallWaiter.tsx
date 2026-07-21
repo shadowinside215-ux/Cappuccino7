@@ -34,6 +34,8 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
       } else {
         setActiveDineInOrder(null);
       }
+    }, (error) => {
+      console.warn("CallWaiter orders snapshot error:", error);
     });
   }, []);
 
@@ -58,6 +60,8 @@ export default function CallWaiter({ userProfile }: { userProfile: UserProfile |
       } else {
         setActiveRequest(null);
       }
+    }, (error) => {
+      console.warn("CallWaiter request snapshot error:", error);
     });
   }, [activeDineInOrder]);
 

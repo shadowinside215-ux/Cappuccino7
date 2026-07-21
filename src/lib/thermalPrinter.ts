@@ -72,6 +72,7 @@ export function generateThermalReceipt(data: ReceiptData): string {
   receipt += justify("TOTAL:", `${data.total.toFixed(0)} MAD`) + "\n";
   receipt += justify("PAYMENT:", data.paymentMethod.toUpperCase()) + "\n";
   receipt += doubleLine + "\n";
+
   receipt += center("THANK YOU FOR YOUR VISIT") + "\n";
   receipt += center("CAPPUCCINO7 - EST. 2024") + "\n";
   receipt += "\n\n\n"; // Space for tearing
@@ -80,60 +81,64 @@ export function generateThermalReceipt(data: ReceiptData): string {
 }
 
 export function printToThermalPrinter(receipt: string) {
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.width = '0px';
-  iframe.style.height = '0px';
-  iframe.style.border = 'none';
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow?.document;
-  if (doc) {
-    doc.open();
-    doc.write(`
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8">
           <title>Thermal Receipt</title>
           <style>
-            @page {
-              margin: 0;
-              size: 80mm auto; /* Thermal printer width */
+            @media print {
+              @page {
+                margin: 0;
+                size: 80mm auto;
+              }
+              html, body {
+                width: 80mm;
+                margin: 0;
+                padding: 0;
+              }
             }
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              width: 100%;
+            html, body {
               margin: 0;
-              padding: 5mm;
-              background: white;
-              color: black;
-              white-space: pre-wrap;
-              font-size: 12px;
+              padding: 0;
+              background: #fff;
+              color: #000;
+              font-family: 'Courier New', Courier, monospace;
+              text-align: left;
+            }
+            .receipt-container {
+              width: 72mm; /* standard printable area for 80mm paper */
+              margin: 0 auto;
+              padding: 4mm 0;
+              font-size: 14px; /* adjusted to fit ~32 columns in 72mm */
               line-height: 1.2;
-              box-sizing: border-box;
+              white-space: pre-wrap;
+              word-wrap: break-word;
             }
           </style>
         </head>
         <body>
-          ${receipt}
+          <div class="receipt-container">${receipt}</div>
         </body>
       </html>
     `);
-    doc.close();
-
-    // Wait for the iframe to load before printing
-    iframe.onload = () => {
+    printWindow.document.close();
+    
+    // Wait for the window to load before printing
+    setTimeout(() => {
       try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
+        printWindow.focus();
+        printWindow.print();
       } catch (e) {
         console.error("Print failed", e);
       }
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-    };
+    }, 250);
   } else {
     console.log(receipt);
-    alert("Receipt generated! Check console.");
+    alert("Receipt generated! Check console. Please allow popups for printing.");
   }
 }

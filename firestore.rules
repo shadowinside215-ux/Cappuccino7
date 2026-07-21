@@ -156,7 +156,7 @@ service cloud.firestore {
       allow update: if (isOwner(existing().userId) && (existing().status == 'pending' || existing().status == 'Waiting') && 
         (!('createdAt' in existing()) || existing().createdAt == null || (request.time.toMillis() - existing().createdAt.toMillis() < 300000)) &&
         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'items', 'total', 'isModified', 'kitchenStatus', 'barmanStatus', 'deliveryType', 'tableZone', 'tableArea', 'tableNumber', 'fullTableLabel', 'prepTime', 'expectedReadyAt', 'address', 'deliveryNotes', 'customerName', 'customerPhone', 'verificationToken'])) ||
-        (isStaff() && incoming().diff(existing()).affectedKeys().hasAny(['waiterId', 'waiterName', 'waiterStatus', 'status', 'kitchenStatus', 'barmanStatus', 'isPaid', 'paymentMethod', 'updatedAt', 'verificationToken', 'deliveredAt', 'paidAt', 'deliveredInMinutes', 'readyInMinutes', 'readyAt', 'preparingAt', 'completedAt', 'kitchenStartedAt', 'kitchenReadyAt', 'kitchenCompletedAt', 'barmanStartedAt', 'barmanReadyAt', 'barmanCompletedAt']));
+        (isStaff());
       
       allow delete: if isAdmin();
     }

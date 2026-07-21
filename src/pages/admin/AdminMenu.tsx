@@ -95,7 +95,8 @@ export default function AdminMenu() {
     const checkAuth = () => {
       const user = auth.currentUser;
       const adminEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'dragonballsam86@gmail.com';
-      const isAdminEmail = user?.email?.toLowerCase() === adminEmail.toLowerCase();
+      const email = user?.email?.toLowerCase();
+      const isAdminEmail = email === adminEmail.toLowerCase() || email === 'mohamed.erguigue@gmail.com' || email === 'samiarafati3@gmail.com';
       
       if (!user) {
         toast.error('You are not signed into Firebase. Please log in on the main site first.', { id: 'auth-warning' });

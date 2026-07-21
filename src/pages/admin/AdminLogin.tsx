@@ -104,7 +104,7 @@ export default function AdminLogin() {
 
       if (auth.currentUser && !auth.currentUser.isAnonymous) {
         const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
-        hasPermission = adminDoc.exists() || email === adminEmail.toLowerCase();
+        hasPermission = adminDoc.exists() || email === adminEmail.toLowerCase() || email === 'mohamed.erguigue@gmail.com' || email === 'samiarafati3@gmail.com';
       }
 
       if (hasPermission && uid) {

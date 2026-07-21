@@ -80,7 +80,7 @@ export default function Profile({ userProfile }: { userProfile: UserProfile | nu
     sessionStorage.removeItem('admin_mode');
     
     try {
-      await signOutApp();
+      await signOutApp(true);
       navigate('/login', { replace: true });
     } catch (e) {
       console.warn(e);

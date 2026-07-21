@@ -7,7 +7,7 @@ import { Order, UserProfile } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Users, Search, Coffee, TrendingUp, Settings as SettingsIcon, Package, Database, Gift, Mail, ChevronRight, Award, ShieldCheck, LogOut, Palette, Star, X, History, Info, Clock, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Image as ImageIcon, QrCode, Download } from 'lucide-react';
 import { Timer } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { CATEGORIES, PRODUCTS_DATA } from '../../data/menuData';
@@ -347,42 +347,39 @@ export default function AdminDashboard() {
     });
 
     // Weekly Revenue Listener (Limit to last 14 days to keep it light)
-    const qRev = query(
-      collection(db, 'dailyRevenue'), 
-      orderBy('lastUpdated', 'desc')
-    );
-    
-    const unsubMonth = onSnapshot(collection(db, 'monthlyRevenue'), (snapshot) => {
-      let rev = 0; let ord = 0;
-      const currentMonth = format(new Date(), 'yyyy-MM'); // yyyy-MM
-      snapshot.docs.forEach(d => {
-        if (d.id === currentMonth) {
-          rev += d.data().amount || 0;
-          ord += d.data().orderCount || 0;
-        }
-      });
-      setMonthlyStats({ revenue: rev, orders: ord });
-    });
-
-    const unsubRev = onSnapshot(qRev, (snapshot) => {
+    const unsubRev = onSnapshot(collection(db, 'stats'), (snapshot) => {
       const revData: Record<string, { amount: number, orderCount: number }> = {};
       let todayRev = 0;
       let todayOrders = 0;
+      let monthRev = 0;
+      let monthOrders = 0;
+      
       const today = format(new Date(), 'yyyy-MM-dd');
+      const currentMonth = format(new Date(), 'yyyy-MM');
       
       snapshot.docs.forEach(d => {
         const data = d.data();
+        const amt = (data.amount || 0) + (data.revenue || 0);
+        const ord = (data.orderCount || 0) + (data.orders || 0);
+        
         revData[d.id] = { 
-          amount: data.amount || 0, 
-          orderCount: data.orderCount || 0 
+          amount: amt,
+          orderCount: ord
         };
+        
         if (d.id === today) {
-          todayRev = data.amount || 0;
-          todayOrders = data.orderCount || 0;
+          todayRev = amt;
+          todayOrders = ord;
+        }
+        
+        if (d.id.startsWith(currentMonth)) {
+          monthRev += amt;
+          monthOrders += ord;
         }
       });
       
       setWeeklyRevenue(revData);
+      setMonthlyStats({ revenue: monthRev, orders: monthOrders });
       setStats(prev => ({ ...prev, todayRevenue: todayRev, totalOrders: todayOrders }));
       setLoading(false);
       setRevError(null);
@@ -391,6 +388,8 @@ export default function AdminDashboard() {
       setRevError(error.message);
       setLoading(false);
     });
+
+
 
     // Total Users Listener
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
@@ -573,7 +572,7 @@ export default function AdminDashboard() {
       setIsCreator(email === creatorEmail);
       
       const adminDoc = await getDoc(doc(db, 'admins', auth.currentUser.uid));
-      const hasRole = adminDoc.exists() || email === creatorEmail || sessionStorage.getItem('admin_mode') === 'true';
+      const hasRole = adminDoc.exists() || email === creatorEmail || email === 'mohamed.erguigue@gmail.com' || email === 'samiarafati3@gmail.com' || sessionStorage.getItem('admin_mode') === 'true';
       setIsAdmin(hasRole);
       if (!hasRole) setLoading(false);
     };
@@ -721,8 +720,12 @@ export default function AdminDashboard() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => {
-                navigate('/');
+              onClick={async () => {
+                try {
+                  sessionStorage.removeItem('admin_mode');
+                  localStorage.removeItem('staffSession');
+                  navigate('/');
+                } catch(e) {}
               }}
               className="p-3 bg-bento-card-bg rounded-2xl text-stone-700 hover:text-bento-primary transition-colors border border-stone-200 shadow-sm"
               title="Exit Admin Console"

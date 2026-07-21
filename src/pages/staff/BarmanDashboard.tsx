@@ -52,7 +52,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
 
 export default function BarmanDashboard() {
-  const [orders, setOrders] = useState<Order[]>([]);
+    const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
@@ -190,11 +190,11 @@ export default function BarmanDashboard() {
     }
   };
 
-  const logout = () => {
+  const confirmLogout = async () => {
     localStorage.removeItem('barman_session_active');
     localStorage.removeItem('staffSession');
     
-    navigate('/login');
+    signOutApp(true).catch(console.error); navigate('/login');
   };
 
   if (loading) {
@@ -217,7 +217,7 @@ export default function BarmanDashboard() {
           </div>
           <div>
             <h1 className="text-4xl font-black italic tracking-tighter uppercase">{t('barman_dashboard')}</h1>
-            <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.4em]">{t('station_terminal')} • Palace Taha</p>
+            <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.4em]">{t('station_terminal')}</p>
           </div>
         </div>
 
@@ -248,11 +248,17 @@ export default function BarmanDashboard() {
              <span className="text-[10px] font-black uppercase text-amber-900 tracking-widest">{t('active_orders')}</span>
           </div>
           <button 
-            onClick={logout}
-            className="p-4 bg-bento-bg text-amber-900 rounded-2xl hover:bg-stone-500/10 hover:text-amber-600 transition-all"
-          >
-            <LogOut size={20} />
-          </button>
+             onClick={() => {
+               signOutApp().then(() => {
+                 localStorage.removeItem('barman_session_active');
+                 localStorage.removeItem('staffSession');
+                 navigate('/login');
+               }).catch(() => {});
+             }}
+             className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100 cursor-pointer relative z-50 hover:bg-red-100 transition-colors"
+           >
+             {t('exit', 'Exit')}
+           </button>
         </div>
       </div>
       </div>
@@ -391,6 +397,7 @@ export default function BarmanDashboard() {
           </AnimatePresence>
         </div>
       )}
+      
     </div>
   );
 }

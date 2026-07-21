@@ -1,33 +1,46 @@
-import fs from 'fs';
-let content = fs.readFileSync('src/pages/cashier/CashierDashboard.tsx', 'utf8');
+const fs = require('fs');
+let code = fs.readFileSync('src/pages/cashier/CashierDashboard.tsx', 'utf-8');
 
-// Add a search input state for journal
-content = content.replace(
-  /const \[searchQuery, setSearchQuery\] = useState\(''\);/,
-  "const [searchQuery, setSearchQuery] = useState('');\n  const [journalSearch, setJournalSearch] = useState('');"
+// 1. Add journalDate state
+code = code.replace(
+  "const [journalSearch, setJournalSearch] = useState('');",
+  "const [journalSearch, setJournalSearch] = useState('');\n  const [journalDate, setJournalDate] = useState<Date>(new Date());"
 );
 
-// Add the input to the modal
-content = content.replace(
-  /<h2 className="text-5xl font-black uppercase italic tracking-tighter text-bento-ink">\{t\('pos_sales_journal'\)\}<\/h2>/,
-  `<h2 className="text-5xl font-black uppercase italic tracking-tighter text-bento-ink">{t('pos_sales_journal')}</h2>
-                   <div className="flex items-center bg-white/50 px-4 py-2 rounded-xl border border-stone-200 ml-4">
-                     <Search size={16} className="text-stone-400 mr-2" />
-                     <input type="text" value={journalSearch} onChange={e => setJournalSearch(e.target.value)} placeholder="Search..." className="bg-transparent border-none outline-none text-sm font-bold w-48 text-stone-700" />
-                   </div>`
-);
+// 2. Change useEffect for JournalOrders
+const oldJournalEffect = `    // Load Completed Orders for Journal (only for today by default)
+    const todayStart = startOfDay(new Date());
+    const qJournal = query(
+      collection(db, 'orders'),
+      where('isPaid', '==', true),
+      where('createdAt', '>=', todayStart),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubJournal = onSnapshot(qJournal, (snap) => {
+      setJournalOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+    }, (error) => {
+      console.warn('Journal listener limited:', error.message);
+    });`;
 
-// Filter the journalOrders
-content = content.replace(
-  /\{journalOrders\.map\(order => \(/,
-  `{journalOrders.filter(o => 
-      !journalSearch || 
-      o.id.toLowerCase().includes(journalSearch.toLowerCase()) || 
-      o.customerName?.toLowerCase().includes(journalSearch.toLowerCase()) ||
-      o.vendeur?.toLowerCase().includes(journalSearch.toLowerCase()) ||
-      o.paymentMethod?.toLowerCase().includes(journalSearch.toLowerCase()) ||
-      o.items?.some(i => i.name.toLowerCase().includes(journalSearch.toLowerCase()))
-    ).map(order => (`
-);
+const newJournalEffect = `    // Load Completed Orders for Journal (based on selected date)
+    const targetStart = startOfDay(journalDate);
+    const targetEnd = endOfDay(journalDate);
+    const qJournal = query(
+      collection(db, 'orders'),
+      where('isPaid', '==', true),
+      where('createdAt', '>=', targetStart),
+      where('createdAt', '<=', targetEnd),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubJournal = onSnapshot(qJournal, (snap) => {
+      setJournalOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+    }, (error) => {
+      console.warn('Journal listener limited:', error.message);
+    });
+    
+    return () => {
+      unsubJournal();
+    };
+  }, [journalDate]);`;
 
-fs.writeFileSync('src/pages/cashier/CashierDashboard.tsx', content);
+// Since the old journal effect was inside the large useEffect without dependencies for journalDate, we need to extract it!

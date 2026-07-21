@@ -37,7 +37,7 @@ const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/235
 export default function WaiterDashboard() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [orders, setOrders] = useState<Order[]>([]);
+    const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'ready'>('orders'); // Default to requests as per high priority
@@ -86,9 +86,7 @@ export default function WaiterDashboard() {
       // Fetch waiter profile
       unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
         if (docSnap.exists()) {
-          setWaiterProfile(docSnap.data() as UserProfile);
-        }
-      });
+          setWaiterProfile(docSnap.data() as UserProfile); } }, (err) => console.warn(err));
 
       // Orders subscription
       const qOrders = query(
@@ -477,7 +475,7 @@ export default function WaiterDashboard() {
               {t('waiter_console') as string}
             </h1>
             <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em]">
-              Palace Taha • {waiterProfile?.assignedZone === 'Both' ? t('inside_and_outside', 'Inside & Outside') : waiterProfile?.assignedZone === 'A' ? t('inside_zone_a', 'Inside (Zone A)') : waiterProfile?.assignedZone === 'B' ? t('outside_zone_b', 'Outside (Zone B)') : t('select_zone', 'Select Zone')}
+              {waiterProfile?.assignedZone === 'Both' ? t('inside_and_outside', 'Inside & Outside') : waiterProfile?.assignedZone === 'A' ? t('inside_zone_a', 'Inside (Zone A)') : waiterProfile?.assignedZone === 'B' ? t('outside_zone_b', 'Outside (Zone B)') : t('select_zone', 'Select Zone')}
             </p>
           </div>
         </div>
@@ -537,14 +535,15 @@ export default function WaiterDashboard() {
            
            <button 
              onClick={() => {
-               localStorage.removeItem('waiter_session_active');
-               localStorage.removeItem('staffSession');
-               
-               navigate('/');
+               signOutApp().then(() => {
+                 localStorage.removeItem('waiter_session_active');
+                 localStorage.removeItem('staffSession');
+                 navigate('/login');
+               }).catch(() => {});
              }}
-             className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100"
+             className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100 cursor-pointer relative z-50 hover:bg-red-100 transition-colors"
            >
-             {t('exit') as string}
+             {t('exit', 'Exit')}
            </button>
         </div>
       </div>
@@ -1052,6 +1051,7 @@ function RequestCard({ req, t, auth, acceptRequest, completeRequest }: any) {
             </div>
           )}
       </div>
+      
     </div>
   );
 }

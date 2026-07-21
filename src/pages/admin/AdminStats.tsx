@@ -47,15 +47,18 @@ export default function AdminStats() {
   useEffect(() => {
     if (!isAdmin) return;
     const timer = setTimeout(() => setMounted(true), 100);
-    // Listen to dailyRevenue collection
-    const q = query(collection(db, 'dailyRevenue'), orderBy('lastUpdated', 'desc'));
+    // Listen to stats collection
+    const q = query(collection(db, 'stats'), orderBy('lastUpdated', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const stats = snapshot.docs.map(doc => ({
-        id: doc.id,
-        amount: doc.data().amount || 0,
-        orderCount: doc.data().orderCount || 0,
-        lastUpdated: doc.data().lastUpdated
-      } as DailyStat));
+      const stats = snapshot.docs.map(doc => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          amount: (d.amount || 0) + (d.revenue || 0),
+          orderCount: (d.orderCount || 0) + (d.orders || 0),
+          lastUpdated: d.lastUpdated
+        } as DailyStat;
+      });
       setData(stats);
       setLoading(false);
     }, (error) => {

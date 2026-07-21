@@ -137,7 +137,7 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     const existing = cart.find((item: any) => item.productId === product.id && item.customization === customization);
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity = Math.min(11, existing.quantity + 1);
     } else {
       cart.push({
         productId: product.id,

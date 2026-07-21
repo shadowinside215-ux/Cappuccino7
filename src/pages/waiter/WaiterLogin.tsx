@@ -226,7 +226,7 @@ export default function WaiterLogin() {
              <div>
                 <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest mb-1 leading-none">Live Network</h4>
                 <p className="text-[10px] text-amber-800/60 font-bold leading-tight">
-                  Real-time sync active. Activity is logged via Palace Taha terminal.
+                  Real-time sync active. Activity is logged via terminal.
                 </p>
              </div>
           </div>

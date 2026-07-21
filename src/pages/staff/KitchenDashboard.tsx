@@ -52,7 +52,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
 
 export default function KitchenDashboard() {
-  const [orders, setOrders] = useState<Order[]>([]);
+    const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
@@ -190,11 +190,11 @@ export default function KitchenDashboard() {
     }
   };
 
-  const logout = () => {
+  const confirmLogout = async () => {
     localStorage.removeItem('kitchen_session_active');
     localStorage.removeItem('staffSession');
     
-    navigate('/login');
+    signOutApp(true).catch(console.error); navigate('/login');
   };
 
   if (loading) {
@@ -217,7 +217,7 @@ export default function KitchenDashboard() {
           </div>
           <div>
             <h1 className="text-4xl font-black italic tracking-tighter uppercase">{t('kitchen_dashboard')}</h1>
-            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">{t('station_terminal')} • Palace Taha</p>
+            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">{t('station_terminal')}</p>
           </div>
         </div>
 
@@ -238,11 +238,17 @@ export default function KitchenDashboard() {
              <span className="text-[10px] font-black uppercase text-stone-500 tracking-widest">{t('active_orders')}</span>
           </div>
           <button 
-            onClick={logout}
-            className="p-4 bg-bento-bg text-stone-400 rounded-2xl hover:bg-stone-500/10 hover:text-bento-ink transition-all"
-          >
-            <LogOut size={20} />
-          </button>
+             onClick={() => {
+               signOutApp().then(() => {
+                 localStorage.removeItem('kitchen_session_active');
+                 localStorage.removeItem('staffSession');
+                 navigate('/login');
+               }).catch(() => {});
+             }}
+             className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100 cursor-pointer relative z-50 hover:bg-red-100 transition-colors"
+           >
+             {t('exit', 'Exit')}
+           </button>
         </div>
         </div>
       </div>
@@ -372,6 +378,7 @@ export default function KitchenDashboard() {
           </AnimatePresence>
         </div>
       )}
+      
     </div>
   );
 }

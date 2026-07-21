@@ -27,22 +27,24 @@ function confirmLogout(): Promise<boolean> {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     
-    document.getElementById('cancel-logout')?.addEventListener('click', () => {
+    overlay.querySelector('#cancel-logout')?.addEventListener('click', () => {
       document.body.removeChild(overlay);
       resolve(false);
     });
     
-    document.getElementById('confirm-logout')?.addEventListener('click', () => {
+    overlay.querySelector('#confirm-logout')?.addEventListener('click', () => {
       document.body.removeChild(overlay);
       resolve(true);
     });
   });
 }
 
-export async function signOutApp(): Promise<void> {
-  const confirmed = await confirmLogout();
-  if (!confirmed) {
-    return Promise.reject('User cancelled logout');
+export async function signOutApp(skipConfirmation: boolean = false): Promise<void> {
+  if (!skipConfirmation) {
+    const confirmed = await confirmLogout();
+    if (!confirmed) {
+      return Promise.reject('User cancelled logout');
+    }
   }
   try {
     await auth.signOut();
