@@ -250,7 +250,16 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                     <h2 className="text-4xl font-black text-bento-ink italic uppercase tracking-tighter">
                       {t(`products.${selectedProduct.name}`, selectedProduct.name)}
                     </h2>
-                    <span className="text-2xl font-black text-amber-400 italic">{selectedProduct.price} DH</span>
+                    <div className="flex flex-col items-end">
+                      {userProfile && (userProfile.itemLoyalty?.[selectedProduct.id] || 0) >= 11 ? (
+                        <>
+                          <span className="text-xs font-black text-stone-500 line-through decoration-red-500/50">{selectedProduct.price} DH</span>
+                          <span className="text-2xl font-black text-amber-400 italic">0 DH</span>
+                        </>
+                      ) : (
+                        <span className="text-2xl font-black text-amber-400 italic">{selectedProduct.price} DH</span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-bento-ink/40 text-sm font-medium leading-relaxed italic">
                     {t(`descriptions.${selectedProduct.name}`, selectedProduct.description)}
@@ -865,7 +874,14 @@ export default function Home({ userProfile }: { userProfile: UserProfile | null 
                         
                         <div className="absolute top-4 left-4">
                           <div className="bg-bento-card-bg/10 backdrop-blur-xl px-3 py-1.5 rounded-xl text-[10px] font-black text-bento-ink uppercase tracking-widest ring-1 ring-bento-card-border shadow-2xl">
-                            {product.price} DH
+                            {userProfile && (userProfile.itemLoyalty?.[product.id] || 0) >= 11 ? (
+                              <div className="flex flex-col items-center">
+                                <span className="text-[8px] line-through text-bento-ink/50 decoration-red-500/50">{product.price} DH</span>
+                                <span className="text-amber-500">0 DH</span>
+                              </div>
+                            ) : (
+                              <>{product.price} DH</>
+                            )}
                           </div>
                         </div>
 

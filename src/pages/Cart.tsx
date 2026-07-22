@@ -67,7 +67,15 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
     }
   }, []);
 
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const getItemTotalPrice = (item: OrderItem) => {
+    const points = userProfile?.itemLoyalty?.[item.productId] || 0;
+    if (points >= 11) {
+      const rewards = Math.min(item.quantity, Math.floor(points / 11));
+      return item.price * (item.quantity - rewards);
+    }
+    return item.price * item.quantity;
+  };
+  const total = items.reduce((sum, item) => sum + getItemTotalPrice(item), 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   const captureGPS = (retryOnTimeout = true): Promise<{ lat: number, lng: number }> => {
@@ -220,7 +228,7 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
         userId: auth.currentUser.uid,
         customerName: userProfile?.name || auth.currentUser.displayName || (isGuest ? t('guest', 'Guest') : t('customer', 'Customer')),
                 items: itemsWithMetadata,
-        total: total,
+        total: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         kitchenStatus: hasKitchenItems ? 'pending' : 'completed',
         barmanStatus: itemsWithMetadata.some(item => item.system === 'barman') ? 'pending' : 'completed',
         deliveryType,
@@ -460,7 +468,16 @@ export default function Cart({ userProfile }: { userProfile: UserProfile | null 
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-3">
-                        <p className="font-black text-2xl text-bento-ink">{(item.price * item.quantity)} DH</p>
+                        <div className="flex flex-col items-end">
+                          {(userProfile?.itemLoyalty?.[item.productId] || 0) >= 11 ? (
+                            <>
+                              <p className="font-black text-xs text-bento-ink/40 line-through decoration-red-500/50 decoration-2">{(item.price * item.quantity)} DH</p>
+                              <p className="font-black text-2xl text-bento-primary">{getItemTotalPrice(item)} DH</p>
+                            </>
+                          ) : (
+                            <p className="font-black text-2xl text-bento-ink">{(item.price * item.quantity)} DH</p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-4 bg-bento-ink/10 rounded-full px-4 py-2 ring-1 ring-bento-card-border backdrop-blur-md">
                           <button 
                             onClick={() => updateQuantity(item.productId, -1)}

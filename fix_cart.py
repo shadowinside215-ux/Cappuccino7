@@ -3,80 +3,36 @@ import re
 with open('src/pages/Cart.tsx', 'r') as f:
     code = f.read()
 
-# Add Minus to imports
-code = code.replace("Plus, Trash2,", "Plus, Minus, Trash2,")
+# Replace total calculation
+old_total = "const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);"
+new_total = """const getItemTotalPrice = (item: OrderItem) => {
+    const points = userProfile?.itemLoyalty?.[item.productId] || 0;
+    if (points >= 11) {
+      const rewards = Math.min(item.quantity, Math.floor(points / 11));
+      return item.price * (item.quantity - rewards);
+    }
+    return item.price * item.quantity;
+  };
+  const total = items.reduce((sum, item) => sum + getItemTotalPrice(item), 0);"""
 
-# Update updateQuantity
-old_update = """  const updateQuantity = (id: string, delta: number) => {
-    const newItems = items.map(item => {
-      if (item.productId === id) {
-        const newQty = Math.max(0, item.quantity + delta);
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    }).filter(item => item.quantity > 0);
-    setItems(newItems);
-    localStorage.setItem('cart', JSON.stringify(newItems));
-  };"""
+code = code.replace(old_total, new_total)
 
-new_update = """  const updateQuantity = (id: string, delta: number) => {
-    const newItems = items.map(item => {
-      if (item.productId === id) {
-        let newQty = item.quantity + delta;
-        if (newQty > 11) newQty = 11;
-        newQty = Math.max(0, newQty);
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    }).filter(item => item.quantity > 0);
-    setItems(newItems);
-    localStorage.setItem('cart', JSON.stringify(newItems));
-  };"""
-
-code = code.replace(old_update, new_update)
-
-# Update the buttons
-old_buttons = """                        <div className="flex items-center gap-4 bg-bento-ink/10 rounded-full px-4 py-2 ring-1 ring-bento-card-border backdrop-blur-md">
-                          <button 
-                            onClick={() => updateQuantity(item.productId, -item.quantity)}
-                            className="text-red-500/80 hover:text-red-500 transition-colors text-[10px] uppercase font-black tracking-widest whitespace-nowrap"
-                          >
-                            Cancel order
-                          </button>
-                          <button 
-                            onClick={() => updateQuantity(item.productId, 1)}
-                            className="text-bento-ink/40 hover:text-bento-ink transition-colors"
-                          >
-                            <Plus size={16} />
-                          </button>
+# Replace the display price
+old_price = """<p className="font-black text-2xl text-bento-ink">{(item.price * item.quantity)} DH</p>"""
+new_price = """<div className="flex flex-col items-end">
+                          {userProfile?.itemLoyalty?.[item.productId] >= 11 ? (
+                            <>
+                              <p className="font-black text-xs text-bento-ink/40 line-through decoration-red-500/50 decoration-2">{(item.price * item.quantity)} DH</p>
+                              <p className="font-black text-2xl text-bento-primary">{getItemTotalPrice(item)} DH</p>
+                            </>
+                          ) : (
+                            <p className="font-black text-2xl text-bento-ink">{(item.price * item.quantity)} DH</p>
+                          )}
                         </div>"""
 
-new_buttons = """                        <div className="flex items-center gap-4 bg-bento-ink/10 rounded-full px-4 py-2 ring-1 ring-bento-card-border backdrop-blur-md">
-                          <button 
-                            onClick={() => updateQuantity(item.productId, -1)}
-                            className="text-bento-ink/40 hover:text-bento-ink transition-colors"
-                          >
-                            <Minus size={16} />
-                          </button>
-                          <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
-                          <button 
-                            onClick={() => updateQuantity(item.productId, 1)}
-                            className="text-bento-ink/40 hover:text-bento-ink transition-colors"
-                          >
-                            <Plus size={16} />
-                          </button>
-                          <div className="w-[1px] h-4 bg-bento-card-border mx-2"></div>
-                          <button 
-                            onClick={() => updateQuantity(item.productId, -item.quantity)}
-                            className="text-red-500/80 hover:text-red-500 transition-colors text-[10px] uppercase font-black tracking-widest whitespace-nowrap"
-                          >
-                            {t('remove', 'Remove')}
-                          </button>
-                        </div>"""
-
-code = code.replace(old_buttons, new_buttons)
+code = code.replace(old_price, new_price)
 
 with open('src/pages/Cart.tsx', 'w') as f:
     f.write(code)
 
-print("Cart.tsx updated.")
+print("Cart updated.")
